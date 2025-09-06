@@ -17,7 +17,7 @@ import AKPI from "../components/AKPI";
 import ChartStackedBar from "../components/ChartStackedBar";
 import DataGridTable from "../components/DataGridTable";
 import ChartBar from "../components/ChartBar";
-import { getConversationsTrend } from "../api/dashboard";
+import { getConversationsTrend, getKPI } from "../api/dashboard";
 import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 
 

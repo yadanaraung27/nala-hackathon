@@ -1,4 +1,5 @@
-from django.urls import path
+from django.urls import path,include
+from django.contrib import admin
 from dashboard.views import (
     SampleProtectedEndpointView,
     KPIView,
@@ -8,6 +9,8 @@ from dashboard.views import (
 )
 
 urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("api/", include("samples.urls")),  # 👈 mounts your app's urls.py
     path("sample/", SampleProtectedEndpointView.as_view(), name="sample"),
     path("kpi/", KPIView.as_view(), name="kpi"),
     path("content-topic-type/<str:date_range>/", AnalyticsContentTopicTypeView.as_view(), name="content-topic-type"),
