@@ -13,44 +13,37 @@ React + Vite web app with React Router, built for Stage 2 of Reimagine Learning 
 
 ## Prerequisites <a id="prerequisites"></a>
 
-TODO.
-
-### Create a Virtual Environment <a id="create-a-virtual-environment"></a>
-
-**uv (Recommended)**
-
-To manage our project dependencies, we are using uv which is an extremely fast Python package and project manager, written in Rust. For more information on how to get started with uv, please visit the [uv documentation](https://docs.astral.sh/uv/).
-
-To create a virtual environment, run the following command:
+The following command is to be ran by one developer in the team to initialise the Repository to be a Vite + React Project.
 
 ```bash
-uv venv
-```
-
-Once you have created a virtual environment, you may activate it.
-
-On Linux or macOS, run the following command:
-
-```bash
-source .venv/bin/activate
-```
-
-On Windows, run:
-
-```powershell
-.venv/Scripts/activate
+npx create-vite@latest nala-hackathon -- --template react
 ```
 
 ### Install Dependencies <a id="install-dependencies"></a>
 
 ```bash
-uv sync
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+
 npm install
-npm install react-router-dom @mui/material @mui/x-charts
+
+# Install MU
+npm install @mui/material @emotion/react @emotion/styled @mui/icons-material
+
+# Install MUI X
+npm install @mui/x-data-grid @mui/x-charts
+
+# Install API helper
+npm install axios
 ```
 
 ### Run Application <a id="run-application"></a>
 
 ```bash
+# Run dev server
 npm run dev
 ```
