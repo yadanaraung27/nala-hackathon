@@ -1,0 +1,21 @@
+.main-content {
+  margin-left: 273px;
+  padding: 40px 32px;
+  flex: 1;
+  background: #FFF;
+  min-height: 100vh;
+}
+
+.bottom-sections {
+  display: flex;
+  gap: 32px;
+  margin: 32px 0;
+}
+
+.left-bottom {
+  flex: 0 0 auto;
+}
+
+.right-bottom {
+  flex: 1;
+}

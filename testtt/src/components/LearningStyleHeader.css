@@ -1,0 +1,197 @@
+.learning-style-header {
+  width: 100%;
+  height: 291px;
+  position: relative;
+  margin-bottom: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.background-elements {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #EAECF0;
+  border-radius: 8px;
+}
+
+.bg-blur {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(217, 217, 217, 0.39);
+  backdrop-filter: blur(22.5px);
+}
+
+.bg-shapes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.shape {
+  position: absolute;
+  border-radius: 50px;
+}
+
+.shape-1 {
+  width: 120px;
+  height: 80px;
+  background: #0BA5EC;
+  top: -20px;
+  left: 92px;
+  transform: rotate(-15deg);
+}
+
+.shape-2 {
+  width: 100px;
+  height: 60px;
+  background: #0BA5EC;
+  top: 50px;
+  left: 40px;
+  transform: rotate(25deg);
+}
+
+.shape-3 {
+  width: 150px;
+  height: 90px;
+  background: #0BA5EC;
+  top: -30px;
+  right: 100px;
+  transform: rotate(35deg);
+}
+
+.shape-4 {
+  width: 180px;
+  height: 100px;
+  background: #36BFFA;
+  top: 80px;
+  right: -20px;
+  transform: rotate(-20deg);
+}
+
+.shape-5 {
+  width: 140px;
+  height: 70px;
+  background: #28D6D8;
+  bottom: 20px;
+  left: 200px;
+  transform: rotate(40deg);
+}
+
+.content-overlay {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  padding: 40px;
+  height: 100%;
+}
+
+.student-image {
+  width: 279px;
+  height: 291px;
+  flex-shrink: 0;
+}
+
+.student-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.text-content {
+  flex: 1;
+  padding-left: 46px;
+  color: white;
+}
+
+.welcome-title {
+  color: #FFF;
+  font-family: 'Inter', sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 38px;
+  margin: 0 0 20px 0;
+}
+
+.learning-style-text {
+  margin-bottom: 16px;
+}
+
+.style-label {
+  color: #FFF;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.style-name {
+  color: #5200F5;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.description {
+  color: #FFF;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  margin: 0 0 24px 0;
+  width: 536px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.retake-quiz-btn {
+  display: flex;
+  padding: 10px 16px;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  border: 1px solid #D0D5DD;
+  background: #FFF;
+  box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.05);
+  color: #344054;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retake-quiz-btn:hover {
+  background: #F9FAFB;
+}
+
+.learn-more {
+  position: absolute;
+  bottom: -40px;
+  right: 120px;
+  z-index: 3;
+}
+
+.learn-more span {
+  color: #5200F5;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.learn-more span:hover {
+  text-decoration: underline;
+}

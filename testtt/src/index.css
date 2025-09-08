@@ -1,0 +1,38 @@
+:root {
+  --Gray-200: #EAECF0;
+  --Base-White: #FFF;
+  --Gray-700: #344054;
+  --Gray-900: #101828;
+  --Gray-500: #667085;
+  --Gray-100: #F2F4F7;
+  --Gray-300: #D0D5DD;
+  --w500: #0BA5EC;
+  --w300: #7CD4FD;
+  --Static-Headline-Medium-Font: Roboto;
+  --Static-Headline-Medium-Size: 28px;
+  --Static-Headline-Medium-Line-Height: 36px;
+  --Static-Headline-Medium-Tracking: 0;
+  --colors-white-100: #FFF;
+  --Neutral-White: #FFF;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #FFF;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
