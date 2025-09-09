@@ -1,56 +1,36 @@
-# LearnUs: Reimagine Learning Analytics @ NTU Hackathon
+# Learning Analytics Dashboard (Figma Make Export)
 
-React + Vite web app with React Router, built for Stage 2 of Reimagine Learning Analytics @ NTU Hackathon.
+This repository contains the code for the Learning Analytics Dashboard, originally designed in [Figma](https://www.figma.com/design/Lxw10CtJdqt4UIYsRb07Cu/Learning-Analytics-Dashboard).
 
-## Table of Contents
+All code for testing is located in the `samples/figma_make` directory. You will need to set up dependencies before running the project.
 
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Create a Virtual Environment](#create-a-virtual-environment)
-  - [Install Dependencies](#install-dependencies)
+## Getting Started
 
-## Getting Started <a id="getting-started"></a>
+1. **Navigate to the project directory:**
+   ```bash
+   cd samples/figma_make
+   ```
 
-## Prerequisites <a id="prerequisites"></a>
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+   This will create a `node_modules` folder in the `figma_make` project.
 
-TODO.
+3. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
 
-### Create a Virtual Environment <a id="create-a-virtual-environment"></a>
+   If you encounter an error related to `@vitejs/plugin-react-swc`, install it with:
+   ```bash
+   npm install --save-dev @vitejs/plugin-react-swc
+   ```
 
-**uv (Recommended)**
+4. **Expected Output:**
+   - On successful execution, you should see output similar to the screenshot below:
 
-To manage our project dependencies, we are using uv which is an extremely fast Python package and project manager, written in Rust. For more information on how to get started with uv, please visit the [uv documentation](https://docs.astral.sh/uv/).
-
-To create a virtual environment, run the following command:
-
-```bash
-uv venv
-```
-
-Once you have created a virtual environment, you may activate it.
-
-On Linux or macOS, run the following command:
-
-```bash
-source .venv/bin/activate
-```
-
-On Windows, run:
-
-```powershell
-.venv/Scripts/activate
-```
-
-### Install Dependencies <a id="install-dependencies"></a>
-
-```bash
-uv sync
-npm install
-npm install react-router-dom @mui/material @mui/x-charts
-```
-
-### Run Application <a id="run-application"></a>
-
-```bash
-npm run dev
-```
+     ![Executed npm run dev](../../media/successful_npm_run_dev.png)
+   - The dashboard UI will appear as shown:
+   
+     ![Figma Make UI](../../media/figma_make_ui.png)
