@@ -1,3 +1,18 @@
+// Fetch reply from RAG backend
+async function fetchRagReply(query: string): Promise<string> {
+  try {
+    const response = await fetch("http://127.0.0.1:5000/api/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query }),
+    });
+    if (!response.ok) throw new Error("Backend error");
+    const data = await response.json();
+    return data.answer || "Sorry, I couldn't find an answer.";
+  } catch (err) {
+    return "Error contacting the learning assistant backend.";
+  }
+}
 import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -426,12 +441,16 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate typing delay
-    setTimeout(async () => {
-      const botResponse = await generateResponse(text);
-      setMessages(prev => [...prev, botResponse]);
-      setIsTyping(false);
-    }, 1000 + Math.random() * 1000);
+    // Call backend
+    const botReply = await fetchRagReply(text);
+    const botMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      content: botReply,
+      sender: 'bot',
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, botMessage]);
+    setIsTyping(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
