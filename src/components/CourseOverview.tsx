@@ -20,64 +20,65 @@ interface CourseEvent {
 const mockCourseEvents: CourseEvent[] = [
   {
     id: '1',
-    title: 'Data Structures Assignment 2',
-    type: 'assignment',
-    date: '2025-08-20',
-    daysUntil: 8,
-    course: 'CS2040S',
+    title: 'Midterm Exam',
+    type: 'exam',
+    date: '2025-10-11',
+    daysUntil: 17,
+    course: 'MH1810',
     priority: 'high',
-    description: 'Implement binary search tree with deletion'
+    description: 'Complex numbers, vectors, matrices, limits, derivatives - 15% weightage'
   },
   {
     id: '2',
-    title: 'Midterm Exam',
-    type: 'exam',
-    date: '2025-08-25',
-    daysUntil: 13,
-    course: 'CS2106',
-    priority: 'high',
-    description: 'Operating Systems concepts'
+    title: 'Online Assignment 3',
+    type: 'assignment',
+    date: '2025-10-05',
+    daysUntil: 11,
+    course: 'MH1810',
+    priority: 'medium',
+    description: 'Derivatives and applications problems'
   },
   {
     id: '3',
-    title: 'Group Project Presentation',
-    type: 'project',
-    date: '2025-08-22',
-    daysUntil: 10,
-    course: 'CS3219',
-    priority: 'medium',
-    description: 'Software Engineering project demo'
+    title: 'Take-home Test',
+    type: 'assignment',
+    date: '2025-11-11',
+    daysUntil: 48,
+    course: 'MH1810',
+    priority: 'high',
+    description: 'Differentiation and Integration - Submit by 11th Nov - 9% weightage'
   },
   {
     id: '4',
-    title: 'Weekly Quiz 5',
-    type: 'quiz',
-    date: '2025-08-18',
-    daysUntil: 6,
-    course: 'CS3230',
-    priority: 'medium',
-    description: 'Algorithm analysis and design'
+    title: 'Final Exam',
+    type: 'exam',
+    date: '2025-11-24',
+    daysUntil: 61,
+    course: 'MH1810',
+    priority: 'high',
+    description: 'Comprehensive exam 9am-11am - 60% weightage'
   },
   {
     id: '5',
-    title: 'Machine Learning Assignment 1',
+    title: 'Online Assignment 2',
     type: 'assignment',
-    date: '2025-08-15',
-    daysUntil: 3,
-    course: 'CS3244',
-    priority: 'high',
-    description: 'Linear regression implementation'
+    date: '2025-09-21',
+    daysUntil: -3,
+    course: 'MH1810',
+    priority: 'medium',
+    completed: true,
+    description: 'Limits and continuity problems'
   },
   {
     id: '6',
-    title: 'Database Lab Report',
+    title: 'Online Assignment 1',
     type: 'assignment',
-    date: '2025-08-10',
-    daysUntil: -2,
-    course: 'CS2102',
-    priority: 'high',
+    date: '2025-09-07',
+    daysUntil: -17,
+    course: 'MH1810',
+    priority: 'medium',
     completed: true,
-    description: 'SQL query optimization analysis'
+    description: 'Complex numbers and vector problems'
   }
 ];
 
@@ -110,11 +111,33 @@ const getDaysUntilColor = (daysUntil: number) => {
 
 export default function CourseOverview() {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'upcoming' | 'completed'>('upcoming');
+  const [completedEvents, setCompletedEvents] = useState<Set<string>>(new Set());
   
+  const handleMarkComplete = (eventId: string) => {
+    setCompletedEvents(prev => new Set([...prev, eventId]));
+  };
+
+  const handleToggleComplete = (eventId: string) => {
+    setCompletedEvents(prev => {
+      const newSet = new Set([...prev]);
+      if (newSet.has(eventId)) {
+        newSet.delete(eventId);
+      } else {
+        newSet.add(eventId);
+      }
+      return newSet;
+    });
+  };
+
+  const isEventCompleted = (event: CourseEvent) => {
+    return event.completed || completedEvents.has(event.id);
+  };
+
   const filteredEvents = mockCourseEvents
     .filter(event => {
-      if (selectedFilter === 'upcoming') return event.daysUntil >= 0 && !event.completed;
-      if (selectedFilter === 'completed') return event.completed;
+      const completed = isEventCompleted(event);
+      if (selectedFilter === 'upcoming') return event.daysUntil >= 0 && !completed;
+      if (selectedFilter === 'completed') return completed;
       return true;
     })
     .sort((a, b) => a.daysUntil - b.daysUntil);
@@ -126,50 +149,7 @@ export default function CourseOverview() {
 
   return (
     <div className="space-y-6">
-      {/* Course Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Upcoming Deadlines</p>
-                <p className="text-2xl font-bold text-gray-900">{upcomingEvents.length}</p>
-              </div>
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card className="bg-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Completion Rate</p>
-                <p className="text-2xl font-bold text-gray-900">{completionRate}%</p>
-              </div>
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Active Courses</p>
-                <p className="text-2xl font-bold text-gray-900">5</p>
-              </div>
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <BookOpen className="h-5 w-5 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Course Events */}
       <Card className="bg-white">
@@ -178,7 +158,7 @@ export default function CourseOverview() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Course Schedule & Deadlines
+                Course Schedule
               </CardTitle>
               <CardDescription>Important dates and assignments for your modules</CardDescription>
             </div>
@@ -213,7 +193,7 @@ export default function CourseOverview() {
               <div
                 key={event.id}
                 className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
-                  event.completed 
+                  isEventCompleted(event) 
                     ? 'bg-gray-50 border-gray-200' 
                     : event.daysUntil <= 3 
                     ? 'bg-red-50 border-red-200' 
@@ -222,13 +202,13 @@ export default function CourseOverview() {
               >
                 <div className="flex items-start gap-3 flex-1">
                   <div className={`p-2 rounded-lg ${
-                    event.completed ? 'bg-gray-100' : 
+                    isEventCompleted(event) ? 'bg-gray-100' : 
                     event.type === 'exam' ? 'bg-red-100' :
                     event.type === 'assignment' ? 'bg-blue-100' :
                     event.type === 'project' ? 'bg-purple-100' :
                     'bg-gray-100'
                   }`}>
-                    {event.completed ? (
+                    {isEventCompleted(event) ? (
                       <CheckCircle className="h-4 w-4 text-gray-600" />
                     ) : (
                       <div className={
@@ -244,15 +224,9 @@ export default function CourseOverview() {
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className={`font-medium ${event.completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                      <h3 className={`font-medium ${isEventCompleted(event) ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
                         {event.title}
                       </h3>
-                      <Badge variant="outline" className="text-xs">
-                        {event.course}
-                      </Badge>
-                      <Badge className={`text-xs ${getPriorityColor(event.priority)}`}>
-                        {event.priority}
-                      </Badge>
                     </div>
                     <p className="text-sm text-gray-600 mb-1">{event.description}</p>
                     <div className="flex items-center gap-4 text-xs text-gray-500">
@@ -260,7 +234,7 @@ export default function CourseOverview() {
                         <Calendar className="h-3 w-3" />
                         {new Date(event.date).toLocaleDateString()}
                       </span>
-                      {!event.completed && (
+                      {!isEventCompleted(event) && (
                         <span className={`flex items-center gap-1 font-medium ${getDaysUntilColor(event.daysUntil)}`}>
                           <Clock className="h-3 w-3" />
                           {event.daysUntil === 0 ? 'Due today' :
@@ -273,9 +247,24 @@ export default function CourseOverview() {
                   </div>
                 </div>
 
-                {!event.completed && event.daysUntil >= 0 && (
-                  <Button variant="outline" size="sm">
+                {!isEventCompleted(event) && event.daysUntil >= 0 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleMarkComplete(event.id)}
+                  >
                     Mark Complete
+                  </Button>
+                )}
+                {isEventCompleted(event) && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="flex items-center gap-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                    onClick={() => handleToggleComplete(event.id)}
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    <span className="text-sm font-medium">Completed</span>
                   </Button>
                 )}
               </div>

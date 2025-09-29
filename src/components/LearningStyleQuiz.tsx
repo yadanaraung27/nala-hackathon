@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
 import { Progress } from './ui/progress';
-import { Brain, MessageCircle, Building, Lightbulb, Mountain } from 'lucide-react';
+import { Brain, MessageCircle, Building, Lightbulb, Mountain, Info, X } from 'lucide-react';
 
 interface Question {
   id: number;
@@ -78,6 +78,7 @@ export default function LearningStyleQuiz({ onComplete, onSkip, allowSkip = fals
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<{ [key: number]: string }>({});
   const [selectedAnswer, setSelectedAnswer] = useState('');
+  const [showKolbInfo, setShowKolbInfo] = useState(false);
 
   const handleAnswerSelect = (value: string) => {
     setSelectedAnswer(value);
@@ -135,16 +136,120 @@ export default function LearningStyleQuiz({ onComplete, onSkip, allowSkip = fals
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl bg-white">
-        <CardHeader className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-2">
-            <Brain className="h-6 w-6 text-purple-600" />
-            <CardTitle>Discover Your Learning Preference</CardTitle>
-          </div>
-          <CardDescription>
-            Based on Kolb's Learning Theory, we'll help you identify your learning preferences to personalize your dashboard experience. {allowSkip ? 'This quiz is optional and takes just 2 minutes.' : 'This quick quiz takes just 2 minutes and helps us personalize your experience.'}
-          </CardDescription>
+    <>
+      {/* Kolb's Learning Theory Information Modal */}
+      {showKolbInfo && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
+          <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-purple-600" />
+                  About Kolb's Learning Theory
+                </CardTitle>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowKolbInfo(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <p className="text-gray-700 mb-4">
+                  Developed by educational theorist David Kolb, this theory identifies how individuals prefer to learn and process information through a continuous cycle of experience, reflection, conceptualization, and experimentation.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-medium text-gray-900 mb-3">The Four Learning Preference Types</h4>
+                <div className="grid gap-4">
+                  <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                    <MessageCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-blue-900">The Interactor</p>
+                      <p className="text-sm text-blue-700">Prefers learning through active experimentation and concrete experience - thriving in social, hands-on environments.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
+                    <Building className="h-5 w-5 text-green-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-green-900">The Architect</p>
+                      <p className="text-sm text-green-700">Excels in abstract conceptualization and reflective observation - preferring systematic, theoretical approaches.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg">
+                    <Lightbulb className="h-5 w-5 text-orange-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-orange-900">The Problem Solver</p>
+                      <p className="text-sm text-orange-700">Combines abstract conceptualization with active experimentation - learning through practical application.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
+                    <Mountain className="h-5 w-5 text-purple-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-purple-900">The Adventurer</p>
+                      <p className="text-sm text-purple-700">Blends concrete experience with reflective observation - thriving in dynamic, intuitive learning environments.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-medium text-gray-900 mb-3">How This Helps Your Learning</h4>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-500 mt-1 flex-shrink-0">•</span>
+                    <span>Personalized study recommendations based on your preferred learning approach</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-500 mt-1 flex-shrink-0">•</span>
+                    <span>Customized chatbot interactions that match your learning style</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-500 mt-1 flex-shrink-0">•</span>
+                    <span>Daily questions and challenges tailored to your preferences</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-500 mt-1 flex-shrink-0">•</span>
+                    <span>Better understanding of your own learning processes and strengths</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <Button onClick={() => setShowKolbInfo(false)}>
+                  Got it!
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <Card className="w-full max-w-2xl bg-white">
+          <CardHeader className="text-center space-y-4">
+            <div className="flex items-center justify-center gap-2">
+              <Brain className="h-6 w-6 text-purple-600" />
+              <CardTitle>Discover Your Learning Preference</CardTitle>
+            </div>
+            <CardDescription>
+              Based on{' '}
+              <button
+                onClick={() => setShowKolbInfo(true)}
+                className="text-purple-600 underline decoration-purple-600/30 hover:decoration-purple-600 underline-offset-2 hover:text-purple-700 transition-colors inline-flex items-center gap-1 font-medium"
+              >
+                Kolb's Learning Theory
+                <Info className="h-3.5 w-3.5" />
+              </button>
+              , we'll help you identify your learning preferences to personalize your dashboard experience. {allowSkip ? 'This quiz is optional and takes just 2 minutes.' : 'This quick quiz takes just 2 minutes and helps us personalize your experience.'}
+            </CardDescription>
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-gray-600">
               <span>Question {currentQuestion + 1} of {questions.length}</span>
@@ -203,5 +308,6 @@ export default function LearningStyleQuiz({ onComplete, onSkip, allowSkip = fals
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }

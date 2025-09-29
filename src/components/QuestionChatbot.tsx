@@ -3,14 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Textarea } from './ui/textarea';
-import { ArrowLeft, HelpCircle, Save, Send, Users, Clock, Target, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Send, Target, Lightbulb } from 'lucide-react';
 
 interface QuestionChatbotProps {
   learningStyle?: string | null;
   onBack: () => void;
+  onSubmitAnswer?: (question: string, answer: string) => void;
 }
 
-export default function QuestionChatbot({ learningStyle, onBack }: QuestionChatbotProps) {
+export default function QuestionChatbot({ learningStyle, onBack, onSubmitAnswer }: QuestionChatbotProps) {
   const [answer, setAnswer] = useState('');
   const [showHint, setShowHint] = useState(false);
 
@@ -18,21 +19,20 @@ export default function QuestionChatbot({ learningStyle, onBack }: QuestionChatb
   const questionData = {
     difficulty: 'Medium',
     questionType: 'Understand',
-    topic: 'Binary Search Trees',
-    question: "Imagine you're explaining binary search trees to a study group. How would you describe the insertion process step-by-step, and what questions might your classmates ask that you should be prepared to answer?",
-    hint: "Consider the comparison process, tree balancing, and common edge cases like duplicate values.",
+    topic: 'Derivatives',
+    question: "Imagine you're explaining the chain rule to a study group. How would you describe when and why we use it for composite functions, and what common mistakes should your classmates avoid?",
+    hint: "Think about identifying outer and inner functions and common differentiation errors...",
     relatedTopics: ['Data Structures', 'Tree Traversal', 'Algorithm Explanation']
   };
 
   const handleSubmit = () => {
-    // Handle answer submission
-    console.log('Submitting answer:', answer);
+    // Handle answer submission and redirect to chatbot
+    if (onSubmitAnswer) {
+      onSubmitAnswer(questionData.question, answer);
+    }
   };
 
-  const handleSaveDraft = () => {
-    // Handle saving draft
-    console.log('Saving draft:', answer);
-  };
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -50,7 +50,7 @@ export default function QuestionChatbot({ learningStyle, onBack }: QuestionChatb
               Back to Dashboard
             </Button>
             <div className="h-6 w-px bg-gray-300"></div>
-            <h1 className="text-2xl font-semibold text-gray-900">Chatbot</h1>
+
           </div>
 
         </div>
@@ -134,18 +134,9 @@ export default function QuestionChatbot({ learningStyle, onBack }: QuestionChatb
 
               {/* Answer Section */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <label className="block text-lg font-medium text-gray-900">
-                    Your Answer:
-                  </label>
-                  <div className="text-sm text-gray-500">
-                    {answer.length > 0 && (
-                      <span className={answer.length >= 50 ? "text-green-600" : "text-orange-600"}>
-                        {answer.length} characters {answer.length < 50 ? `(${50 - answer.length} more recommended)` : "✓"}
-                      </span>
-                    )}
-                  </div>
-                </div>
+                <label className="block text-lg font-medium text-gray-900">
+                  Your Answer:
+                </label>
                 <Textarea
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}
@@ -155,44 +146,17 @@ export default function QuestionChatbot({ learningStyle, onBack }: QuestionChatb
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-between items-center pt-6 border-t border-gray-200">
-                <Button
-                  variant="outline"
-                  onClick={handleSaveDraft}
-                  className="flex items-center gap-2 px-6 py-3"
-                >
-                  <Save className="h-4 w-4" />
-                  Save Draft
-                </Button>
+              <div className="flex justify-end items-center pt-6 border-t border-gray-200">
                 <Button
                   onClick={handleSubmit}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white flex items-center gap-2 px-8 py-3 text-base font-medium"
-                  disabled={answer.length < 20}
                 >
                   Submit My Answer
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
 
-              {/* Related Topics */}
-              <div className="pt-6 border-t border-gray-200">
-                <h4 className="font-medium text-gray-900 mb-4">Continue Learning</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {questionData.relatedTopics.map((topic, index) => (
-                    <div
-                      key={index}
-                      className="p-4 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 cursor-pointer transition-colors group"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-gray-900 group-hover:text-purple-700">
-                          {topic}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+
 
               {/* Personalized tip based on learning style */}
               {learningStyle && (

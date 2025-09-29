@@ -11,90 +11,82 @@ const courseDifficultyMapping = {
   'The Interactor': {
     easier: [
       { 
-        name: 'Software Engineering', 
-        code: 'CS3203', 
-        reason: 'Heavy emphasis on team collaboration and group discussions',
-        tips: ['Participate actively in team meetings', 'Leverage peer programming sessions'],
+        name: 'Applied Derivatives', 
+        code: 'MH1810-Module4', 
+        reason: 'Interactive problem-solving and group discussion of real-world applications',
+        tips: ['Participate actively in optimization discussions', 'Leverage group problem-solving sessions'],
         currentGrade: 'B+',
         confidence: 85
       },
       { 
-        name: 'Human Computer Interaction', 
-        code: 'CS3240', 
-        reason: 'Interactive design processes and user feedback sessions',
-        tips: ['Engage with user testing groups', 'Present design concepts regularly'],
+        name: 'Complex Numbers', 
+        code: 'MH1810-Module1', 
+        reason: 'Visual learning through polar representations and collaborative exploration',
+        tips: ['Engage with geometric interpretation groups', 'Present polar form concepts regularly'],
         currentGrade: 'A-',
         confidence: 90
-      },
-      { 
-        name: 'Database Systems', 
-        code: 'CS2102', 
-        reason: 'Collaborative project work and discussion-based learning',
-        tips: ['Form study groups for complex queries', 'Explain concepts to teammates'],
-        currentGrade: 'B',
-        confidence: 78
       }
     ],
     harder: [
       { 
-        name: 'Algorithms', 
-        code: 'CS3230', 
-        reason: 'Requires extensive individual problem-solving practice',
-        tips: ['Join algorithm study groups', 'Discuss solutions with peers after practice'],
+        name: 'Integration Techniques', 
+        code: 'MH1810-Module7', 
+        reason: 'Requires extensive individual practice with various methods',
+        tips: ['Join integration study groups', 'Discuss solution strategies with peers after practice'],
         currentGrade: 'B-',
         confidence: 65
       },
       { 
-        name: 'Independent Research Project', 
-        code: 'CS4199', 
-        reason: 'Minimal peer interaction and self-directed learning',
-        tips: ['Schedule regular advisor meetings', 'Present progress to research groups'],
+        name: 'Limits and Continuity', 
+        code: 'MH1810-Module3', 
+        reason: 'Abstract concepts requiring individual reflection and practice',
+        tips: ['Schedule regular tutorial sessions', 'Present limit concepts to study groups'],
         currentGrade: 'B',
-        confidence: 60
+        confidence: 70
       }
     ]
   },
   'The Architect': {
     easier: [
       { 
-        name: 'Database Systems', 
-        code: 'CS2102', 
-        reason: 'Systematic approach to data modeling and structured analysis',
-        tips: ['Create detailed ER diagrams', 'Build comprehensive query documentation'],
+        name: 'Vector and Matrix Operations', 
+        code: 'MH1810-Module2', 
+        reason: 'Systematic approach to linear algebra and structured calculations',
+        tips: ['Create detailed operation reference sheets', 'Build comprehensive formula documentation'],
         currentGrade: 'A',
         confidence: 92
       },
       { 
-        name: 'Algorithm Analysis', 
-        code: 'CS3230', 
-        reason: 'Deep theoretical understanding and methodical problem solving',
-        tips: ['Create algorithm complexity comparison charts', 'Build personal reference materials'],
+        name: 'Limits and Continuity', 
+        code: 'MH1810-Module3', 
+        reason: 'Deep theoretical understanding and methodical limit evaluation',
+        tips: ['Create limit technique comparison charts', 'Build personal theorem reference materials'],
         currentGrade: 'A-',
         confidence: 88
       },
       { 
-        name: 'Computer Security', 
-        code: 'CS2107', 
-        reason: 'Requires careful analysis of security protocols and systems',
-        tips: ['Document security frameworks thoroughly', 'Create threat analysis models'],
+        name: 'Integration Theory', 
+        code: 'MH1810-Module6', 
+        reason: 'Requires careful analysis of integration principles and systematic approach',
+        tips: ['Document integration rules thoroughly', 'Create method selection flowcharts'],
         currentGrade: 'B+',
         confidence: 85
       }
     ],
     harder: [
       { 
-        name: 'Software Engineering Project', 
-        code: 'CS3203', 
-        reason: 'Fast-paced group dynamics and unpredictable collaboration',
-        tips: ['Prepare detailed project plans in advance', 'Set structured meeting agendas'],
+        name: 'Applied Optimization', 
+        code: 'MH1810-Module5', 
+        reason: 'Fast-paced problem solving with unpredictable real-world applications',
+        tips: ['Prepare detailed solution templates in advance', 'Set structured problem-solving frameworks'],
         currentGrade: 'B',
         confidence: 68
       },
       { 
-        name: 'Rapid Prototyping Workshop', 
-        code: 'CS3216', 
-        reason: 'Time-pressured environment with chaotic brainstorming',
-        tips: ['Prepare structured templates beforehand', 'Focus on your analytical strengths'],
+        name: 'Complex Number Applications', 
+        code: 'MH1810-Module1', 
+        reason: 'Time-pressured geometric interpretations and visual problem solving',
+        tips: ['Prepare structured visualization tools beforehand', 'Focus on your analytical calculation strengths'],
         currentGrade: 'B-',
         confidence: 62
       }
@@ -103,44 +95,44 @@ const courseDifficultyMapping = {
   'The Problem Solver': {
     easier: [
       { 
-        name: 'Data Structures', 
-        code: 'CS2040S', 
-        reason: 'Hands-on implementation and practical problem solving',
-        tips: ['Code multiple implementations', 'Test with real-world data sets'],
+        name: 'Applied Derivatives', 
+        code: 'MH1810-Module5', 
+        reason: 'Hands-on optimization problems and practical calculus applications',
+        tips: ['Solve multiple real-world optimization problems', 'Test with various constraint scenarios'],
         currentGrade: 'A',
         confidence: 90
       },
       { 
-        name: 'Web Development', 
-        code: 'CS3216', 
-        reason: 'Practical application building with immediate feedback',
-        tips: ['Build side projects to reinforce learning', 'Debug and optimize continuously'],
+        name: 'Integration Applications', 
+        code: 'MH1810-Module8', 
+        reason: 'Practical area and volume calculations with immediate visual feedback',
+        tips: ['Build visual models to reinforce learning', 'Solve and verify solutions continuously'],
         currentGrade: 'A-',
         confidence: 87
       },
       { 
-        name: 'Machine Learning Applications', 
-        code: 'CS3244', 
-        reason: 'Applied ML with real datasets and measurable outcomes',
-        tips: ['Work on Kaggle competitions', 'Implement algorithms from scratch'],
+        name: 'Complex Number Problems', 
+        code: 'MH1810-Module1', 
+        reason: 'Applied complex analysis with measurable computational outcomes',
+        tips: ['Work on engineering applications', 'Implement polar conversions from scratch'],
         currentGrade: 'B+',
         confidence: 82
       }
     ],
     harder: [
       { 
-        name: 'Theoretical Computer Science', 
-        code: 'CS3236', 
+        name: 'Theoretical Limits', 
+        code: 'MH1810-Module3', 
         reason: 'Abstract mathematical concepts without clear practical applications',
-        tips: ['Find practical examples for abstract concepts', 'Connect theory to coding problems'],
+        tips: ['Find practical examples for limit concepts', 'Connect theory to real-world problems'],
         currentGrade: 'B-',
         confidence: 58
       },
       { 
-        name: 'Philosophy of Computing', 
-        code: 'CS4268', 
-        reason: 'Open-ended discussions without concrete problem-solving',
-        tips: ['Frame philosophical questions as problems to solve', 'Seek concrete examples'],
+        name: 'Pure Mathematical Proofs', 
+        code: 'MH1810-Theory', 
+        reason: 'Open-ended proof discussions without concrete computational solving',
+        tips: ['Frame proof questions as problems to solve', 'Seek computational examples'],
         currentGrade: 'C+',
         confidence: 55
       }
@@ -149,44 +141,44 @@ const courseDifficultyMapping = {
   'The Adventurer': {
     easier: [
       { 
-        name: 'Software Engineering Projects', 
-        code: 'CS3203', 
-        reason: 'Collaborative team environment with hands-on development',
-        tips: ['Lead team brainstorming sessions', 'Organize coding workshops'],
+        name: 'Mathematical Modeling Projects', 
+        code: 'MH1810-Applied', 
+        reason: 'Collaborative team environment with hands-on calculus applications',
+        tips: ['Lead modeling brainstorming sessions', 'Organize problem-solving workshops'],
         currentGrade: 'A',
         confidence: 92
       },
       { 
-        name: 'Interactive Web Development', 
-        code: 'CS3216', 
-        reason: 'Creative group projects with interactive elements',
-        tips: ['Prototype early and often', 'Get feedback from multiple user groups'],
+        name: 'Interactive Calculus Visualization', 
+        code: 'MH1810-Module5', 
+        reason: 'Creative problem solving with interactive graphical elements',
+        tips: ['Create visual prototypes early and often', 'Get feedback from multiple study groups'],
         currentGrade: 'A-',
         confidence: 89
       },
       { 
-        name: 'Game Development Workshop', 
-        code: 'CS4350', 
-        reason: 'Hands-on creative collaboration with immediate results',
-        tips: ['Form diverse teams', 'Participate in game jams and hackathons'],
+        name: 'Integration Applications Workshop', 
+        code: 'MH1810-Module8', 
+        reason: 'Hands-on creative collaboration with immediate computational results',
+        tips: ['Form diverse problem-solving teams', 'Participate in math competitions and challenges'],
         currentGrade: 'A-',
         confidence: 86
       }
     ],
     harder: [
       { 
-        name: 'Theoretical Mathematics', 
-        code: 'MA1521', 
-        reason: 'Long passive lectures with dense theoretical content',
-        tips: ['Form study groups for practice problems', 'Use visual aids and interactive tools'],
+        name: 'Theoretical Calculus Proofs', 
+        code: 'MH1810-Theory', 
+        reason: 'Long passive lectures with dense theoretical limit content',
+        tips: ['Form study groups for proof practice', 'Use visual aids and interactive graphing tools'],
         currentGrade: 'B-',
         confidence: 64
       },
       { 
-        name: 'Independent Study', 
-        code: 'CS4199', 
-        reason: 'Solitary work with extensive reading requirements',
-        tips: ['Break readings into interactive sessions', 'Present findings to peer groups'],
+        name: 'Independent Integration Study', 
+        code: 'MH1810-Module7', 
+        reason: 'Solitary work with extensive formula memorization requirements',
+        tips: ['Break formula practice into interactive sessions', 'Present techniques to peer groups'],
         currentGrade: 'B',
         confidence: 67
       }

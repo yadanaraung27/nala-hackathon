@@ -1,208 +1,641 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
-import { Calendar, Clock, BookOpen, Users, Target, CheckCircle2, AlertCircle, FileText } from 'lucide-react';
-import CourseOverview from '../CourseOverview';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
+import { Calendar, Clock, BookOpen, Target, CheckCircle2, AlertCircle, ChevronDown, ChevronRight, Video, FileText, Users, Play } from 'lucide-react';
+import exampleImage from 'figma:asset/7f77702042ff249087a3e5efcca6a7b0b4ef2be4.png';
 
-export default function CoursesPage() {
+interface CoursesPageProps {
+  onNavigateToChatbot?: () => void;
+}
+
+export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = {}) {
+  const [expandedTopics, setExpandedTopics] = useState<Set<number>>(new Set([3])); // Current topic expanded by default
+  const [assessmentFilter, setAssessmentFilter] = useState<'upcoming' | 'completed' | 'all'>('upcoming');
+  const [completedAssessments, setCompletedAssessments] = useState<Set<number>>(new Set()); // Track completed assessments
+
+  // Load completed assessments from localStorage on component mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('completedAssessments');
+      if (saved) {
+        const parsedCompleted = JSON.parse(saved);
+        setCompletedAssessments(new Set(parsedCompleted));
+      }
+    } catch (error) {
+      console.error('Error loading completed assessments:', error);
+    }
+  }, []);
+
+  const toggleTopic = (index: number) => {
+    const newExpanded = new Set(expandedTopics);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedTopics(newExpanded);
+  };
+
+  const toggleAssessmentComplete = (assessmentId: number) => {
+    const newCompleted = new Set(completedAssessments);
+    if (newCompleted.has(assessmentId)) {
+      newCompleted.delete(assessmentId);
+    } else {
+      newCompleted.add(assessmentId);
+    }
+    setCompletedAssessments(newCompleted);
+    
+    // Save to localStorage
+    try {
+      localStorage.setItem('completedAssessments', JSON.stringify(Array.from(newCompleted)));
+    } catch (error) {
+      console.error('Error saving completed assessments:', error);
+    }
+  };
+
+  const courseworkAssessments = [
+    {
+      id: 1,
+      type: 'assignment',
+      title: 'Online Assignment 3',
+      description: 'Derivatives and applications problems',
+      dueDate: '05/10/2025',
+      daysLeft: 11,
+      status: 'upcoming',
+      weightage: null
+    },
+    {
+      id: 2,
+      type: 'exam',
+      title: 'Midterm Exam',
+      description: 'Complex numbers, vectors, matrices, limits, derivatives - 15% weightage',
+      dueDate: '11/10/2025',
+      daysLeft: 17,
+      status: 'upcoming',
+      weightage: '15% weightage'
+    },
+    {
+      id: 3,
+      type: 'assignment',
+      title: 'Take-home Test',
+      description: 'Differentiation and Integration - Submit by 11th Nov - 9% weightage',
+      dueDate: '11/11/2025',
+      daysLeft: 48,
+      status: 'upcoming',
+      weightage: '9% weightage'
+    },
+    {
+      id: 4,
+      type: 'exam',
+      title: 'Final Exam',
+      description: 'Comprehensive exam 9am-11am - 60% weightage',
+      dueDate: '24/11/2025',
+      daysLeft: 61,
+      status: 'upcoming',
+      weightage: '60% weightage'
+    }
+  ];
+
+  const courseTopics = [
+    {
+      topic: 'Topic 1',
+      title: 'Complex Numbers',
+      subtopics: ['Complex Plane', 'Polar Coordinates', 'Powers & Roots', 'Fundamental Theorem'],
+      progress: 100,
+      status: 'completed',
+      deadline: 'Completed Sept 15',
+      grade: 'A-',
+      resources: { videos: 4, tutorials: 3, exercises: 12 }
+    },
+    {
+      topic: 'Topic 2', 
+      title: 'Vectors and Matrices',
+      subtopics: ['Vector Algebra', 'Dot & Cross Product', 'Lines & Planes', 'Matrix Operations'],
+      progress: 100,
+      status: 'completed',
+      deadline: 'Completed Sept 22',
+      grade: 'B+',
+      resources: { videos: 5, tutorials: 4, exercises: 15 }
+    },
+    {
+      topic: 'Topic 3',
+      title: 'Limits and Continuity',
+      subtopics: ['Types of Limits', 'Sandwich Theorem', 'Evaluation of Limits', 'Continuity Properties'],
+      progress: 85,
+      status: 'completed',
+      deadline: 'Completed Sept 29',
+      grade: 'A',
+      resources: { videos: 6, tutorials: 3, exercises: 18 }
+    },
+    {
+      topic: 'Topic 4',
+      title: 'Derivatives',
+      subtopics: ['Differentiability', 'Rules & Properties', 'Transcendental Functions', 'Implicit Differentiation'],
+      progress: 45,
+      status: 'in-progress',
+      deadline: 'Assignment due Oct 11',
+      grade: null,
+      resources: { videos: 7, tutorials: 5, exercises: 20 }
+    },
+    {
+      topic: 'Topic 5',
+      title: 'Applications of Derivatives',
+      subtopics: ['Extreme Values', 'Curve Sketching', 'Optimization', 'L\'Hopital\'s Rule'],
+      progress: 0,
+      status: 'upcoming',
+      deadline: 'Starts Oct 14',
+      grade: null,
+      resources: { videos: 6, tutorials: 4, exercises: 16 }
+    },
+    {
+      topic: 'Topic 6',
+      title: 'Integration',
+      subtopics: ['Anti-derivatives', 'Riemann Sum', 'Definite Integration', 'Fundamental Theorem'],
+      progress: 0,
+      status: 'upcoming',
+      deadline: 'Starts Oct 21',
+      grade: null,
+      resources: { videos: 8, tutorials: 6, exercises: 22 }
+    },
+    {
+      topic: 'Topic 7',
+      title: 'Integration Methods',
+      subtopics: ['Integration by Parts', 'Trigonometric Substitution', 'Partial Fractions', 'Improper Integrals'],
+      progress: 0,
+      status: 'upcoming',
+      deadline: 'Starts Oct 28',
+      grade: null,
+      resources: { videos: 9, tutorials: 7, exercises: 25 }
+    },
+    {
+      topic: 'Topic 8',
+      title: 'Applications of Integration',
+      subtopics: ['Area Between Curves', 'Volume of Solids', 'Length of Curves', 'Surface Area'],
+      progress: 0,
+      status: 'upcoming',
+      deadline: 'Starts Nov 4',
+      grade: null,
+      resources: { videos: 7, tutorials: 5, exercises: 19 }
+    }
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-4xl font-semibold text-gray-900">Courses</h1>
-        <p className="text-sm text-gray-500 mt-1">Track your course progress and upcoming deadlines</p>
+        <h1 className="text-3xl font-semibold text-gray-900">Course Overview</h1>
+        <p className="text-sm text-gray-500 mt-1">Mathematics I • AY 2024/25 Semester 1</p>
       </div>
 
-      {/* Quick Stats Cards */}
+      {/* Consolidated Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Upcoming Deadlines */}
-        <Card className="bg-gradient-to-br from-orange-500 to-red-500 text-white">
+        {/* Overall Progress */}
+        <Card className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <AlertCircle className="h-6 w-6 text-white" />
-                <span className="font-semibold text-lg">Upcoming Deadlines</span>
-              </div>
-              <Badge className="bg-white text-orange-600 font-bold text-lg px-3 py-1">8</Badge>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="text-white/90 text-sm">Next deadline in:</div>
-              <div className="text-2xl font-bold">2 days</div>
-              <div className="text-white/75 text-xs">Topic 1 Quiz - Monday 9:00 AM</div>
-            </div>
-            
-            <Button variant="outline" className="mt-4 w-full bg-white text-orange-600 border-white hover:bg-orange-50">
-              View All Deadlines
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Completion Rate */}
-        <Card className="bg-gradient-to-br from-green-500 to-emerald-500 text-white">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Target className="h-6 w-6 text-white" />
-                <span className="font-semibold text-lg">Completion Rate</span>
+                <BookOpen className="h-6 w-6" />
+                <span className="font-semibold">This Week's Content</span>
               </div>
             </div>
-            
             <div className="space-y-4">
+              {/* Lectures Section */}
               <div>
-                <div className="text-3xl font-bold mb-1">73%</div>
-                <div className="text-green-100 text-sm">Overall Progress</div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Video className="h-4 w-4 text-blue-100" />
+                  <span className="text-sm font-medium text-blue-100">Lectures</span>
+                </div>
+                <div className="space-y-2 ml-6">
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 rounded border-2 border-white/40 bg-transparent checked:bg-white checked:border-white focus:ring-2 focus:ring-white/30"
+                      onChange={(e) => {
+                        // This will be replaced with proper state management
+                        const span = e.target.nextElementSibling;
+                        if (span) {
+                          span.style.textDecoration = e.target.checked ? 'line-through' : 'none';
+                          span.style.opacity = e.target.checked ? '0.6' : '1';
+                        }
+                      }}
+                    />
+                    <span className="text-sm text-white transition-all duration-200">Lecture 7a: Applications of Derivatives</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 rounded border-2 border-white/40 bg-transparent checked:bg-white checked:border-white focus:ring-2 focus:ring-white/30"
+                      onChange={(e) => {
+                        // This will be replaced with proper state management
+                        const span = e.target.nextElementSibling;
+                        if (span) {
+                          span.style.textDecoration = e.target.checked ? 'line-through' : 'none';
+                          span.style.opacity = e.target.checked ? '0.6' : '1';
+                        }
+                      }}
+                    />
+                    <span className="text-sm text-white transition-all duration-200">Lecture 7b: Optimization Problems</span>
+                  </div>
+                </div>
               </div>
-              <div className="w-full bg-white/20 rounded-full h-2">
-                <div className="bg-white h-2 rounded-full" style={{ width: '73%' }}></div>
+              
+              {/* Tutorials Section */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-4 w-4 text-blue-100" />
+                  <span className="text-sm font-medium text-blue-100">Tutorials</span>
+                </div>
+                <div className="space-y-2 ml-6">
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 rounded border-2 border-white/40 bg-transparent checked:bg-white checked:border-white focus:ring-2 focus:ring-white/30"
+                      onChange={(e) => {
+                        // This will be replaced with proper state management
+                        const span = e.target.nextElementSibling;
+                        if (span) {
+                          span.style.textDecoration = e.target.checked ? 'line-through' : 'none';
+                          span.style.opacity = e.target.checked ? '0.6' : '1';
+                        }
+                      }}
+                    />
+                    <span className="text-sm text-white transition-all duration-200">Tutorial 6b: L'Hopital's Rule</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 rounded border-2 border-white/40 bg-transparent checked:bg-white checked:border-white focus:ring-2 focus:ring-white/30"
+                      onChange={(e) => {
+                        // This will be replaced with proper state management
+                        const span = e.target.nextElementSibling;
+                        if (span) {
+                          span.style.textDecoration = e.target.checked ? 'line-through' : 'none';
+                          span.style.opacity = e.target.checked ? '0.6' : '1';
+                        }
+                      }}
+                    />
+                    <span className="text-sm text-white transition-all duration-200">Tutorial 7a: Curve Sketching</span>
+                  </div>
+                </div>
               </div>
-              <div className="text-green-100 text-xs">8 of 11 modules completed</div>
             </div>
           </CardContent>
         </Card>
 
         {/* Current Focus */}
-        <Card className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
+        <Card className="bg-gradient-to-br from-green-500 to-emerald-500 text-white">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <BookOpen className="h-6 w-6 text-white" />
-                <span className="font-semibold text-lg">Current Focus</span>
+                <BookOpen className="h-6 w-6" />
+                <span className="font-semibold">Current Focus</span>
               </div>
             </div>
-            
             <div className="space-y-2">
-              <div className="text-xl font-bold">Predicate Logic</div>
-              <div className="text-blue-100 text-sm">Topic 3 • Module 3</div>
+              <div className="text-xl font-bold">Derivatives</div>
+              <div className="text-green-100 text-sm">Topic 4 • 45% complete</div>
               <div className="flex items-center gap-2 mt-3">
                 <div className="w-full bg-white/20 rounded-full h-1.5">
                   <div className="bg-white h-1.5 rounded-full" style={{ width: '45%' }}></div>
                 </div>
-                <span className="text-blue-100 text-xs">45%</span>
               </div>
             </div>
-            
-            <Button variant="outline" className="mt-4 w-full bg-white text-blue-600 border-white hover:bg-blue-50">
+            <Button 
+              variant="outline" 
+              className="mt-4 w-full bg-white text-green-600 border-white hover:bg-green-50"
+              onClick={() => onNavigateToChatbot?.()}
+            >
               Continue Learning
             </Button>
           </CardContent>
         </Card>
+
+        {/* Key Deadlines - Single unified view */}
+        <Card className="bg-gradient-to-br from-orange-500 to-red-500 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-6 w-6" />
+                <span className="font-semibold">Key Deadlines</span>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <div className="text-lg font-bold">Assignment Due</div>
+                <div className="text-orange-100 text-sm">Derivatives • Oct 11</div>
+                <div className="text-orange-200 text-xs">5 days remaining</div>
+              </div>
+              <hr className="border-white/20" />
+              <div>
+                <div className="text-sm font-medium">Midterm Exam</div>
+                <div className="text-orange-200 text-xs">Oct 25 • 19 days</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Course Schedule and Deadlines - Full Component */}
-      <CourseOverview />
-
-      {/* Detailed Course Progress */}
+      {/* Course Topics & Coursework - Tabbed Interface */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
-            Course Modules
+            Course Progress
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            {[
-              {
-                module: 'Module 1',
-                title: 'Elementary Number Theory',
-                topics: ['Prime Numbers', 'Divisibility', 'GCD & LCM', 'Modular Arithmetic'],
-                progress: 100,
-                status: 'completed',
-                deadline: 'Completed',
-                grade: 'A-'
-              },
-              {
-                module: 'Module 2', 
-                title: 'Propositional Logic',
-                topics: ['Truth Tables', 'Logical Operators', 'Equivalences', 'Proof Techniques'],
-                progress: 100,
-                status: 'completed',
-                deadline: 'Completed',
-                grade: 'B+'
-              },
-              {
-                module: 'Module 3',
-                title: 'Predicate Logic',
-                topics: ['Quantifiers', 'Domain & Range', 'Logical Inference', 'Proof by Contradiction'],
-                progress: 45,
-                status: 'in-progress',
-                deadline: 'Due in 5 days',
-                grade: null
-              },
-              {
-                module: 'Module 4',
-                title: 'Set Theory',
-                topics: ['Set Operations', 'Cardinality', 'Relations', 'Functions'],
-                progress: 0,
-                status: 'upcoming',
-                deadline: 'Starts in 12 days',
-                grade: null
-              }
-            ].map((course, index) => (
-              <div key={index} className="border rounded-lg p-6 space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Badge 
-                        variant={course.status === 'completed' ? 'default' : course.status === 'in-progress' ? 'secondary' : 'outline'}
-                        className={
-                          course.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          course.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
-                        }
-                      >
-                        {course.module}
-                      </Badge>
-                      {course.status === 'completed' && <CheckCircle2 className="h-4 w-4 text-green-600" />}
-                      {course.status === 'in-progress' && <Clock className="h-4 w-4 text-blue-600" />}
-                    </div>
-                    <h3 className="font-semibold text-lg text-gray-900 mb-1">{course.title}</h3>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {course.topics.map((topic, topicIndex) => (
-                        <Badge key={topicIndex} variant="outline" className="text-xs">
-                          {topic}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-gray-600 mb-1">{course.deadline}</div>
-                    {course.grade && (
-                      <Badge className="bg-purple-100 text-purple-800">
-                        Grade: {course.grade}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
+          <Tabs defaultValue="topics" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="topics">Topics</TabsTrigger>
+              <TabsTrigger value="coursework">Coursework & Assessments</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="topics" className="mt-6">
+              {/* Topics Content */}
+              <div className="space-y-4">
+                <p className="text-sm text-gray-500">Click on any topic to view detailed resources and progress</p>
+                <div className="space-y-3">
+                  {courseTopics.map((course, index) => (
+                    <Card key={index} className={`transition-all duration-200 ${
+                      course.status === 'in-progress' ? 'border-blue-300 bg-blue-50' : 
+                      course.status === 'completed' ? 'border-green-300 bg-green-50' : 
+                      'border-gray-200'
+                    }`}>
+                      <Collapsible>
+                        <CollapsibleTrigger 
+                          className="w-full"
+                          onClick={() => toggleTopic(index)}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4 flex-1">
+                                {/* Status Indicator */}
+                                <div className="flex items-center gap-2">
+                                  {course.status === 'completed' && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+                                  {course.status === 'in-progress' && <Clock className="h-5 w-5 text-blue-600" />}
+                                  {course.status === 'upcoming' && <Calendar className="h-5 w-5 text-gray-400" />}
+                                </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Progress</span>
-                    <span className="font-medium">{course.progress}%</span>
-                  </div>
-                  <Progress value={course.progress} className="h-2" />
-                </div>
+                                {/* Topic Info */}
+                                <div className="flex-1 text-left">
+                                  <div className="flex items-center gap-3 mb-1">
+                                    <Badge 
+                                      variant={course.status === 'completed' ? 'default' : course.status === 'in-progress' ? 'secondary' : 'outline'}
+                                      className={
+                                        course.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                        course.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                                        'bg-gray-100 text-gray-600'
+                                      }
+                                    >
+                                      {course.topic}
+                                    </Badge>
+                                    {course.grade && (
+                                      <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                                        Grade: {course.grade}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <h3 className="font-semibold text-lg text-gray-900">{course.title}</h3>
+                                  <p className="text-sm text-gray-600">{course.deadline}</p>
+                                </div>
 
-                <div className="flex gap-2">
-                  {course.status === 'in-progress' && (
-                    <Button size="sm">Continue Learning</Button>
-                  )}
-                  {course.status === 'upcoming' && (
-                    <Button size="sm" variant="outline">Preview Content</Button>
-                  )}
-                  {course.status === 'completed' && (
-                    <Button size="sm" variant="outline">Review Material</Button>
-                  )}
-                  <Button size="sm" variant="outline">
-                    <FileText className="h-3 w-3 mr-1" />
-                    Syllabus
-                  </Button>
+                                {/* Progress */}
+                                <div className="text-right min-w-[120px]">
+                                  <div className="text-sm font-medium text-gray-900 mb-1">{course.progress}%</div>
+                                  <div className="w-24 bg-gray-200 rounded-full h-2">
+                                    <div 
+                                      className={`h-2 rounded-full ${
+                                        course.status === 'completed' ? 'bg-green-500' : 
+                                        course.status === 'in-progress' ? 'bg-blue-500' : 
+                                        'bg-gray-300'
+                                      }`}
+                                      style={{ width: `${course.progress}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Expand Icon */}
+                              <div className="ml-4">
+                                {expandedTopics.has(index) ? 
+                                  <ChevronDown className="h-5 w-5 text-gray-400" /> : 
+                                  <ChevronRight className="h-5 w-5 text-gray-400" />
+                                }
+                              </div>
+                            </div>
+                          </CardContent>
+                        </CollapsibleTrigger>
+
+                        <CollapsibleContent>
+                          <CardContent className="pt-0 pb-4 px-4">
+                            <div className="border-t pt-4 space-y-4">
+                              {/* Subtopics */}
+                              <div>
+                                <h4 className="font-medium text-gray-900 mb-2">Subtopics</h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {course.subtopics.map((subtopic, subtopicIndex) => (
+                                    <Badge key={subtopicIndex} variant="outline" className="text-xs bg-gray-50">
+                                      {subtopic}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Resources */}
+                              <div>
+                                <h4 className="font-medium text-gray-900 mb-2">Available Resources</h4>
+                                <div className="flex items-center gap-6 text-sm text-gray-600">
+                                  <div className="flex items-center gap-1">
+                                    <Video className="h-4 w-4" />
+                                    <span>{course.resources.videos} Videos</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Users className="h-4 w-4" />
+                                    <span>{course.resources.tutorials} Tutorials</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <FileText className="h-4 w-4" />
+                                    <span>{course.resources.exercises} Exercises</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div className="flex gap-2 pt-2">
+                                {course.status === 'in-progress' && (
+                                  <Button size="sm" className="flex items-center gap-2">
+                                    <Play className="h-4 w-4" />
+                                    Continue Learning
+                                  </Button>
+                                )}
+                                {course.status === 'upcoming' && (
+                                  <Button size="sm" variant="outline">
+                                    Preview Content
+                                  </Button>
+                                )}
+                                {course.status === 'completed' && (
+                                  <Button size="sm" variant="outline">
+                                    Review Material
+                                  </Button>
+                                )}
+                                <Button size="sm" variant="outline">
+                                  <FileText className="h-3 w-3 mr-1" />
+                                  Syllabus
+                                </Button>
+                                {course.status === 'in-progress' && (
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => onNavigateToChatbot?.()}
+                                  >
+                                    Ask Questions
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </Card>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
+            </TabsContent>
+            
+            <TabsContent value="coursework" className="mt-6">
+              {/* Coursework & Assessments Content */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                      <Calendar className="h-5 w-5" />
+                      Course Schedule
+                    </h3>
+                    <p className="text-sm text-gray-500">Important dates and assignments for your modules</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={assessmentFilter === 'upcoming' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setAssessmentFilter('upcoming')}
+                      className={assessmentFilter === 'upcoming' ? 'bg-black text-white' : ''}
+                    >
+                      Upcoming
+                    </Button>
+                    <Button
+                      variant={assessmentFilter === 'completed' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setAssessmentFilter('completed')}
+                      className={assessmentFilter === 'completed' ? 'bg-black text-white' : ''}
+                    >
+                      Completed
+                    </Button>
+                    <Button
+                      variant={assessmentFilter === 'all' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setAssessmentFilter('all')}
+                      className={assessmentFilter === 'all' ? 'bg-black text-white' : ''}
+                    >
+                      All
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  {courseworkAssessments
+                    .filter(item => {
+                      const isMarkedCompleted = completedAssessments.has(item.id);
+                      
+                      if (assessmentFilter === 'all') return true;
+                      if (assessmentFilter === 'upcoming') return !isMarkedCompleted;
+                      if (assessmentFilter === 'completed') return isMarkedCompleted;
+                      
+                      return true;
+                    })
+                    .map((assessment) => (
+                    <Card 
+                      key={assessment.id} 
+                      className={`border transition-all duration-200 ${
+                        completedAssessments.has(assessment.id) 
+                          ? 'border-green-200 bg-green-50/50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className={`flex items-center gap-4 flex-1 transition-opacity duration-200 ${
+                            completedAssessments.has(assessment.id) ? 'opacity-75' : 'opacity-100'
+                          }`}>
+                            {/* Icon */}
+                            <div className="flex-shrink-0">
+                              {assessment.type === 'assignment' ? (
+                                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                  <FileText className="h-5 w-5 text-blue-600" />
+                                </div>
+                              ) : (
+                                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                                  <AlertCircle className="h-5 w-5 text-red-600" />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Content */}
+                            <div className="flex-1">
+                              <h4 className={`font-semibold mb-1 transition-all duration-200 ${
+                                completedAssessments.has(assessment.id) 
+                                  ? 'text-gray-500 line-through' 
+                                  : 'text-gray-900'
+                              }`}>
+                                {assessment.title}
+                              </h4>
+                              <p className={`text-sm mb-2 transition-all duration-200 ${
+                                completedAssessments.has(assessment.id) 
+                                  ? 'text-gray-400' 
+                                  : 'text-gray-600'
+                              }`}>
+                                {assessment.description}
+                              </p>
+                              <div className="flex items-center gap-4 text-sm">
+                                <div className="flex items-center gap-1 text-gray-500">
+                                  <Calendar className="h-4 w-4" />
+                                  <span>{assessment.dueDate}</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-gray-500">
+                                  <Clock className="h-4 w-4" />
+                                  <span>{assessment.daysLeft} days left</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Mark Complete Button */}
+                            <Button 
+                              variant={completedAssessments.has(assessment.id) ? "default" : "outline"} 
+                              size="sm"
+                              onClick={() => toggleAssessmentComplete(assessment.id)}
+                              className={completedAssessments.has(assessment.id) ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
+                            >
+                              {completedAssessments.has(assessment.id) ? (
+                                <div className="flex items-center gap-1">
+                                  <CheckCircle2 className="h-4 w-4" />
+                                  Mark Completed
+                                </div>
+                              ) : (
+                                'Mark Complete'
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>

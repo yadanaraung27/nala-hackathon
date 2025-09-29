@@ -1,6 +1,6 @@
 # Learning Analytics Dashboard (Figma Make Export)
 
-This repository contains the code for the Learning Analytics Dashboard, originally designed in [Figma](https://www.figma.com/design/Lxw10CtJdqt4UIYsRb07Cu/Learning-Analytics-Dashboard).
+This repository contains the code for the Learning Analytics Dashboard, originally designed in [Figma](https://www.figma.com/make/Lxw10CtJdqt4UIYsRb07Cu/Learning-Analytics-Dashboard?fullscreen=1).
 
 All code for testing is located in the `samples/figma_make` directory. You will need to set up dependencies before running the project.
 

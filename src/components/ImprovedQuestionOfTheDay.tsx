@@ -18,11 +18,11 @@ export default function ImprovedQuestionOfTheDay({ learningStyle, onStartChallen
   // Mock data - would come from backend
   const todaysQuestion = {
     id: 'q_2024_01_15',
-    category: 'Data Structures',
+    category: 'Derivatives',
     difficulty: 'Medium',
     questionType: 'Understand',
-    question: "Imagine you're explaining binary search trees to a study group. How would you describe the insertion process step-by-step, and what questions might your classmates ask that you should be prepared to answer?",
-    hint: "Think about prefix matching and autocomplete functionality...",
+    question: "Imagine you're explaining the chain rule to a study group. How would you describe when and why we use it for composite functions, and what common mistakes should your classmates avoid?",
+    hint: "Think about identifying outer and inner functions and common differentiation errors...",
     estimatedTime: "3-5 min",
     participantCount: 342,
     correctAnswers: 287
@@ -48,7 +48,7 @@ export default function ImprovedQuestionOfTheDay({ learningStyle, onStartChallen
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Zap className="h-6 w-6 text-yellow-500" />
+            <span className="text-2xl">🎯</span>
             Daily Challenge
           </h2>
         </div>

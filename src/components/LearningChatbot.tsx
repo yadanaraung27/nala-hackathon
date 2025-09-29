@@ -20,8 +20,7 @@ import { Input } from './ui/input';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
-import { MessageCircle, Send, X, Minimize2, Maximize2, Brain, HelpCircle, Sparkles, RotateCcw, Image as ImageIcon, Eye } from 'lucide-react';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { Brain, Send, X, Minimize2, Maximize2, RotateCcw, Lightbulb, BookOpen, Target } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -29,11 +28,6 @@ interface Message {
   sender: 'user' | 'bot';
   timestamp: Date;
   suggestions?: string[];
-  image?: {
-    url: string;
-    alt: string;
-    caption?: string;
-  };
   isLoading?: boolean;
 }
 
@@ -41,187 +35,146 @@ interface LearningChatbotProps {
   learningStyle?: string | null;
 }
 
-// Pre-fetched navigation images from Unsplash
-const navigationImages = {
-  "analytics dashboard": "https://images.unsplash.com/photo-1575388902449-6bca946ad549?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhbmFseXRpY3MlMjBkYXNoYm9hcmQlMjBpbnRlcmZhY2V8ZW58MXx8fHwxNzU1MjE3MzE5fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  "personality quiz": "https://images.unsplash.com/photo-1575388902449-6bca946ad549?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwZXJzb25hbGl0eSUyMHF1aXolMjBpbnRlcmZhY2V8ZW58MXx8fHwxNzU1MjUxMjA0fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  "navigation tabs": "https://images.unsplash.com/photo-1663579973124-61c113e1521c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3ZWJzaXRlJTIwbmF2aWdhdGlvbiUyMHRhYnN8ZW58MXx8fHwxNzU1MjUxMjA3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  "daily challenge": "https://images.unsplash.com/photo-1661358791066-3c9f7603f6c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkYWlseSUyMGNoYWxsZW5nZSUyMG1vYmlsZSUyMGFwcHxlbnwxfHx8fDE3NTUyNTEyMTN8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  "radar chart": "https://images.unsplash.com/photo-1567665202038-6c5e97837696?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyYWRhciUyMGNoYXJ0JTIwc2tpbGxzJTIwYXNzZXNzbWVudHxlbnwxfHx8fDE3NTUyNTEyMTh8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  "settings panel": "https://images.unsplash.com/photo-1575388902449-6bca946ad549?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzZXR0aW5ncyUyMGN1c3RvbWl6YXRpb24lMjBwYW5lbHxlbnwxfHx8fDE3NTUyNTEyMjN8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
-};
+// Learning Theory Knowledge Base
+const learningTheoryKnowledgeBase = {
+  kolbsTheory: {
+    overview: "Kolb's Learning Theory identifies four distinct learning styles based on how you prefer to process information and experience. It's based on a four-stage learning cycle where effective learning happens through the complete cycle.",
+    cycle: [
+      "🎯 **Concrete Experience (CE)** - Learning through direct experience, feelings, and real-world situations",
+      "🤔 **Reflective Observation (RO)** - Learning by watching, reflecting, and observing from different perspectives", 
+      "💭 **Abstract Conceptualization (AC)** - Learning through thinking, analysis, and theoretical understanding",
+      "⚡ **Active Experimentation (AE)** - Learning through hands-on practice, testing ideas, and experimentation"
+    ],
+    styles: {
+      "The Interactor": {
+        description: "Combines Concrete Experience + Reflective Observation. You learn best through social interaction, discussion, and collaborative experiences.",
+        strengths: ["Great at working with people", "Excellent listening skills", "Strong empathy and emotional intelligence", "Natural at facilitating discussions"],
+        challenges: ["May struggle with theoretical concepts", "Can be indecisive when quick decisions are needed", "May avoid confrontation even when necessary"],
+        ideal_environment: "Group settings, collaborative projects, discussion-based learning, peer feedback sessions"
+      },
+      "The Architect": {
+        description: "Combines Abstract Conceptualization + Reflective Observation. You prefer structured, methodical approaches with clear frameworks and detailed analysis.",
+        strengths: ["Excellent analytical thinking", "Strong planning and organization skills", "Good at theoretical understanding", "Systematic problem-solving approach"],
+        challenges: ["May get stuck in analysis paralysis", "Can be slow to take action", "May struggle with ambiguous situations"],
+        ideal_environment: "Structured learning, detailed explanations, theoretical frameworks, systematic approaches"
+      },
+      "The Problem Solver": {
+        description: "Combines Abstract Conceptualization + Active Experimentation. You learn best through hands-on practice, experimentation, and real-world challenges.",
+        strengths: ["Excellent at practical application", "Quick decision-making", "Good at solving technical problems", "Results-oriented approach"],
+        challenges: ["May rush without enough reflection", "Can be impatient with theory", "May overlook people's feelings in decisions"],
+        ideal_environment: "Hands-on practice, technical challenges, immediate application, problem-solving scenarios"
+      },
+      "The Adventurer": {
+        description: "Combines Concrete Experience + Active Experimentation. You thrive in dynamic, varied learning environments with creative exploration.",
+        strengths: ["Highly adaptable and flexible", "Great at innovation and creativity", "Natural leadership in dynamic situations", "Excellent at seizing opportunities"],
+        challenges: ["May struggle with routine tasks", "Can be disorganized", "May start many projects without finishing"],
+        ideal_environment: "Dynamic settings, variety and change, creative projects, leadership opportunities"
+      }
+    }
+  },
+  
+  studyTips: {
+    "The Interactor": [
+      "Form study groups and engage in regular discussions about course material",
+      "Explain concepts to classmates - teaching others reinforces your own learning",
+      "Use collaborative online platforms and discussion forums actively",
+      "Participate in class discussions and Q&A sessions",
+      "Connect with professors during office hours for deeper conversations",
+      "Create peer review sessions for assignments and projects"
+    ],
+    "The Architect": [
+      "Create detailed study schedules and stick to systematic learning plans",
+      "Build comprehensive notes with clear hierarchies and frameworks",
+      "Break complex topics into structured, logical components",
+      "Use mind maps and flowcharts to organize information visually",
+      "Focus on understanding theoretical foundations before practical applications",
+      "Develop systematic review cycles for long-term retention"
+    ],
+    "The Problem Solver": [
+      "Seek out hands-on projects and practical applications of theories",
+      "Practice with real-world case studies and problem sets",
+      "Build working examples and prototypes when possible",
+      "Focus on immediate application rather than just memorizing concepts",
+      "Learn through trial and error with quick feedback loops",
+      "Set up practice environments where you can experiment safely"
+    ],
+    "The Adventurer": [
+      "Mix different learning formats - videos, readings, interactive content",
+      "Explore creative approaches and interdisciplinary connections",
+      "Set flexible goals and adapt your learning style as needed",
+      "Seek variety in your study methods and environments",
+      "Connect learning to personal interests and real-world experiences",
+      "Use gamification and challenges to maintain engagement"
+    ]
+  },
 
-// Chatbot knowledge base organized by topics
-const chatbotKnowledgeBase = {
-  // Learning Styles
-  learningStyles: {
-    'The Interactor': {
-      greeting: "Hi there! As a fellow Interactor, I love our conversations! I'm here to help you navigate the platform and make the most of your collaborative learning journey. What would you like to explore together?",
-      features: [
-        "Your daily questions are designed with discussion prompts to encourage interaction",
-        "The analytics track your engagement in collaborative features",
-        "Course recommendations prioritize group projects and team-based assignments",
-        "The chatbot (that's me!) adapts to be more conversational and interactive"
-      ]
-    },
-    'The Architect': {
-      greeting: "Hello! I can see you're an Architect who values structured learning. I'm here to provide detailed explanations about the platform's features and help you build a comprehensive understanding of how everything works together.",
-      features: [
-        "Your daily questions focus on theoretical understanding and systematic analysis",
-        "The mastery tracking shows detailed progress across all competency levels",
-        "Course difficulty analysis helps you plan your structured learning path",
-        "All explanations are organized with clear frameworks and detailed breakdowns"
-      ]
-    },
-    'The Problem Solver': {
-      greeting: "Hey! Ready to tackle some challenges? As a Problem Solver, you'll love how this platform gives you hands-on tools and practical insights. Let me show you how to make the most of the features!",
-      features: [
-        "Daily questions include coding challenges and practical problems to solve",
-        "Analytics track your performance on practical vs theoretical content",
-        "Course recommendations highlight project-based and hands-on learning opportunities",
-        "The platform emphasizes real-world applications and immediate feedback"
-      ]
-    },
-    'The Adventurer': {
-      greeting: "Welcome, fellow explorer! I love how you embrace diverse learning experiences. This platform has so many exciting features to discover - let's embark on this learning adventure together!",
-      features: [
-        "Daily questions vary in format and incorporate creative, engaging elements",
-        "Course recommendations include diverse and interdisciplinary options",
-        "Platform features can be customized to match your ever-changing preferences",
-        "The interface adapts to keep your learning experience fresh and dynamic"
-      ]
+  improvementStrategies: {
+    general: [
+      "🍅 Use the Pomodoro Technique: 25 minutes focused work, 5 minute breaks",
+      "🧠 Practice active recall: Test yourself without looking at notes",
+      "📚 Implement spaced repetition: Review material at increasing intervals",
+      "🎯 Set specific, measurable learning goals for each study session",
+      "🔇 Create a distraction-free study environment",
+      "💤 Ensure adequate sleep (7-9 hours) for memory consolidation"
+    ],
+    personalized: {
+      "The Interactor": "Focus on collaborative learning - join study groups, find study buddies, or teach concepts to others to reinforce your understanding",
+      "The Architect": "Leverage your systematic nature - create detailed study plans, use structured note-taking methods, and build comprehensive knowledge frameworks",
+      "The Problem Solver": "Emphasize practical application - work on hands-on projects, solve real problems, and immediately apply what you learn",
+      "The Adventurer": "Embrace variety - mix up your study methods, explore creative approaches, and connect learning to your diverse interests"
     }
   },
 
-  // Platform features explanations with image keys
-  features: {
-    dashboard: {
-      overview: "The dashboard is your central hub for learning analytics. It shows your question activity, engagement patterns, and personalized insights based on your learning style.",
-      navigation: "Use the tabs to explore different sections: Overview, Topics, Engagement, Performance, Courses, Daily Challenge, Mastery Level, and Course Fit.",
-      customization: "Click the 'Features' button in the top right to enable/disable different sections based on your needs.",
-      imageKey: "analytics dashboard"
+  learningChallenges: {
+    "The Interactor": {
+      challenge: "Struggling with individual study and theoretical concepts",
+      solutions: [
+        "Find a study partner or join online study communities",
+        "Schedule regular check-ins with classmates or tutors",
+        "Use discussion forums to ask questions and engage with others",
+        "Try explaining theoretical concepts out loud as if teaching someone"
+      ]
     },
-    learningStyle: {
-      purpose: "Learning styles help personalize your entire experience. Based on Kolb's Learning Theory, we identify you as one of four types: The Interactor, The Architect, The Problem Solver, or The Adventurer.",
-      benefits: "Your learning style affects your daily questions, course difficulty ratings, chatbot interactions, and study recommendations.",
-      retaking: "You can retake the quiz anytime by clicking 'Retake Quiz' in the purple banner or your profile.",
-      imageKey: "personality quiz"
+    "The Architect": {
+      challenge: "Analysis paralysis and difficulty with practical application",
+      solutions: [
+        "Set time limits for planning and analysis phases",
+        "Start with small, low-risk practical exercises",
+        "Create structured templates for moving from theory to practice",
+        "Use the 80/20 rule - implement when you have 80% understanding"
+      ]
     },
-    dailyChallenge: {
-      purpose: "Daily challenges keep you engaged with personalized questions based on your learning style and weaker topics.",
-      streaks: "Maintain your streak by answering at least one question per day. Your current streak is displayed with a fire emoji.",
-      personalization: "Questions are tailored to your learning style - interactive for Interactors, structured for Architects, practical for Problem Solvers, and varied for Adventurers.",
-      imageKey: "daily challenge"
+    "The Problem Solver": {
+      challenge: "Impatience with theory and rushing through concepts",
+      solutions: [
+        "Set specific 'theory time' with clear start and end points",
+        "Connect every theoretical concept to a practical example",
+        "Use timers to force yourself to spend adequate time on foundations",
+        "Find real-world case studies that demonstrate theoretical importance"
+      ]
     },
-    masteryLevel: {
-      purpose: "Mastery Level shows your competency across 7 learning tiers for each course, from basic understanding to innovation.",
-      visualization: "The radar chart displays your progress across different courses with colored polygons.",
-      tiers: "Tier 1 (Basic Understanding) → Tier 7 (Innovation). Each tier represents increasing depth of knowledge and application.",
-      imageKey: "radar chart"
-    },
-    courseFit: {
-      purpose: "Course Fit analyzes which courses are easier or harder for you based on your learning style.",
-      insights: "Green cards show courses that align with your learning preferences, orange cards show challenges with specific strategies.",
-      tips: "Each course includes personalized study tips and explanations for why it might be easier or harder for your learning style.",
-      imageKey: "analytics dashboard"
-    },
-    analytics: {
-      purpose: "Analytics provide insights into your learning patterns, question types, engagement trends, and performance metrics.",
-      metrics: "Track total questions, active learning time, topics covered, response patterns, and performance against targets.",
-      trends: "View daily activity patterns, weekly engagement, and question type distribution to optimize your learning schedule.",
-      imageKey: "analytics dashboard"
-    },
-    navigation: {
-      tabs: "The main navigation uses tabs at the top of each section. Click on Overview, Topics, Engagement, Performance, and your personalized tabs.",
-      settings: "Access settings by clicking the 'Features' button in the top right corner. Here you can toggle different platform features on/off.",
-      profile: "Your learning style profile appears in the top right when available. Click on it to see your character details.",
-      imageKey: "navigation tabs"
-    },
-    customization: {
-      features: "Toggle features on/off in the Settings panel: Learning Styles, Course Overview, Daily Challenges, Mastery Level, Course Difficulty, and Learning Assistant.",
-      layout: "The dashboard adapts based on your enabled features. Disabled features won't show in the main interface.",
-      preferences: "Your preferences are automatically saved and will persist across sessions.",
-      imageKey: "settings panel"
+    "The Adventurer": {
+      challenge: "Difficulty with routine study and staying focused",
+      solutions: [
+        "Create variety in your study schedule and methods",
+        "Use shorter, more frequent study sessions",
+        "Gamify your learning with challenges and rewards",
+        "Connect learning goals to your personal interests and ambitions"
+      ]
     }
-  },
-
-  // Navigation guides with specific image keys
-  navigationGuides: {
-    "take quiz": {
-      steps: [
-        "Look for the purple banner at the top of your dashboard",
-        "Click the 'Retake Quiz' button if you see your learning style displayed",
-        "If no quiz is visible, check that Learning Styles is enabled in Settings",
-        "The quiz will appear as a modal with multiple-choice questions"
-      ],
-      imageKey: "personality quiz"
-    },
-    "find tabs": {
-      steps: [
-        "Look for the horizontal tab bar below the feature cards",
-        "Tabs include: Overview, Topics, Engagement, Performance",
-        "Additional tabs appear based on enabled features: Courses, Daily Challenge, Mastery Level, Course Fit",
-        "Click any tab to switch between different sections"
-      ],
-      imageKey: "navigation tabs"
-    },
-    "access settings": {
-      steps: [
-        "Look for the 'Features' button in the top right corner of the dashboard",
-        "Click the button to open the settings modal",
-        "Use the toggles to enable/disable features",
-        "Changes are automatically saved"
-      ],
-      imageKey: "settings panel"
-    },
-    "view analytics": {
-      steps: [
-        "Click on the 'Overview' tab to see general analytics",
-        "Use 'Topics' tab for subject-specific insights",
-        "Check 'Engagement' for activity patterns",
-        "View 'Performance' for goal tracking"
-      ],
-      imageKey: "analytics dashboard"
-    },
-    "daily challenge": {
-      steps: [
-        "Look for the orange 'Quick Challenge' card in the feature section",
-        "Click 'Start Challenge' to begin your daily question",
-        "Maintain your streak by completing at least one question per day",
-        "Access the full Daily Challenge tab for more details"
-      ],
-      imageKey: "daily challenge"
-    },
-    "mastery chart": {
-      steps: [
-        "Navigate to the 'Mastery Level' tab",
-        "View the radar chart showing your progress across different learning tiers",
-        "Each colored polygon represents a different course",
-        "Click 'Show Details' to see tier descriptions"
-      ],
-      imageKey: "radar chart"
-    }
-  },
-
-  // Common troubleshooting
-  troubleshooting: {
-    "quiz not showing": "The learning style quiz appears automatically for new users. If it's not showing, check that Learning Styles is enabled in Features settings (top right button).",
-    "features missing": "Some features only appear after completing the learning style quiz or when specific features are enabled in settings.",
-    "data not loading": "Try refreshing the page using the 'Refresh' button in the top right. If issues persist, check your internet connection.",
-    "personalization not working": "Personalization requires a completed learning style assessment. Make sure you've finished the quiz and see your style in the purple banner."
   }
 };
 
-// Quick suggestions based on context
-const quickSuggestions = [
-  "How do I take the learning style quiz?",
-  "What do the different tabs show?",
-  "How does my learning style affect the platform?",
-  "How do I maintain my daily streak?",
-  "What are mastery levels?",
-  "How to customize my dashboard?",
-  "Why are some courses marked easier/harder?",
-  "How do analytics help my learning?"
+// Quick suggestions for the Learning Theory Assistant
+const learningTheorySuggestions = [
+  "What does my learning style mean?",
+  "Give me study tips for my learning type",
+  "Tell me about Kolb's Learning Theory",
+  "How can I improve my learning?",
+  "What are my learning strengths and challenges?",
+  "How do I overcome study difficulties?",
+  "Explain the learning cycle to me",
+  "What's the best study environment for me?"
 ];
 
 export default function LearningChatbot({ learningStyle }: LearningChatbotProps) {
@@ -235,7 +188,6 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      // Initialize with greeting based on learning style
       const initialMessage = getInitialGreeting();
       setMessages([initialMessage]);
     }
@@ -250,17 +202,16 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
   };
 
   const getInitialGreeting = (): Message => {
-    let greeting = "Hello! I'm your learning companion, here to help you navigate the platform and make the most of your personalized learning experience. What would you like to know?";
-    let suggestions = quickSuggestions.slice(0, 4);
+    let greeting = "Hello! I'm your Learning Theory Assistant 🧠\n\nI'm here to help you understand learning theories like Kolb's model, discover insights about your learning preferences, and provide personalized study tips to enhance your learning journey. What would you like to explore?";
+    let suggestions = learningTheorySuggestions.slice(0, 4);
 
-    if (learningStyle && chatbotKnowledgeBase.learningStyles[learningStyle as keyof typeof chatbotKnowledgeBase.learningStyles]) {
-      const styleInfo = chatbotKnowledgeBase.learningStyles[learningStyle as keyof typeof chatbotKnowledgeBase.learningStyles];
-      greeting = styleInfo.greeting;
+    if (learningStyle) {
+      greeting = `Hello! I'm your Learning Theory Assistant 🧠\n\nI can see you're identified as **${learningStyle}** - that's fantastic! I'm here to help you understand what this means, how you learn best, and provide personalized strategies to maximize your learning potential.\n\nWhat would you like to know about your learning style or learning theories in general?`;
       suggestions = [
-        "Tell me about my learning style features",
-        "How to use daily challenges?",
-        "What is mastery level tracking?",
-        "How to customize my dashboard?"
+        "What does being " + learningStyle + " mean?",
+        "Give me study tips for my learning type",
+        "What are my strengths and challenges?",
+        "Tell me about Kolb's Learning Theory"
       ];
     }
 
@@ -273,146 +224,95 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
     };
   };
 
-  const getNavigationImage = (imageKey: string): { url: string; alt: string; caption: string } | undefined => {
-    const imageUrl = navigationImages[imageKey as keyof typeof navigationImages];
-    if (!imageUrl) return undefined;
-
-    const imageData = {
-      url: imageUrl,
-      alt: `${imageKey} interface example`,
-      caption: `Visual example of a ${imageKey} interface to help you navigate`
-    };
-
-    return imageData;
-  };
-
   const generateResponse = async (userMessage: string): Promise<Message> => {
     const message = userMessage.toLowerCase();
-    let response = "I'm here to help! Let me provide some information about that.";
+    let response = "I'm here to help you understand learning theories and improve your study strategies! Let me provide some insights.";
     let suggestions: string[] = [];
-    let imageData: { url: string; alt: string; caption?: string } | undefined;
 
-    // Check if this is a navigation question that needs visual guidance
-    const needsVisualGuide = 
-      message.includes('how to') || 
-      message.includes('where') || 
-      message.includes('navigate') || 
-      message.includes('find') || 
-      message.includes('access') || 
-      message.includes('show me');
-
-    // Navigation-specific responses with visual guides
-    if (message.includes('take') && message.includes('quiz')) {
-      const guide = chatbotKnowledgeBase.navigationGuides["take quiz"];
-      response = `Here's how to take the learning style quiz:\n\n${guide.steps.map((step, i) => `${i + 1}. ${step}`).join('\n')}\n\nThe quiz helps personalize your entire learning experience!`;
-      suggestions = ["What are the different learning styles?", "How does personalization work?", "Can I retake the quiz later?"];
-      if (needsVisualGuide) {
-        imageData = getNavigationImage(guide.imageKey);
+    // Kolb's Learning Theory explanation
+    if (message.includes('kolb') || message.includes('learning theory') || message.includes('learning cycle')) {
+      const theory = learningTheoryKnowledgeBase.kolbsTheory;
+      response = `**Kolb's Learning Theory** 📚\n\n${theory.overview}\n\n**The Four-Stage Learning Cycle:**\n${theory.cycle.join('\n')}\n\nThis theory helps us understand that people have different preferences for how they like to process information and gain experience. The most effective learning happens when you go through all four stages of the cycle!`;
+      suggestions = ["What's my learning style mean?", "How does this apply to studying?", "Give me practical study tips"];
+    }
+    
+    // Learning style explanation (specific to user's style)
+    else if ((message.includes('what does') && (message.includes('learning style') || message.includes('learning preference'))) || 
+             (message.includes('my style') || message.includes('my learning type')) ||
+             (learningStyle && message.includes(learningStyle.toLowerCase()))) {
+      if (learningStyle && learningTheoryKnowledgeBase.kolbsTheory.styles[learningStyle as keyof typeof learningTheoryKnowledgeBase.kolbsTheory.styles]) {
+        const styleInfo = learningTheoryKnowledgeBase.kolbsTheory.styles[learningStyle as keyof typeof learningTheoryKnowledgeBase.kolbsTheory.styles];
+        response = `**${learningStyle}** 🎯\n\n${styleInfo.description}\n\n**Your Learning Strengths:**\n${styleInfo.strengths.map(s => `✅ ${s}`).join('\n')}\n\n**Potential Challenges:**\n${styleInfo.challenges.map(c => `⚠️ ${c}`).join('\n')}\n\n**Your Ideal Learning Environment:**\n📍 ${styleInfo.ideal_environment}`;
+        suggestions = ["Give me study tips for my type", "How can I overcome my challenges?", "What study environment works best?"];
+      } else {
+        response = "To provide personalized insights about your learning style, you'll need to complete the learning style assessment first! 📝\n\nThe quiz identifies whether you're The Interactor, The Architect, The Problem Solver, or The Adventurer based on Kolb's Learning Theory.\n\nOnce you know your style, I can provide targeted advice for your specific learning preferences.";
+        suggestions = ["Tell me about Kolb's theory", "What are the different learning styles?", "How can I improve my learning in general?"];
       }
     }
     
-    // Tabs navigation
-    else if ((message.includes('tab') || message.includes('navigate')) && (message.includes('find') || message.includes('where'))) {
-      const guide = chatbotKnowledgeBase.navigationGuides["find tabs"];
-      response = `Here's how to navigate using tabs:\n\n${guide.steps.map((step, i) => `${i + 1}. ${step}`).join('\n')}\n\nEach tab shows different aspects of your learning journey!`;
-      suggestions = ["What's in the Overview tab?", "How to access settings?", "Show me the analytics"];
-      if (needsVisualGuide) {
-        imageData = getNavigationImage(guide.imageKey);
-      }
-    }
-
-    // Settings access
-    else if (message.includes('setting') || message.includes('customize') || message.includes('features')) {
-      const guide = chatbotKnowledgeBase.navigationGuides["access settings"];
-      response = `Here's how to customize your dashboard:\n\n${guide.steps.map((step, i) => `${i + 1}. ${step}`).join('\n')}\n\nYou can enable/disable: Learning Styles, Course Overview, Daily Challenges, Mastery Level, Course Difficulty, and this Learning Assistant!`;
-      suggestions = ["How to reset preferences?", "What happens when I disable features?", "Show me the dashboard"];
-      if (needsVisualGuide) {
-        imageData = getNavigationImage(guide.imageKey);
-      }
-    }
-
-    // Daily challenges navigation
-    else if (message.includes('daily') || message.includes('challenge') || message.includes('streak')) {
-      const guide = chatbotKnowledgeBase.navigationGuides["daily challenge"];
-      response = `${chatbotKnowledgeBase.features.dailyChallenge.purpose}\n\nHere's how to access daily challenges:\n\n${guide.steps.map((step, i) => `${i + 1}. ${step}`).join('\n')}\n\n${chatbotKnowledgeBase.features.dailyChallenge.personalization}`;
-      suggestions = ["How are questions personalized?", "What if I miss a day?", "How to improve my streak?"];
-      if (needsVisualGuide) {
-        imageData = getNavigationImage(guide.imageKey);
-      }
-    }
-
-    // Mastery levels navigation
-    else if (message.includes('mastery') || message.includes('tier') || message.includes('radar')) {
-      const guide = chatbotKnowledgeBase.navigationGuides["mastery chart"];
-      response = `${chatbotKnowledgeBase.features.masteryLevel.purpose}\n\nHere's how to view your mastery levels:\n\n${guide.steps.map((step, i) => `${i + 1}. ${step}`).join('\n')}\n\n${chatbotKnowledgeBase.features.masteryLevel.tiers}`;
-      suggestions = ["How to improve mastery?", "What do the colors mean?", "How are tiers calculated?"];
-      if (needsVisualGuide) {
-        imageData = getNavigationImage(guide.imageKey);
-      }
-    }
-
-    // Analytics navigation
-    else if (message.includes('analytics') || message.includes('chart') || message.includes('data')) {
-      const guide = chatbotKnowledgeBase.navigationGuides["view analytics"];
-      response = `${chatbotKnowledgeBase.features.analytics.purpose}\n\nHere's how to explore your analytics:\n\n${guide.steps.map((step, i) => `${i + 1}. ${step}`).join('\n')}\n\n${chatbotKnowledgeBase.features.analytics.trends}`;
-      suggestions = ["How to interpret the charts?", "What are performance targets?", "How to export data?"];
-      if (needsVisualGuide) {
-        imageData = getNavigationImage(chatbotKnowledgeBase.features.analytics.imageKey);
-      }
-    }
-
-    // Learning style specific responses
-    else if (message.includes('learning style') || message.includes('my style')) {
-      if (learningStyle && chatbotKnowledgeBase.learningStyles[learningStyle as keyof typeof chatbotKnowledgeBase.learningStyles]) {
-        const styleInfo = chatbotKnowledgeBase.learningStyles[learningStyle as keyof typeof chatbotKnowledgeBase.learningStyles];
-        response = `As ${learningStyle}, here's how the platform adapts to you:\n\n${styleInfo.features.map(feature => `• ${feature}`).join('\n')}`;
-        suggestions = ["How to retake the quiz?", "What are course difficulty ratings?", "Tell me about daily challenges"];
+    // Study tips and improvement strategies
+    else if (message.includes('study tips') || message.includes('how to study') || message.includes('study better') || 
+             message.includes('improve') || message.includes('learn better')) {
+      if (learningStyle && learningTheoryKnowledgeBase.studyTips[learningStyle as keyof typeof learningTheoryKnowledgeBase.studyTips]) {
+        const tips = learningTheoryKnowledgeBase.studyTips[learningStyle as keyof typeof learningTheoryKnowledgeBase.studyTips];
+        const personalizedStrategy = learningTheoryKnowledgeBase.improvementStrategies.personalized[learningStyle as keyof typeof learningTheoryKnowledgeBase.improvementStrategies.personalized];
+        
+        response = `**Personalized Study Tips for ${learningStyle}** 📚\n\n${tips.map((tip, i) => `${i + 1}. ${tip}`).join('\n')}\n\n**Key Strategy for Your Type:**\n🎯 ${personalizedStrategy}\n\n**Universal Study Techniques:**\n${learningTheoryKnowledgeBase.improvementStrategies.general.join('\n')}`;
+        suggestions = ["What are my learning challenges?", "How to create the best study environment?", "Tell me about my learning strengths"];
       } else {
-        response = "Learning styles help personalize your experience! Take the quiz in the purple banner to discover whether you're The Interactor, The Architect, The Problem Solver, or The Adventurer. Each style gets different question types, study tips, and course recommendations.";
-        suggestions = ["How to take the quiz?", "What are the different learning styles?", "How does personalization work?"];
-      }
-      
-      if (needsVisualGuide) {
-        imageData = getNavigationImage(chatbotKnowledgeBase.features.learningStyle.imageKey);
+        response = `**Universal Study Strategies** 📚\n\nHere are proven techniques that work for all learning styles:\n\n${learningTheoryKnowledgeBase.improvementStrategies.general.join('\n')}\n\nFor personalized tips based on your specific learning style, complete the learning style assessment first!`;
+        suggestions = ["Tell me about learning styles", "How does Kolb's theory work?", "What's the learning cycle?"];
       }
     }
-
-    // Course difficulty
-    else if (message.includes('course') && (message.includes('difficult') || message.includes('easy') || message.includes('fit'))) {
-      response = `${chatbotKnowledgeBase.features.courseFit.purpose}\n\n${chatbotKnowledgeBase.features.courseFit.insights}\n\n${chatbotKnowledgeBase.features.courseFit.tips}`;
-      suggestions = ["Why is this course harder for me?", "How to succeed in challenging courses?", "What makes a course easier?"];
-      
-      if (needsVisualGuide) {
-        imageData = getNavigationImage(chatbotKnowledgeBase.features.courseFit.imageKey);
+    
+    // Learning challenges and solutions
+    else if (message.includes('challenge') || message.includes('difficulty') || message.includes('struggle') || 
+             message.includes('problem') || message.includes('overcome')) {
+      if (learningStyle && learningTheoryKnowledgeBase.learningChallenges[learningStyle as keyof typeof learningTheoryKnowledgeBase.learningChallenges]) {
+        const challengeInfo = learningTheoryKnowledgeBase.learningChallenges[learningStyle as keyof typeof learningTheoryKnowledgeBase.learningChallenges];
+        response = `**Common Challenge for ${learningStyle}** ⚠️\n\n${challengeInfo.challenge}\n\n**Solutions to Try:**\n${challengeInfo.solutions.map((sol, i) => `${i + 1}. ${sol}`).join('\n')}\n\nRemember, recognizing your challenges is the first step to overcoming them! 💪`;
+        suggestions = ["Give me more study tips", "What are my learning strengths?", "How to create better study habits?"];
+      } else {
+        response = "Learning challenges are completely normal! 💪\n\nEveryone faces difficulties, but understanding your learning style helps you develop targeted strategies.\n\nCommon challenges include:\n• Difficulty concentrating\n• Information not sticking\n• Feeling overwhelmed\n• Lack of motivation\n\nOnce you know your learning style, I can provide specific strategies to overcome these challenges!";
+        suggestions = ["Tell me about learning styles", "How can I improve my focus?", "What study methods work best?"];
       }
     }
-
-    // Dashboard navigation
-    else if (message.includes('dashboard') || message.includes('navigate') || message.includes('tabs')) {
-      response = `${chatbotKnowledgeBase.features.dashboard.overview}\n\n${chatbotKnowledgeBase.features.dashboard.navigation}\n\n${chatbotKnowledgeBase.features.dashboard.customization}`;
-      suggestions = ["How to customize features?", "What's in each tab?", "How to use analytics?"];
-      
-      if (needsVisualGuide) {
-        imageData = getNavigationImage(chatbotKnowledgeBase.features.dashboard.imageKey);
+    
+    // Strengths and positive aspects
+    else if (message.includes('strength') || message.includes('good at') || message.includes('advantage') || 
+             message.includes('positive') || message.includes('excel')) {
+      if (learningStyle && learningTheoryKnowledgeBase.kolbsTheory.styles[learningStyle as keyof typeof learningTheoryKnowledgeBase.kolbsTheory.styles]) {
+        const styleInfo = learningTheoryKnowledgeBase.kolbsTheory.styles[learningStyle as keyof typeof learningTheoryKnowledgeBase.kolbsTheory.styles];
+        response = `**Your Learning Strengths as ${learningStyle}** ⭐\n\n${styleInfo.strengths.map(s => `🌟 ${s}`).join('\n')}\n\nThese are your natural advantages! Focus on study methods and environments that leverage these strengths. When you align your learning approach with your natural preferences, you'll find studying becomes more effective and enjoyable! 🚀`;
+        suggestions = ["How can I use these strengths in studying?", "What challenges should I watch out for?", "Give me study tips for my type"];
+      } else {
+        response = "Everyone has unique learning strengths! 🌟\n\nDiscovering your learning style helps you identify and leverage your natural advantages. Whether you're great at:\n• Analytical thinking\n• Creative problem-solving\n• Social collaboration\n• Hands-on application\n\nKnowing your style helps you study smarter, not harder!";
+        suggestions = ["What are the different learning styles?", "How do I find my learning style?", "Tell me about Kolb's theory"];
       }
     }
-
-    // Troubleshooting
-    else if (message.includes('not working') || message.includes('problem') || message.includes('issue') || message.includes('error')) {
-      response = "I can help troubleshoot! Here are common solutions:\n\n• Try refreshing with the 'Refresh' button (top right)\n• Check that needed features are enabled in Settings\n• Make sure you've completed the learning style quiz\n• Clear your browser cache if issues persist\n\nWhat specific issue are you experiencing?";
-      suggestions = ["Quiz not showing up", "Features are missing", "Data not loading", "Personalization not working"];
+    
+    // Study environment questions
+    else if (message.includes('environment') || message.includes('where to study') || message.includes('study space')) {
+      if (learningStyle && learningTheoryKnowledgeBase.kolbsTheory.styles[learningStyle as keyof typeof learningTheoryKnowledgeBase.kolbsTheory.styles]) {
+        const styleInfo = learningTheoryKnowledgeBase.kolbsTheory.styles[learningStyle as keyof typeof learningTheoryKnowledgeBase.kolbsTheory.styles];
+        response = `**Ideal Study Environment for ${learningStyle}** 🏫\n\n📍 **Perfect Setting:** ${styleInfo.ideal_environment}\n\n**Additional Environment Tips:**\n• Choose locations that match your energy levels\n• Minimize distractions that don't suit your style\n• Have necessary tools and resources easily accessible\n• Consider lighting, noise levels, and comfort\n• Plan for breaks that recharge you`;
+        suggestions = ["What study methods work best for me?", "How to deal with distractions?", "Tell me about my learning strengths"];
+      } else {
+        response = "Creating the right study environment is crucial for effective learning! 🏫\n\n**General Environment Tips:**\n• Find a quiet, well-lit space\n• Minimize distractions (phone, social media)\n• Keep necessary materials within reach\n• Ensure comfortable temperature\n• Have a dedicated study area\n\nYour specific learning style will determine whether you prefer:\n• Solo vs. group study spaces\n• Structured vs. flexible arrangements\n• Theory-focused vs. hands-on setups";
+        suggestions = ["What are the learning styles?", "How do I improve my focus?", "Tell me about study strategies"];
+      }
     }
-
-    // Help and general guidance
-    else if (message.includes('help') || message.includes('how') || message.includes('what')) {
-      response = "I'm here to help you make the most of your learning platform! Here are some key areas I can assist with:\n\n• Learning style assessment and personalization\n• Dashboard navigation and features\n• Daily challenges and streak maintenance\n• Understanding analytics and progress tracking\n• Course difficulty and mastery levels\n• Troubleshooting and customization\n\nWhat specific topic would you like to explore?";
-      suggestions = quickSuggestions.slice(0, 4);
+    
+    // General help and guidance
+    else if (message.includes('help') || message.includes('what can you') || message.includes('how do you')) {
+      response = "I'm your Learning Theory Assistant! 🧠 Here's how I can help you:\n\n🎯 **Learning Style Insights** - Understand what your learning preference means\n📚 **Study Strategies** - Get personalized tips based on your learning type\n🔬 **Learning Theory** - Learn about Kolb's theory and other learning frameworks\n💪 **Overcome Challenges** - Find solutions to common study difficulties\n⭐ **Leverage Strengths** - Discover and use your natural learning advantages\n🏫 **Study Environment** - Create the perfect learning space for your style\n\nWhat specific area would you like to explore?";
+      suggestions = learningTheorySuggestions.slice(0, 4);
     }
-
-    // Fallback for unrecognized queries
+    
+    // Fallback response
     else {
-      response = "I'd love to help with that! I specialize in helping students navigate the learning platform. You can ask me about:\n\n• Learning styles and personalization\n• Daily challenges and streaks\n• Mastery level tracking\n• Course difficulty analysis\n• Dashboard features and analytics\n• Troubleshooting issues\n\nTry asking something more specific, or choose from the suggestions below!";
-      suggestions = ["Show me platform features", "How does personalization work?", "Help with daily challenges", "Explain the analytics"];
+      response = "I specialize in learning theories and helping you understand your learning preferences! 🧠\n\nI can help you with:\n• Understanding Kolb's Learning Theory\n• Explaining your learning style and what it means\n• Providing personalized study tips and strategies\n• Overcoming learning challenges\n• Creating the best study environment for you\n\nTry asking me something specific about learning theories or your learning style!";
+      suggestions = ["What does my learning style mean?", "Tell me about Kolb's theory", "Give me study tips", "How can I learn better?"];
     }
 
     return {
@@ -420,8 +320,7 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
       content: response,
       sender: 'bot',
       timestamp: new Date(),
-      suggestions: suggestions.length > 0 ? suggestions : undefined,
-      image: imageData
+      suggestions: suggestions.length > 0 ? suggestions : undefined
     };
   };
 
@@ -429,7 +328,6 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
     const text = messageText || inputValue.trim();
     if (!text) return;
 
-    // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       content: text,
@@ -441,16 +339,12 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
     setInputValue('');
     setIsTyping(true);
 
-    // Call backend
-    const botReply = await fetchRagReply(text);
-    const botMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      content: botReply,
-      sender: 'bot',
-      timestamp: new Date()
-    };
-    setMessages(prev => [...prev, botMessage]);
-    setIsTyping(false);
+    // Simulate thinking delay
+    setTimeout(async () => {
+      const botResponse = await generateResponse(text);
+      setMessages(prev => [...prev, botResponse]);
+      setIsTyping(false);
+    }, 800 + Math.random() * 800);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -466,21 +360,26 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
 
   if (!isOpen) {
     return (
-      <Button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 z-50"
-        size="lg"
+      <div 
+        className="fixed bottom-6 right-6 z-50"
+        data-tutorial="learning-theory-assistant"
       >
-        <MessageCircle className="h-6 w-6 text-white" />
-      </Button>
+        <Button
+          onClick={() => setIsOpen(true)}
+          className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105"
+          size="lg"
+        >
+          <Brain className="h-6 w-6 text-white" />
+        </Button>
+      </div>
     );
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
-      <Card className={`w-96 bg-white shadow-2xl transition-all duration-300 ${isMinimized ? 'h-16' : 'h-[600px]'}`}>
+    <div className="fixed bottom-6 right-6 z-50 max-w-[400px] max-h-[calc(100vh-3rem)] sm:max-w-[384px]">
+      <Card className={`w-[calc(100vw-3rem)] sm:w-96 max-w-full bg-white shadow-2xl transition-all duration-300 ${isMinimized ? 'h-16' : 'h-[600px] max-h-[calc(100vh-3rem)]'} overflow-hidden`}>
         {/* Header */}
-        <CardHeader className="p-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-lg">
+        <CardHeader className="p-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-t-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Avatar className="h-8 w-8 bg-white/20">
@@ -489,7 +388,7 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
                 </AvatarFallback>
               </Avatar>
               <div>
-                <CardTitle className="text-sm">Learning Assistant</CardTitle>
+                <CardTitle className="text-sm">Learning Theory Assistant</CardTitle>
                 {learningStyle && (
                   <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30 mt-1">
                     {learningStyle}
@@ -503,6 +402,7 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
                 size="sm"
                 onClick={clearChat}
                 className="h-8 w-8 p-0 hover:bg-white/20 text-white"
+                title="Clear conversation"
               >
                 <RotateCcw className="h-4 w-4" />
               </Button>
@@ -529,42 +429,32 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
         {!isMinimized && (
           <>
             {/* Messages */}
-            <CardContent className="p-0 h-[440px] flex flex-col">
-              <ScrollArea className="flex-1 p-4">
+            <CardContent className="p-0 h-[440px] max-h-[calc(100vh-12rem)] flex flex-col overflow-hidden">
+              <ScrollArea className="flex-1 p-4 h-full overflow-y-auto">
                 <div className="space-y-4">
                   {messages.map((message) => (
-                    <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[80%] rounded-lg px-3 py-2 ${
+                    <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} mb-4`}>
+                      <div className={`max-w-[85%] w-auto rounded-lg px-3 py-2 ${
                         message.sender === 'user' 
-                          ? 'bg-blue-600 text-white' 
+                          ? 'bg-purple-600 text-white' 
                           : 'bg-gray-100 text-gray-900'
-                      }`}>
-                        <p className="text-sm whitespace-pre-line">{message.content}</p>
+                      } break-words overflow-hidden`}>
+                        <p className="text-sm whitespace-pre-line break-words word-wrap leading-relaxed">{message.content}</p>
                         
-                        {/* Display image if present */}
-                        {message.image && (
-                          <div className="mt-3 rounded-lg overflow-hidden">
-                            <ImageWithFallback
-                              src={message.image.url}
-                              alt={message.image.alt}
-                              className="w-full h-32 object-cover rounded"
-                            />
-                            {message.image.caption && (
-                              <p className="text-xs text-gray-600 mt-1 italic">{message.image.caption}</p>
-                            )}
-                          </div>
-                        )}
-                        
-                        {message.suggestions && (
-                          <div className="mt-3 space-y-1">
+                        {/* Suggestions */}
+                        {message.suggestions && message.sender === 'bot' && (
+                          <div className="mt-3 space-y-2 max-w-full overflow-hidden">
                             {message.suggestions.map((suggestion, index) => (
-                              <button
+                              <Button
                                 key={index}
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs h-auto p-2 w-full justify-start bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 min-h-[32px] break-words text-wrap max-w-full overflow-hidden"
                                 onClick={() => handleSendMessage(suggestion)}
-                                className="block w-full text-left text-xs bg-white/20 hover:bg-white/30 rounded px-2 py-1 transition-colors"
                               >
-                                {suggestion}
-                              </button>
+                                <Lightbulb className="h-3 w-3 mr-2 flex-shrink-0 mt-0.5" />
+                                <span className="text-left break-words leading-tight text-wrap overflow-hidden">{suggestion}</span>
+                              </Button>
                             ))}
                           </div>
                         )}
@@ -574,41 +464,40 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
                   
                   {isTyping && (
                     <div className="flex justify-start">
-                      <div className="bg-gray-100 rounded-lg px-3 py-2">
+                      <div className="max-w-[80%] rounded-lg px-3 py-2 bg-gray-100 text-gray-900">
                         <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
                           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                         </div>
                       </div>
                     </div>
                   )}
+                  
                   <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
 
               {/* Input */}
-              <div className="border-t p-4">
-                <div className="flex gap-2">
+              <div className="p-4 border-t border-gray-200 flex-shrink-0">
+                <div className="flex gap-2 max-w-full">
                   <Input
                     ref={inputRef}
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Ask me about navigating the platform..."
-                    className="flex-1"
+                    placeholder="Ask about learning theories, study tips..."
+                    className="flex-1 min-w-0"
+                    disabled={isTyping}
                   />
-                  <Button 
+                  <Button
                     onClick={() => handleSendMessage()}
                     disabled={!inputValue.trim() || isTyping}
                     size="sm"
+                    className="bg-purple-600 hover:bg-purple-700 flex-shrink-0"
                   >
                     <Send className="h-4 w-4" />
                   </Button>
-                </div>
-                <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
-                  <ImageIcon className="h-3 w-3" />
-                  <span>Visual navigation guides included automatically</span>
                 </div>
               </div>
             </CardContent>

@@ -1,21 +1,42 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Calendar, Brain, Info, X } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { Calendar, Brain, Info, X, Target, TrendingUp, MessageSquare, Users, Clock, AlertCircle, Flame, BarChart3, BookOpen, Video, PenTool, ChevronRight } from 'lucide-react';
 import ImprovedQuestionOfTheDay from '../ImprovedQuestionOfTheDay';
 import MasteryLevel from '../MasteryLevel';
+import DailyChallengeRow from '../DailyChallengeRow';
+import { getCurrentAcademicWeek, getWeeklyContent, getProgressiveQuestionLevel, formatCurrentWeekRange } from '../../utils/academicWeek';
 
-// Mock data for learning activity
-const engagementData = [
-  { day: 'Mon', questions: 320, students: 45 },
-  { day: 'Tue', questions: 285, students: 52 },
-  { day: 'Wed', questions: 398, students: 67 },
-  { day: 'Thu', questions: 423, students: 71 },
-  { day: 'Fri', questions: 367, students: 58 },
-  { day: 'Sat', questions: 189, students: 23 },
-  { day: 'Sun', questions: 156, students: 19 }
+// Mock data for learning analytics
+const weeklyProgressData = [
+  { day: 'Mon', interactions: 12, accuracy: 85, reflection: 4, studyHours: 2.5 },
+  { day: 'Tue', interactions: 8, accuracy: 78, reflection: 3, studyHours: 1.8 },
+  { day: 'Wed', interactions: 15, accuracy: 92, reflection: 5, studyHours: 3.2 },
+  { day: 'Thu', interactions: 11, accuracy: 88, reflection: 4, studyHours: 2.1 },
+  { day: 'Fri', interactions: 9, accuracy: 81, reflection: 3, studyHours: 1.5 },
+  { day: 'Sat', interactions: 6, accuracy: 89, reflection: 2, studyHours: 2.8 },
+  { day: 'Sun', interactions: 4, accuracy: 91, reflection: 1, studyHours: 1.2 }
+];
+
+const questionTypesData = [
+  { name: 'Remembering', value: 15, color: '#f59e0b' },
+  { name: 'Understanding', value: 25, color: '#8b5cf6' },
+  { name: 'Applying', value: 28, color: '#06b6d4' },
+  { name: 'Analyzing', value: 18, color: '#10b981' },
+  { name: 'Evaluating', value: 8, color: '#ef4444' },
+  { name: 'Creating', value: 4, color: '#6366f1' },
+  { name: 'Others', value: 2, color: '#9ca3af' }
+];
+
+const learningCycleData = [
+  { phase: 'Experience', engagement: 85, description: 'Hands-on practice' },
+  { phase: 'Reflection', engagement: 72, description: 'Thinking about learning' },
+  { phase: 'Conceptualization', engagement: 68, description: 'Understanding theory' },
+  { phase: 'Experimentation', engagement: 91, description: 'Applying knowledge' }
 ];
 
 interface HomepageProps {
@@ -24,6 +45,9 @@ interface HomepageProps {
   onShowLearningStyleDetails: () => void;
   onShowQuiz: () => void;
   onStartChallenge: () => void;
+  onNavigateToAnalytics: () => void;
+  onNavigateToCourse: () => void;
+  onNavigateToChatbot: () => void;
 }
 
 export default function Homepage({ 
@@ -31,194 +55,587 @@ export default function Homepage({
   currentDate, 
   onShowLearningStyleDetails, 
   onShowQuiz,
-  onStartChallenge 
+  onStartChallenge,
+  onNavigateToAnalytics,
+  onNavigateToCourse,
+  onNavigateToChatbot 
 }: HomepageProps) {
+  const [currentWeek, setCurrentWeek] = useState<any>(null);
+  const [weeklyContent, setWeeklyContent] = useState<any>(null);
+  const [masteryScore, setMasteryScore] = useState(67);
+  const [questionLevel, setQuestionLevel] = useState<any>(null);
+  const [showBloomsTaxonomy, setShowBloomsTaxonomy] = useState(false);
+
+  // Helper function to get learning preference emoji
+  const getLearningPreferenceEmoji = (preference: string | null) => {
+    switch (preference) {
+      case 'The Interactor': return '🤝';
+      case 'The Architect': return '🏗️';
+      case 'The Problem Solver': return '🔧';
+      case 'The Adventurer': return '🚀';
+      default: return '👨‍💻';
+    }
+  };
+
+  useEffect(() => {
+    try {
+      const week = getCurrentAcademicWeek();
+      setCurrentWeek(week);
+      
+      if (week && week.weekNumber) {
+        const content = getWeeklyContent(week.weekNumber);
+        setWeeklyContent(content);
+      }
+      
+      const level = getProgressiveQuestionLevel(masteryScore);
+      setQuestionLevel(level);
+    } catch (error) {
+      console.error('Error in Homepage useEffect:', error);
+      // Set default values
+      setCurrentWeek(null);
+      setWeeklyContent(null);
+      setQuestionLevel(null);
+    }
+  }, [masteryScore]);
+
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with Quick Analytics */}
       <div className="mb-6">
-        <h1 className="text-4xl font-semibold text-gray-900">Learning Analytics Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">{currentDate}</p>
-      </div>
-
-      {/* Welcome Banner */}
-      <Card className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 border-none text-white relative overflow-hidden">
-        <CardContent className="p-6 relative z-10">
-          {/* Subtle overlay for better text readability */}
-          <div className="absolute inset-0 bg-black/10 rounded-lg"></div>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-4xl font-semibold text-gray-900">Welcome back, Student 👋</h1>
+            <div className="flex items-center gap-3 mt-1">
+              <p className="text-sm text-gray-500">{currentDate}</p>
+              {currentWeek && (
+                <Badge 
+                  variant={currentWeek.type === 'teaching' ? 'default' : 
+                          currentWeek.type === 'recess' ? 'secondary' : 'outline'}
+                  className={`${
+                    currentWeek.type === 'teaching' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                    currentWeek.type === 'recess' ? 'bg-green-100 text-green-700 border-green-200' :
+                    currentWeek.type === 'revision' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+                    'bg-red-100 text-red-700 border-red-200'
+                  }`}
+                >
+                  📚 {currentWeek.name}
+                </Badge>
+              )}
+            </div>
+          </div>
           
-          <div className="flex items-center justify-between relative z-10">
-            <div className="flex items-center gap-6">
-              <div className="w-32 h-32 flex items-center justify-center text-8xl drop-shadow-lg">
-                👨‍💻
-              </div>
-              <div>
-                <h2 className="text-3xl font-bold mb-2 text-white drop-shadow-md">Welcome back, Student 👋</h2>
-                <p className="text-base text-white mb-1 drop-shadow-sm">Your learning preference: <span className="font-semibold text-yellow-300">{learningPreference || 'Not set'}</span></p>
-                <div className="flex items-center gap-2 mb-2">
-                  <Info className="h-4 w-4 text-yellow-300 drop-shadow-sm" />
+          {/* Learning Style Button */}
+          <div className="flex-shrink-0">
+            {!learningPreference ? (
+              <Button 
+                onClick={onShowQuiz}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium shadow-lg"
+              >
+                Discover Your Learning Style
+              </Button>
+            ) : (
+              <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg shadow-sm">
+                <div className="text-xl">
+                  {getLearningPreferenceEmoji(learningPreference)}
+                </div>
+                <div>
+                  <h3 className="font-medium text-purple-800 text-sm">{learningPreference}</h3>
                   <button 
-                    className="text-sm underline hover:no-underline text-yellow-300 drop-shadow-sm font-medium"
                     onClick={onShowLearningStyleDetails}
+                    className="text-xs text-purple-600 underline hover:text-purple-800"
                   >
-                    Learn more about your preference
+                    View details
                   </button>
                 </div>
-                <p className="text-sm text-white/95 drop-shadow-sm">Your chatbot interactions and daily questions are personalised to match your learning preference.</p>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={onShowQuiz}
+                  className="text-purple-600 border-purple-300 hover:bg-purple-50 text-xs px-2 py-1"
+                >
+                  Retake
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Today's Challenge - Moved to Banner Position with Purple Gradient */}
+      <Card className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 border-none text-white relative overflow-hidden shadow-lg mb-6" data-tutorial="daily-challenge">
+        <CardContent className="p-6 relative z-10">
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                <Target className="h-4 w-4 text-white" />
+              </div>
+              <h2 className="text-2xl font-semibold text-white">Today's Challenge</h2>
+              <Badge className="bg-yellow-500 text-yellow-900 hover:bg-yellow-400 font-medium">
+                Day 7 Streak 🔥
+              </Badge>
+            </div>
+            
+            <div className="flex items-end gap-6">
+              {/* Question container with transparent background */}
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-6 flex-1">
+                <p className="text-white leading-relaxed mb-3">
+                  <span className="font-semibold">Chain Rule Application:</span> Imagine you're explaining the chain rule to a study group. How would you describe when and why we use it for composite functions?
+                </p>
+                
+                {/* Badges inside the same container */}
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-1 text-white/90">
+                    <BookOpen className="h-4 w-4" />
+                    <span>Derivatives</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-white/90">
+                    <Clock className="h-4 w-4" />
+                    <span>Medium difficulty</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-white/90">
+                    <Brain className="h-4 w-4" />
+                    <span>Understand level</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Target emoji aligned beside the bottom of question box */}
+              <div className="text-6xl opacity-20 flex-shrink-0 mb-6">
+                🎯
               </div>
             </div>
+
             <Button 
-              variant="outline" 
-              size="sm" 
-              className="bg-white/95 text-gray-700 border-white hover:bg-white shadow-lg font-medium"
-              onClick={onShowQuiz}
+              onClick={onStartChallenge}
+              className="bg-white text-purple-700 hover:bg-gray-50 hover:text-purple-800 font-semibold px-6 py-2 shadow-md"
+              size="default"
             >
-              {learningPreference ? 'Retake Quiz' : 'Take Quiz'}
+              Start Challenge
+              <ChevronRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Daily Challenge Section */}
-      <div>
-        <ImprovedQuestionOfTheDay 
-          learningStyle={learningPreference} 
-          onStartChallenge={onStartChallenge}
-        />
-      </div>
-
-      {/* Course Overview Section */}
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Course Overview</h2>
-      
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Upcoming Deadlines */}
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+      {/* Action Cards Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" data-tutorial="daily-challenge">
+        {/* Current Focus */}
+        <div onClick={onNavigateToChatbot} className="cursor-pointer">
+          <Card className="h-full border border-gray-200 hover:shadow-md transition-all duration-200 hover:border-blue-300">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <Calendar className="h-6 w-6 text-white" />
-                  <span className="font-semibold text-lg">Upcoming Deadlines</span>
+                  <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center border border-blue-200">
+                    <BookOpen className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Current Focus</h3>
+                    <p className="text-sm text-gray-500">Continue your learning</p>
+                  </div>
                 </div>
-                <Badge className="bg-white text-blue-600 font-bold text-lg px-3 py-1">5</Badge>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
               </div>
               
               <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
-                  <div className="w-8 h-8 bg-orange-400 rounded-md flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">T</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-white font-medium text-sm">Topic 1 Quiz</p>
-                    <p className="text-blue-100 text-xs">09:00AM</p>
-                  </div>
+                <div>
+                  <h4 className="font-semibold text-lg text-gray-900">Derivatives</h4>
+                  <p className="text-sm text-gray-600">Topic 4 • 45% complete</p>
                 </div>
-                
-                <div className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
-                  <div className="w-8 h-8 bg-orange-400 rounded-md flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">A</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-white font-medium text-sm">Assignment</p>
-                    <p className="text-blue-100 text-xs">11:00AM</p>
-                    <p className="text-red-300 text-xs">Due Soon</p>
-                  </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: '45%' }}></div>
                 </div>
-              </div>
-              
-              <Button variant="outline" className="mt-4 w-full bg-white text-blue-600 border-white hover:bg-blue-50">
-                View All
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Topics */}
-          <Card className="bg-white border-gray-200">
-            <CardContent className="p-6">
-              <h3 className="font-semibold text-lg text-gray-900 mb-4">Topics</h3>
-              
-              <div className="space-y-4">
-                {[
-                  { name: 'Elementary Number Theory', topic: 'Topic 1', level: 'Excellent', color: 'bg-yellow-400', button: 'Start Chat' },
-                  { name: 'Proportional Logic', topic: 'Topic 2', level: 'Beginner (basic)', color: 'bg-green-400', button: 'Start Chat' },
-                  { name: 'Predicate Logic', topic: 'Topic 3', level: 'Insufficient', color: 'bg-red-400', button: 'Start Chat' }
-                ].map((topic, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Button variant="outline" size="sm" className="text-xs px-3 py-1">
-                          {topic.button}
-                        </Button>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{topic.name}</p>
-                          <p className="text-xs text-gray-500">{topic.topic}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className={`h-2 w-20 ${topic.color} rounded-full`}></div>
-                    </div>
-                  </div>
-                ))}
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Next Deadline */}
+        <div onClick={onNavigateToCourse} className="cursor-pointer">
+          <Card className="h-full border border-orange-200 bg-orange-50 hover:shadow-md transition-all duration-200 hover:border-orange-300">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center border border-orange-200">
+                    <AlertCircle className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-orange-900">Next Deadline</h3>
+                    <p className="text-sm text-orange-600">Stay on track</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-orange-400" />
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="font-semibold text-lg text-orange-900">Derivatives Assignment</h4>
+                <p className="text-sm text-orange-700">Due in 5 days • Oct 11, 2025</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
       </div>
 
-      {/* Your Learning Analytics Section */}
+      {/* This Week's Insights - Full Weekly Learning Analytics Summary */}
       <Card>
         <CardHeader>
-          <CardTitle>Your Learning Analytics</CardTitle>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-[17px]">
+                <BarChart3 className="h-5 w-5 text-purple-600" />
+                This Week's Insights
+              </CardTitle>
+              <p className="text-sm text-gray-500 mt-1">{formatCurrentWeekRange()}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={onNavigateToAnalytics}
+                className="flex items-center gap-2"
+              >
+                <Info className="h-4 w-4" />
+                View Detailed Analytics
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div className="text-center">
-              <p className="text-sm text-gray-600 mb-1">Conversation Sessions</p>
-              <p className="text-3xl font-bold text-gray-900">100</p>
+          {/* Weekly Performance Summary - Top Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            <div className="p-4 border border-green-200 bg-green-50 rounded-lg">
+              <h5 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Strong This Week
+              </h5>
+              <p className="text-green-700 text-sm leading-relaxed mb-3">
+                Great work on <strong>derivatives</strong> and <strong>vectors</strong>! Your 84% accuracy is above class average.
+              </p>
             </div>
-            <div className="text-center">
-              <p className="text-sm text-gray-600 mb-1">Topics Discussed</p>
-              <p className="text-3xl font-bold text-gray-900">6</p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-gray-600 mb-1">Streaming</p>
-              <p className="text-3xl font-bold text-gray-900">91</p>
+            
+            <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
+              <h5 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                <Target className="h-4 w-4" />
+                Focus Area
+              </h5>
+              <p className="text-amber-700 text-sm leading-relaxed mb-2">
+                <strong>Integration concepts</strong> need more practice. Try fundamental techniques first.
+              </p>
+              {learningPreference && (
+                <p className="text-amber-600 text-sm flex items-start gap-2 bg-amber-100 p-2 rounded border border-amber-200">
+                  <span>💡</span>
+                  <span>
+                    {learningPreference === 'The Interactor' ? 'Form study groups to discuss integration concepts together!' :
+                     learningPreference === 'The Architect' ? 'Create structured notes and frameworks for integration methods!' :
+                     learningPreference === 'The Problem Solver' ? 'Work through more integration practice problems!' :
+                     learningPreference === 'The Adventurer' ? 'Try creative visualization techniques for integration concepts!' :
+                     'Consider taking the learning preference quiz for personalized study insights.'}
+                  </span>
+                </p>
+              )}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Learning Activity Chart */}
-            <div>
-              <h4 className="font-medium mb-3">Learning Activity</h4>
-              <p className="text-xs text-gray-500 mb-4">Track how you are doing compared to your industry average</p>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={engagementData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="questions" fill="#60a5fa" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="students" fill="#34d399" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Mastery Level Radar */}
-            <div>
-              <h4 className="font-medium mb-3">Mastery Level</h4>
-              <div className="flex justify-center">
-                <MasteryLevel />
+          {/* Key Metrics Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <MessageSquare className="h-8 w-8 text-purple-600" />
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-purple-400" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Number of learning conversations this week. Higher engagement typically leads to better retention and understanding.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
-              <div className="flex justify-center mt-4">
-                <Button variant="outline" size="sm">
-                  View full report
-                </Button>
+              <p className="text-2xl font-bold text-gray-900">47</p>
+              <p className="text-sm text-gray-600">Chat Sessions</p>
+              <p className="text-xs text-green-600 mt-1">↑ 12% vs last week</p>
+            </div>
+            
+            <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <Brain className="h-8 w-8 text-blue-600" />
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-blue-400" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Average accuracy across all question types this week. Higher percentages indicate more consistent understanding of concepts.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <p className="text-2xl font-bold text-gray-900">84%</p>
+              <p className="text-sm text-gray-600">Avg Accuracy</p>
+              <p className="text-xs text-green-600 mt-1">Above class avg (78%)</p>
+            </div>
+            
+            <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <Clock className="h-8 w-8 text-orange-600" />
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-orange-400" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Total active learning time this week and average per session. Quality focused practice is more valuable than quantity - optimal study sessions are typically 45-90 minutes.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <p className="text-2xl font-bold text-gray-900">18h</p>
+              <p className="text-sm text-gray-600">Study Time</p>
+              <p className="text-xs text-blue-600 mt-1">1.8h avg/session</p>
+              <p className="text-xs text-green-600">↑ 3h vs last week</p>
+            </div>
+          </div>
+
+          {/* Charts Row - Reorganized for better layout */}
+          
+          {/* Question Types by Topics - First Row */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-medium flex items-center gap-2">
+                Question Types by Topics (
+                <button 
+                  onClick={() => setShowBloomsTaxonomy(true)}
+                  className="text-purple-600 underline hover:text-purple-800 transition-colors cursor-pointer"
+                >
+                  Bloom's Taxonomy
+                </button>
+                )
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-sm">
+                      <p className="mb-2"><strong>How This Helps Your Learning:</strong></p>
+                      <p>Our platform tracks your questions across these cognitive levels, helping you build a strong mathematical foundation while progressively developing higher-order thinking skills. This ensures balanced mathematical growth from basic computation to advanced mathematical reasoning.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </h4>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Chart Section */}
+              <div className="lg:col-span-2">
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={[
+                    { topic: 'Derivatives', Remembering: 15, Understanding: 25, Applying: 28, Analyzing: 18, Evaluating: 8, Creating: 4, Others: 2 },
+                    { topic: 'Integration', Remembering: 5, Understanding: 8, Applying: 3, Analyzing: 1, Evaluating: 0, Creating: 0, Others: 0 }
+                  ]}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="topic" />
+                    <YAxis />
+                    <RechartsTooltip />
+                    <Bar dataKey="Remembering" stackId="a" fill="#f59e0b" />
+                    <Bar dataKey="Understanding" stackId="a" fill="#8b5cf6" />
+                    <Bar dataKey="Applying" stackId="a" fill="#06b6d4" />
+                    <Bar dataKey="Analyzing" stackId="a" fill="#10b981" />
+                    <Bar dataKey="Evaluating" stackId="a" fill="#ef4444" />
+                    <Bar dataKey="Creating" stackId="a" fill="#6366f1" />
+                    <Bar dataKey="Others" stackId="a" fill="#9ca3af" />
+                  </BarChart>
+                </ResponsiveContainer>
+                
+                {/* Legend */}
+                <div className="flex flex-wrap gap-3 mt-3 justify-center">
+                  {[
+                    { name: 'Remembering', color: '#f59e0b' },
+                    { name: 'Understanding', color: '#8b5cf6' },
+                    { name: 'Applying', color: '#06b6d4' },
+                    { name: 'Analyzing', color: '#10b981' },
+                    { name: 'Evaluating', color: '#ef4444' },
+                    { name: 'Creating', color: '#6366f1' },
+                    { name: 'Others', color: '#9ca3af' }
+                  ].map((item, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                      <span className="text-xs text-gray-600">{item.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Insight Section */}
+              <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <h5 className="font-semibold text-purple-800 mb-3 flex items-center gap-2">
+                  <Brain className="h-4 w-4" />
+                  Insight:
+                </h5>
+                <p className="text-sm text-purple-700 leading-relaxed">
+                  Your questions are evolving well in <strong>Derivatives</strong>, showing strong progression through Bloom's taxonomy levels. 
+                  You're moving from basic remembering (15%) to higher-order thinking with applying (28%) and analyzing (18%).
+                </p>
+                <div className="mt-3 p-2 bg-purple-100 rounded border border-purple-300">
+                  <p className="text-xs text-purple-600">
+                    <strong>Next Goal:</strong> Continue practicing derivatives to reach evaluating and creating levels, then advance to Integration fundamentals.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Weekly Learning Pattern - Second Row */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-medium flex items-center gap-2">
+                Weekly Learning Pattern
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-gray-400" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-sm">
+                      <p className="mb-2"><strong>This graph shows your daily learning activity:</strong></p>
+                      <p className="mb-1">• <span className="text-purple-600">Purple line (Left Y-axis):</span> Number of chat sessions per day</p>
+                      <p>• <span className="text-orange-600">Orange line (Right Y-axis):</span> Study duration in hours per day</p>
+                      <p className="mt-2 text-xs">Both metrics help track your consistency and engagement patterns throughout the week.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </h4>
+            </div>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={weeklyProgressData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="day" />
+                <YAxis 
+                  yAxisId="left" 
+                  orientation="left" 
+                  domain={[0, 'dataMax + 2']}
+                  label={{ value: 'Chat Sessions', angle: -90, position: 'insideLeft' }} 
+                />
+                <YAxis 
+                  yAxisId="right" 
+                  orientation="right" 
+                  domain={[0, 'dataMax + 0.5']}
+                  label={{ value: 'Study Hours', angle: 90, position: 'insideRight' }} 
+                />
+                <RechartsTooltip 
+                  formatter={(value, name) => [
+                    name === 'interactions' ? [value, 'Chat Sessions'] : [value + 'h', 'Study Hours'],
+                    ''
+                  ]}
+                  labelFormatter={(label) => `${label}`}
+                />
+                <Line yAxisId="left" type="monotone" dataKey="interactions" stroke="#8b5cf6" strokeWidth={3} name="interactions" />
+                <Line yAxisId="right" type="monotone" dataKey="studyHours" stroke="#f97316" strokeWidth={3} name="studyHours" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Kolb's Learning Cycle Progress */}
+          {learningPreference && (
+            <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-medium flex items-center gap-2">
+                  Learning Cycle Progress (Kolb's Model)
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-4 w-4 text-gray-400" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Your engagement across the four phases of experiential learning</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </h4>
+                <Badge variant="outline" className="text-purple-700 border-purple-300">
+                  {learningPreference}
+                </Badge>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {learningCycleData.map((phase, index) => (
+                  <div key={index} className="text-center">
+                    <div className="mb-2">
+                      <div className="w-16 h-16 mx-auto rounded-full bg-white shadow-md flex items-center justify-center">
+                        <span className="text-xl font-bold text-purple-600">{phase.engagement}%</span>
+                      </div>
+                    </div>
+                    <h5 className="font-medium text-sm text-gray-900">{phase.phase}</h5>
+                    <p className="text-xs text-gray-500 mt-1">{phase.description}</p>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-4 p-3 bg-white rounded-lg">
+                <p className="text-sm text-gray-700">
+                  <strong>Reflection Prompt:</strong> Which phase of the learning cycle felt most natural to you this week? 
+                  Consider writing down one thing you'll try differently next week.
+                </p>
+              </div>
+            </div>
+          )}
+
         </CardContent>
       </Card>
+
+      {/* Bloom's Taxonomy Information Dialog */}
+      <Dialog open={showBloomsTaxonomy} onOpenChange={setShowBloomsTaxonomy}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Understanding Bloom's Taxonomy in Mathematics</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-sm">
+            <p>Bloom's Taxonomy provides an elegant framework for understanding different levels of mathematical thinking and problem-solving. In mathematics education, this taxonomy helps students progress from basic recall to advanced mathematical reasoning and creation.</p>
+            
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-orange-600 mb-2">1. Remembering (Recall mathematical facts)</h4>
+                <p className="mb-2">Basic recall of mathematical formulas, definitions, and procedures.</p>
+                <p className="italic">Example: "What is the derivative of x²?" or "State the Pythagorean theorem."</p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold text-purple-600 mb-2">2. Understanding (Comprehend mathematical concepts)</h4>
+                <p className="mb-2">Explaining mathematical concepts in your own words and interpreting mathematical notation.</p>
+                <p className="italic">Example: "Explain what limits mean in calculus" or "Describe how integration relates to area under curves."</p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold text-cyan-600 mb-2">3. Applying (Use mathematical procedures)</h4>
+                <p className="mb-2">Using mathematical formulas and procedures to solve routine problems.</p>
+                <p className="italic">Example: "Find the derivative of 3x³ + 2x - 1" or "Solve this system of linear equations."</p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold text-green-600 mb-2">4. Analyzing (Break down mathematical problems)</h4>
+                <p className="mb-2">Identifying patterns, relationships, and underlying mathematical structures.</p>
+                <p className="italic">Example: "Compare different integration techniques for this function" or "Analyze why this series converges."</p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold text-red-600 mb-2">5. Evaluating (Judge mathematical solutions)</h4>
+                <p className="mb-2">Assessing the validity of mathematical arguments and choosing optimal solution methods.</p>
+                <p className="italic">Example: "Evaluate which optimization method is most efficient" or "Critique this mathematical proof."</p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold text-indigo-600 mb-2">6. Creating (Construct new mathematical solutions)</h4>
+                <p className="mb-2">Developing original mathematical models, proofs, or solution strategies.</p>
+                <p className="italic">Example: "Design a mathematical model for this real-world problem" or "Create an alternative proof for this theorem."</p>
+              </div>
+            </div>
+            
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <p className="font-medium text-blue-800 mb-2">How This Helps Your Learning:</p>
+              <p className="text-blue-700">Our platform tracks your questions across these cognitive levels, helping you build a strong mathematical foundation while progressively developing higher-order thinking skills. This ensures balanced mathematical growth from basic computation to advanced mathematical reasoning.</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

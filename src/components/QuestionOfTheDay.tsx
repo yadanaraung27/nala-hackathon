@@ -21,63 +21,63 @@ interface QOTDQuestion {
 const qotdQuestions: QOTDQuestion[] = [
   {
     id: '1',
-    question: "Imagine you're explaining binary search trees to a study group. How would you describe the insertion process step-by-step, and what questions might your classmates ask that you should be prepared to answer?",
-    topic: "Binary Search Trees",
+    question: "Imagine you're explaining the chain rule to a study group. How would you describe when and why we use it for composite functions, and what common mistakes should your classmates avoid?",
+    topic: "Derivatives - Chain Rule",
     difficulty: "Medium",
     bloomsLevel: "Understand",
     learningStyle: "interactor",
-    hint: "Think about the common misconceptions students have about BST insertion",
-    relatedTopics: ["Data Structures", "Tree Traversal", "Algorithm Explanation"]
+    hint: "Think about the common misconceptions students have about identifying composite functions",
+    relatedTopics: ["Calculus", "Composite Functions", "Differentiation Rules"]
   },
   {
     id: '2',
-    question: "Design a comprehensive study plan for learning recursion. Create a structured outline with learning objectives, practice problems, and self-assessment checkpoints. Include time estimates for each section.",
-    topic: "Recursion",
+    question: "Design a comprehensive study plan for mastering integration techniques. Create a structured outline with learning objectives, practice problems, and self-assessment checkpoints. Include time estimates for each method.",
+    topic: "Integration Methods",
     difficulty: "Medium",
     bloomsLevel: "Create",
     learningStyle: "architect",
-    hint: "Consider different levels of complexity and build prerequisites systematically",
-    relatedTopics: ["Study Planning", "Learning Methodology", "Algorithm Mastery"]
+    hint: "Consider different techniques: substitution, parts, partial fractions, trigonometric substitution",
+    relatedTopics: ["Study Planning", "Integration Techniques", "Calculus Mastery"]
   },
   {
     id: '3',
-    question: "You're debugging a sorting algorithm that's not working correctly. Walk through your debugging process: What steps would you take to identify the issue? Implement a simple bubble sort and intentionally introduce a bug, then fix it.",
-    topic: "Sorting Algorithms",
+    question: "You're solving an optimization problem where you need to minimize the cost of materials for a cylindrical container. Walk through your process: Set up the constraint, find the objective function, and solve step-by-step.",
+    topic: "Optimization Problems",
     difficulty: "Hard",
     bloomsLevel: "Apply",
     learningStyle: "problemSolver",
-    hint: "Focus on systematic debugging techniques and testing strategies",
-    relatedTopics: ["Debugging", "Algorithm Implementation", "Problem Solving"]
+    hint: "Focus on translating real-world constraints into mathematical expressions",
+    relatedTopics: ["Applications of Derivatives", "Optimization", "Problem Solving"]
   },
   {
     id: '4',
-    question: "Design a hands-on group activity to teach stack operations. Create a collaborative exercise that involves physical or interactive elements where team members can learn LIFO principles together. What materials would you need?",
-    topic: "Stack Data Structure",
+    question: "Design a hands-on group activity to teach complex number operations. Create a collaborative exercise that involves visual or interactive elements where team members can learn polar and rectangular forms together. What materials would you need?",
+    topic: "Complex Numbers",
     difficulty: "Medium",
     bloomsLevel: "Create",
     learningStyle: "adventurer",
-    hint: "Think about physical analogies and group participation elements",
-    relatedTopics: ["Interactive Learning", "Data Structures", "Team Activities"]
+    hint: "Think about visual representations and group participation elements",
+    relatedTopics: ["Interactive Learning", "Complex Plane", "Team Activities"]
   },
   {
     id: '5',
-    question: "Compare and contrast different sorting algorithms (bubble sort, merge sort, quick sort). Create a comprehensive analysis including time complexity, space complexity, and best use cases for each.",
-    topic: "Algorithm Analysis",
+    question: "Compare and contrast different integration methods (substitution, integration by parts, partial fractions). Create a comprehensive analysis including when to use each method and their relative difficulty levels.",
+    topic: "Integration Analysis",
     difficulty: "Hard",
     bloomsLevel: "Analyze",
     learningStyle: "architect",
-    hint: "Structure your analysis in a clear, systematic format",
-    relatedTopics: ["Time Complexity", "Space Complexity", "Algorithm Comparison"]
+    hint: "Structure your analysis in a clear, systematic format with examples",
+    relatedTopics: ["Integration Techniques", "Method Selection", "Calculus Strategy"]
   },
   {
     id: '6',
-    question: "You're working on a team project to build a simple web application. Describe how you would organize the team, delegate tasks, and ensure everyone stays engaged throughout the development process.",
-    topic: "Software Engineering",
+    question: "You're working on a team project to model real-world phenomena using calculus. Describe how you would organize the team, delegate mathematical tasks, and ensure everyone contributes to the modeling process.",
+    topic: "Applied Mathematics",
     difficulty: "Medium",
     bloomsLevel: "Apply",
     learningStyle: "adventurer",
-    hint: "Consider different team roles and collaborative development practices",
-    relatedTopics: ["Team Management", "Project Planning", "Agile Development"]
+    hint: "Consider different mathematical modeling approaches and collaborative problem-solving",
+    relatedTopics: ["Mathematical Modeling", "Team Collaboration", "Applied Calculus"]
   }
 ];
 
