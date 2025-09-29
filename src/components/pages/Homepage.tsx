@@ -40,6 +40,7 @@ const learningCycleData = [
   { phase: 'Experimentation', engagement: 91, description: 'Applying knowledge' }
 ];
 
+
 interface HomepageProps {
   learningPreference: string | null;
   currentDate: string;
@@ -68,6 +69,7 @@ export default function Homepage({
   const [showBloomsTaxonomy, setShowBloomsTaxonomy] = useState(false);
   const [strongestTopic, setStrongestTopic] = useState<string | null>(null);
   const [weakestTopic, setWeakestTopic] = useState<string | null>(null);
+  const [bloomMessage, setBloomMessage] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchWeeklyTopics() {
@@ -77,6 +79,7 @@ export default function Homepage({
           const data = await response.json();
           setStrongestTopic(data.strongest);
           setWeakestTopic(data.weakest);
+          setBloomMessage(data.bloom_message);
         }
       } catch (err) {
         console.error('Error fetching weekly topics:', err);
@@ -491,8 +494,7 @@ export default function Homepage({
                   Insight:
                 </h5>
                 <p className="text-sm text-purple-700 leading-relaxed">
-                  Your questions are evolving well in <strong>Derivatives</strong>, showing strong progression through Bloom's taxonomy levels. 
-                  You're moving from basic remembering (15%) to higher-order thinking with applying (28%) and analyzing (18%).
+                   {bloomMessage || "No Bloom's taxonomy insight available."}
                 </p>
                 <div className="mt-3 p-2 bg-purple-100 rounded border border-purple-300">
                   <p className="text-xs text-purple-600">

@@ -45,6 +45,24 @@ def llm(text, system=None, timeout_s=30):
     data = r.json()
     return data
     
+def classify_bloom_taxonomy(msg_text):
+    bloom_terms = ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"]
+    system_prompt = (
+        "You are a Bloom's taxonomy classifier. Given the following question, choose ONE term from this list that best fits the cognitive level required:\n"
+        f"{bloom_terms}\n"
+        "Return ONLY the term, exactly as it appears in the list."
+    )
+    data = llm(msg_text, system=system_prompt)
+    llm_reply = data.get("text", "")
+    reply_clean = llm_reply.strip().lower()
+    bloom_level = None
+    for term in bloom_terms:
+        if term.lower() in reply_clean:
+            bloom_level = term
+            break
+    if not bloom_level:
+        bloom_level = "Unknown"
+    return bloom_level
     
 def print_chat_history(data):
     # Group by conversation
@@ -92,6 +110,7 @@ def get_chat_history(chatbot_id: int, **filters):
     url = f"{BASE_URL}/api/chathistory" 
     headers = {"X-API-Key": API_KEY} 
     params = {"chatbot_id": chatbot_id, **filters} 
+    bloom_terms = ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"]
     r = requests.get(url, headers=headers, params=params, timeout=20) 
     try: 
         r.raise_for_status() 
@@ -104,6 +123,13 @@ def get_chat_history(chatbot_id: int, **filters):
     data = r.json() 
     print(f"Returned {len(data)} rows")
 
+    conversation_ids = []
+    for msg in data:
+        convo_id = msg.get('conversation_id') or msg.get('convo_id')
+        if convo_id is not None:
+            conversation_ids.append(convo_id)
+    print("All conversation IDs:", conversation_ids)
+    
     # Group messages by conversation title
     convos = defaultdict(list)
     for msg in data:
@@ -122,15 +148,53 @@ def get_chat_history(chatbot_id: int, **filters):
             except Exception:
                 pass
             topic, llm_reply = determine_topic(msg_text)
+            bloom_level = classify_bloom_taxonomy(msg_text)
             print(f"Detected topic: {topic}")
             msg_sender = msg.get("msg_sender", "")
             if msg_sender == "user":
-               results.append({"msg_text": msg_text, "topic": topic})
+               results.append({"msg_text": msg_text, "topic": topic, "bloom_level": bloom_level})
         print("-" * 40)
 
+    bloom_counts = defaultdict(int)
+    total = len(results)
+    
+    for item in results:
+        bloom_counts[item["bloom_level"]] += 1
+        
+    print("Bloom's Taxonomy Level Percentages:")
+    bloom_percentages = {}
+    
+    for level in bloom_terms:
+        count = bloom_counts[level]
+        percent = (count / total) * 100 if total > 0 else 0
+        bloom_percentages[level] = percent
+        print(f"{level}: {percent:.1f}% ({count}/{total})")
+
+    # Now use bloom_percentages for all percentage calculations
+    highest_level = max(bloom_percentages, key=bloom_percentages.get)
+    lowest_level = min(bloom_percentages, key=bloom_percentages.get)
+    highest_index = bloom_terms.index(highest_level)
+    lowest_index = bloom_terms.index(lowest_level)
+    diff = bloom_percentages[highest_level] - bloom_percentages[lowest_level]
+
+    # Generate message
+    if highest_index > lowest_index:
+        custom_msg = (
+            f"Negative: Your strongest cognitive skill is '{highest_level}' ({bloom_percentages[highest_level]:.1f}%), "
+            f"which is {diff:.1f}% higher than your weakest skill '{lowest_level}' ({bloom_percentages[lowest_level]:.1f}%). "
+            "This suggests you excel at higher-order thinking tasks!"
+        )
+    else:
+        custom_msg = (
+            f"Positive: Your strongest cognitive skill is '{highest_level}' ({bloom_percentages[highest_level]:.1f}%), "
+            f"but it is at a lower Bloom's level than your weakest skill '{lowest_level}' ({bloom_percentages[lowest_level]:.1f}%). "
+            "Consider practicing more higher-order thinking tasks."
+        )
+    print("Custom Bloom Analysis:", custom_msg)
+    
     llm_reply = determine_topic_aptitude(results)
     print(llm_reply)
-    return results
+    return results,custom_msg, conversation_ids
    
 def determine_topic_aptitude(results):
     # Count occurrences for each topic
@@ -181,7 +245,6 @@ def determine_topic(msg_content):
     # Use the llm() function to send the request
     data = llm(msg_content, system=system_prompt)
     llm_reply = data.get("topic") or data.get("text") or ""
-    print(f"LLM raw reply: {llm_reply}")
     reply_clean = llm_reply.strip().lower()
     topic = None
     for t in topic_list:
@@ -205,12 +268,14 @@ def process_weekly_topics():
     convo_id = 84
     topic_data = get_topic_list(chatbot_id)
     topic_list = topic_data.get("topic_list", ["Unknown"])
-    results = get_chat_history(chatbot_id, user_id=user_id, convo_id=convo_id)
+    results,bloom_message, conversation_ids = get_chat_history(chatbot_id, user_id=user_id, convo_id=convo_id)
     strongest, weakest = determine_topic_aptitude(results)
     return {
         "strongest": strongest,
         "weakest": weakest,
-        "topic_list": topic_list
+        "topic_list": topic_list,
+        "bloom_message": bloom_message,
+        "conversation_ids": conversation_ids
     }
     
 def bootstrap_index(data_dir="data/raw"):

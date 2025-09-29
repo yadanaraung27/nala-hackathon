@@ -7,6 +7,22 @@ import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
 import { Brain, Send, X, Minimize2, Maximize2, RotateCcw, Lightbulb } from 'lucide-react';
 
+function formatBotReply(raw: string): string {
+  // Remove citation markers like [1], [2], etc.
+  let text = raw.replace(/\s*\[\d+\]/g, '');
+
+  // Remove leading/trailing whitespace
+  text = text.trim();
+
+  // Optionally, remove repeated newlines
+  text = text.replace(/\n{3,}/g, '\n\n');
+
+  // Optionally, remove awkward prefixes
+  text = text.replace(/^(Answer:|Response:)\s*/i, '');
+
+  return text;
+}
+
 // Fetch reply from RAG backend
 async function fetchRagReply(query: string): Promise<string> {
   try {
@@ -171,7 +187,8 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
     setMessages(prev => [...prev, generatingMessage]);
 
     // Fetch reply from backend
-    const botReply = await fetchRagReply(text);
+    const botReplyRaw = await fetchRagReply(text);
+    const botReply = formatBotReply(botReplyRaw);
 
     // Replace "generating..." with actual reply
     setMessages(prev => [

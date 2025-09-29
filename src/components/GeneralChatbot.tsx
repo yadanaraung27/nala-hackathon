@@ -39,6 +39,18 @@ interface Message {
   category: 'general' | 'homework' | 'concept' | 'motivation';
 }
 
+async function getNextAvailableConvoId(): Promise<number> {
+  const response = await fetch('http://127.0.0.1:5000/api/weekly_topics');
+  if (!response.ok) throw new Error('Failed to fetch conversation IDs');
+  const data = await response.json();
+  const ids: number[] = (data.conversation_ids || []).map(Number).filter(n => !isNaN(n));
+  let nextId = 1;
+  while (ids.includes(nextId)) {
+    nextId++;
+  }
+  return nextId;
+}
+
 // Helper function for LLM API call
 async function fetchLLMReply(query: string, system?: string): Promise<string> {
   try {
@@ -53,6 +65,30 @@ async function fetchLLMReply(query: string, system?: string): Promise<string> {
   } catch (err) {
     return "Error contacting the learning assistant backend.";
   }
+}
+
+async function postChatHistory(records:any[]) {
+  const res = await fetch("https://nala.ntu.edu.sg/api/chathistory", {
+    method: "POST",
+    headers: {
+      "X-API-Key": "pk_LearnUS_176q45",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(records),
+  });
+  if (!res.ok) {
+    let body;
+    try {
+      body = await res.json();
+    } catch {
+      body = await res.text();
+    }
+    throw new Error(`HTTP ${res.status} ${res.statusText}: ${JSON.stringify(body)}`);
+  }
+  const data = await res.json();
+  console.log("Inserted:", data.inserted);
+  console.log("Errors:", data.errors);
+  return data;
 }
 
 export default function GeneralChatbot({ 
@@ -191,7 +227,7 @@ export default function GeneralChatbot({
   }, [messages, challengeMessages, scrollToBottom]);
 
   // Main LLM-powered send message function
-  const handleSendMessage = useCallback(async (message: string, system?: string) => {
+  const handleSendMessage = useCallback(async (message: string, system?: string, isQuickAction: boolean = false) => {
     if (!message.trim()) return;
 
     const newUserMessage: Message = {
@@ -243,6 +279,24 @@ export default function GeneralChatbot({
       ]);
     }
     setIsLoading(false);
+    if (!isQuickAction && activeTab === 'general') {
+      try {
+        const convo_id = await getNextAvailableConvoId();
+        await postChatHistory([
+          {
+            text: message,
+            reply: botReply,
+            timestamp: new Date().toISOString(),
+            sender: 'user',
+            type: 'general',
+            convo_id: convo_id
+          }
+        ]);
+        console.log('Chat history posted successfully.');
+      } catch (err) {
+        console.error('Failed to post chat history:', err);
+      }
+    }
   }, [activeTab]);
 
   // For quick actions, add system instructions
@@ -259,7 +313,7 @@ export default function GeneralChatbot({
     } else if (type === "Study tips") {
       system = "You are a study coach. Share effective study strategies for this topic.";
     }
-    handleSendMessage(prompt, system);
+    handleSendMessage(prompt, system,true);
   }, [handleSendMessage]);
 
   const handleSuggestedQuestion = useCallback((question: string) => {
