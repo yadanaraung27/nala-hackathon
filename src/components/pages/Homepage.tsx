@@ -11,6 +11,7 @@ import MasteryLevel from '../MasteryLevel';
 import DailyChallengeRow from '../DailyChallengeRow';
 import { getCurrentAcademicWeek, getWeeklyContent, getProgressiveQuestionLevel, formatCurrentWeekRange } from '../../utils/academicWeek';
 
+
 // Mock data for learning analytics
 const weeklyProgressData = [
   { day: 'Mon', interactions: 12, accuracy: 85, reflection: 4, studyHours: 2.5 },
@@ -65,7 +66,24 @@ export default function Homepage({
   const [masteryScore, setMasteryScore] = useState(67);
   const [questionLevel, setQuestionLevel] = useState<any>(null);
   const [showBloomsTaxonomy, setShowBloomsTaxonomy] = useState(false);
+  const [strongestTopic, setStrongestTopic] = useState<string | null>(null);
+  const [weakestTopic, setWeakestTopic] = useState<string | null>(null);
 
+  useEffect(() => {
+    async function fetchWeeklyTopics() {
+      try {
+        const response = await fetch('http://127.0.0.1:5000/api/weekly_topics?chatbot_id=3&user_id=20&convo_id=84');
+        if (response.ok) {
+          const data = await response.json();
+          setStrongestTopic(data.strongest);
+          setWeakestTopic(data.weakest);
+        }
+      } catch (err) {
+        console.error('Error fetching weekly topics:', err);
+      }
+    }
+    fetchWeeklyTopics();
+  }, []);
   // Helper function to get learning preference emoji
   const getLearningPreferenceEmoji = (preference: string | null) => {
     switch (preference) {
@@ -309,7 +327,7 @@ export default function Homepage({
                 Strong This Week
               </h5>
               <p className="text-green-700 text-sm leading-relaxed mb-3">
-                Great work on <strong>derivatives</strong> and <strong>vectors</strong>! Your 84% accuracy is above class average.
+                Great work on <strong>{strongestTopic || '...'}</strong>
               </p>
             </div>
             
@@ -319,7 +337,7 @@ export default function Homepage({
                 Focus Area
               </h5>
               <p className="text-amber-700 text-sm leading-relaxed mb-2">
-                <strong>Integration concepts</strong> need more practice. Try fundamental techniques first.
+                <strong>{weakestTopic || '...'}</strong> needs more practice. Try fundamental techniques first.
               </p>
               {learningPreference && (
                 <p className="text-amber-600 text-sm flex items-start gap-2 bg-amber-100 p-2 rounded border border-amber-200">

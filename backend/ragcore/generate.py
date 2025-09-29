@@ -1,11 +1,14 @@
 # ragcore/generate.py
-import os
+import os,json,requests
 from openai import OpenAI
 
 SYSTEM = """You are a precise assistant. 
 - Use ONLY provided context to answer.
 - If missing info, say what’s missing.
 - Cite sources inline as [n] where n indexes the context list."""
+
+BASE_URL = os.getenv("BASE_URL", "https://nala.ntu.edu.sg") 
+API_KEY = os.getenv("API_KEY", "pk_LearnUS_176q45") 
 
 def build_prompt(query: str, context_chunks: list[dict]):
     ctx = []
@@ -17,12 +20,11 @@ def build_prompt(query: str, context_chunks: list[dict]):
     return SYSTEM, user
 
 def call_llm(query: str, context_chunks: list[dict], model="gpt-4o-mini"):
-    client = OpenAI(api_key="OPENAI_API_KEY")
     system, user = build_prompt(query, context_chunks)
-    resp = client.chat.completions.create(
-        model=model,
-        messages=[{"role":"system","content":system},
-                  {"role":"user","content":user}],
-        temperature=0.2,
-    )
-    return resp.choices[0].message.content
+    url = f"{BASE_URL}/api/llm"
+    headers = {"X-API-Key": API_KEY, "Content-Type": "application/json"}
+    payload = {"text": user, "system": system}
+    r = requests.post(url, headers=headers, data=json.dumps(payload), timeout=30)
+    r.raise_for_status()
+    # Adjust this if your API returns a different field for the answer
+    return r.json().get("answer", r.text)

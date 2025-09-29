@@ -1,18 +1,3 @@
-// Fetch reply from RAG backend
-async function fetchRagReply(query: string): Promise<string> {
-  try {
-    const response = await fetch("http://127.0.0.1:5000/api/ask", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query }),
-    });
-    if (!response.ok) throw new Error("Backend error");
-    const data = await response.json();
-    return data.answer || "Sorry, I couldn't find an answer.";
-  } catch (err) {
-    return "Error contacting the learning assistant backend.";
-  }
-}
 import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -20,7 +5,77 @@ import { Input } from './ui/input';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
-import { Brain, Send, X, Minimize2, Maximize2, RotateCcw, Lightbulb, BookOpen, Target } from 'lucide-react';
+import { Brain, Send, X, Minimize2, Maximize2, RotateCcw, Lightbulb } from 'lucide-react';
+
+// Fetch reply from RAG backend
+async function fetchRagReply(query: string): Promise<string> {
+  try {
+    const response = await fetch("http://127.0.0.1:5000/api/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query,
+        mode: "chatbot"
+      }),
+    });
+    if (!response.ok) {
+      console.error("Backend error:", response.status, await response.text());
+      throw new Error("Backend error");
+    }
+
+    let data: any;
+    try {
+      data = await response.json();
+      console.log("fetchRagReply: parsed JSON response:", data);
+    } catch (jsonErr) {
+      const raw = await response.text();
+      console.warn("fetchRagReply: response.json() failed, raw text:", raw);
+      try {
+        data = JSON.parse(raw);
+        console.log("fetchRagReply: parsed stringified JSON:", data);
+      } catch (parseErr) {
+        console.error("fetchRagReply: Could not parse backend response as JSON.", parseErr);
+        return "Sorry, I couldn't parse the backend response.";
+      }
+    }
+
+    // If data.answer exists and is a stringified JSON, parse it
+    if (typeof data === "object" && typeof data.answer === "string") {
+      try {
+        const answerObj = JSON.parse(data.answer);
+        if (typeof answerObj.text === "string") {
+          return answerObj.text;
+        } else {
+          console.warn("fetchRagReply: answerObj has no text field.", answerObj);
+          return "Sorry, I couldn't find an answer in the backend response.";
+        }
+      } catch (err) {
+        console.error("fetchRagReply: Could not parse answer field as JSON.", err);
+        return "Sorry, I couldn't parse the backend answer field.";
+      }
+    }
+
+    // If data is an array, get first item's text
+    if (Array.isArray(data)) {
+      if (data.length > 0 && typeof data[0].text === "string") {
+        return data[0].text;
+      } else {
+        console.warn("fetchRagReply: Array response but no text field in first item.", data[0]);
+        return "Sorry, I couldn't find an answer in the backend response.";
+      }
+    }
+    // If data is an object, get text
+    if (typeof data === "object" && typeof data.text === "string") {
+      return data.text;
+    } else {
+      console.warn("fetchRagReply: Object response but no text field.", data);
+      return "Sorry, I couldn't find an answer in the backend response.";
+    }
+  } catch (err) {
+    console.error("fetchRagReply: Network or unexpected error:", err);
+    return "Error contacting the learning assistant backend.";
+  }
+}
 
 interface Message {
   id: string;
@@ -35,146 +90,11 @@ interface LearningChatbotProps {
   learningStyle?: string | null;
 }
 
-// Learning Theory Knowledge Base
-const learningTheoryKnowledgeBase = {
-  kolbsTheory: {
-    overview: "Kolb's Learning Theory identifies four distinct learning styles based on how you prefer to process information and experience. It's based on a four-stage learning cycle where effective learning happens through the complete cycle.",
-    cycle: [
-      "🎯 **Concrete Experience (CE)** - Learning through direct experience, feelings, and real-world situations",
-      "🤔 **Reflective Observation (RO)** - Learning by watching, reflecting, and observing from different perspectives", 
-      "💭 **Abstract Conceptualization (AC)** - Learning through thinking, analysis, and theoretical understanding",
-      "⚡ **Active Experimentation (AE)** - Learning through hands-on practice, testing ideas, and experimentation"
-    ],
-    styles: {
-      "The Interactor": {
-        description: "Combines Concrete Experience + Reflective Observation. You learn best through social interaction, discussion, and collaborative experiences.",
-        strengths: ["Great at working with people", "Excellent listening skills", "Strong empathy and emotional intelligence", "Natural at facilitating discussions"],
-        challenges: ["May struggle with theoretical concepts", "Can be indecisive when quick decisions are needed", "May avoid confrontation even when necessary"],
-        ideal_environment: "Group settings, collaborative projects, discussion-based learning, peer feedback sessions"
-      },
-      "The Architect": {
-        description: "Combines Abstract Conceptualization + Reflective Observation. You prefer structured, methodical approaches with clear frameworks and detailed analysis.",
-        strengths: ["Excellent analytical thinking", "Strong planning and organization skills", "Good at theoretical understanding", "Systematic problem-solving approach"],
-        challenges: ["May get stuck in analysis paralysis", "Can be slow to take action", "May struggle with ambiguous situations"],
-        ideal_environment: "Structured learning, detailed explanations, theoretical frameworks, systematic approaches"
-      },
-      "The Problem Solver": {
-        description: "Combines Abstract Conceptualization + Active Experimentation. You learn best through hands-on practice, experimentation, and real-world challenges.",
-        strengths: ["Excellent at practical application", "Quick decision-making", "Good at solving technical problems", "Results-oriented approach"],
-        challenges: ["May rush without enough reflection", "Can be impatient with theory", "May overlook people's feelings in decisions"],
-        ideal_environment: "Hands-on practice, technical challenges, immediate application, problem-solving scenarios"
-      },
-      "The Adventurer": {
-        description: "Combines Concrete Experience + Active Experimentation. You thrive in dynamic, varied learning environments with creative exploration.",
-        strengths: ["Highly adaptable and flexible", "Great at innovation and creativity", "Natural leadership in dynamic situations", "Excellent at seizing opportunities"],
-        challenges: ["May struggle with routine tasks", "Can be disorganized", "May start many projects without finishing"],
-        ideal_environment: "Dynamic settings, variety and change, creative projects, leadership opportunities"
-      }
-    }
-  },
-  
-  studyTips: {
-    "The Interactor": [
-      "Form study groups and engage in regular discussions about course material",
-      "Explain concepts to classmates - teaching others reinforces your own learning",
-      "Use collaborative online platforms and discussion forums actively",
-      "Participate in class discussions and Q&A sessions",
-      "Connect with professors during office hours for deeper conversations",
-      "Create peer review sessions for assignments and projects"
-    ],
-    "The Architect": [
-      "Create detailed study schedules and stick to systematic learning plans",
-      "Build comprehensive notes with clear hierarchies and frameworks",
-      "Break complex topics into structured, logical components",
-      "Use mind maps and flowcharts to organize information visually",
-      "Focus on understanding theoretical foundations before practical applications",
-      "Develop systematic review cycles for long-term retention"
-    ],
-    "The Problem Solver": [
-      "Seek out hands-on projects and practical applications of theories",
-      "Practice with real-world case studies and problem sets",
-      "Build working examples and prototypes when possible",
-      "Focus on immediate application rather than just memorizing concepts",
-      "Learn through trial and error with quick feedback loops",
-      "Set up practice environments where you can experiment safely"
-    ],
-    "The Adventurer": [
-      "Mix different learning formats - videos, readings, interactive content",
-      "Explore creative approaches and interdisciplinary connections",
-      "Set flexible goals and adapt your learning style as needed",
-      "Seek variety in your study methods and environments",
-      "Connect learning to personal interests and real-world experiences",
-      "Use gamification and challenges to maintain engagement"
-    ]
-  },
-
-  improvementStrategies: {
-    general: [
-      "🍅 Use the Pomodoro Technique: 25 minutes focused work, 5 minute breaks",
-      "🧠 Practice active recall: Test yourself without looking at notes",
-      "📚 Implement spaced repetition: Review material at increasing intervals",
-      "🎯 Set specific, measurable learning goals for each study session",
-      "🔇 Create a distraction-free study environment",
-      "💤 Ensure adequate sleep (7-9 hours) for memory consolidation"
-    ],
-    personalized: {
-      "The Interactor": "Focus on collaborative learning - join study groups, find study buddies, or teach concepts to others to reinforce your understanding",
-      "The Architect": "Leverage your systematic nature - create detailed study plans, use structured note-taking methods, and build comprehensive knowledge frameworks",
-      "The Problem Solver": "Emphasize practical application - work on hands-on projects, solve real problems, and immediately apply what you learn",
-      "The Adventurer": "Embrace variety - mix up your study methods, explore creative approaches, and connect learning to your diverse interests"
-    }
-  },
-
-  learningChallenges: {
-    "The Interactor": {
-      challenge: "Struggling with individual study and theoretical concepts",
-      solutions: [
-        "Find a study partner or join online study communities",
-        "Schedule regular check-ins with classmates or tutors",
-        "Use discussion forums to ask questions and engage with others",
-        "Try explaining theoretical concepts out loud as if teaching someone"
-      ]
-    },
-    "The Architect": {
-      challenge: "Analysis paralysis and difficulty with practical application",
-      solutions: [
-        "Set time limits for planning and analysis phases",
-        "Start with small, low-risk practical exercises",
-        "Create structured templates for moving from theory to practice",
-        "Use the 80/20 rule - implement when you have 80% understanding"
-      ]
-    },
-    "The Problem Solver": {
-      challenge: "Impatience with theory and rushing through concepts",
-      solutions: [
-        "Set specific 'theory time' with clear start and end points",
-        "Connect every theoretical concept to a practical example",
-        "Use timers to force yourself to spend adequate time on foundations",
-        "Find real-world case studies that demonstrate theoretical importance"
-      ]
-    },
-    "The Adventurer": {
-      challenge: "Difficulty with routine study and staying focused",
-      solutions: [
-        "Create variety in your study schedule and methods",
-        "Use shorter, more frequent study sessions",
-        "Gamify your learning with challenges and rewards",
-        "Connect learning goals to your personal interests and ambitions"
-      ]
-    }
-  }
-};
-
-// Quick suggestions for the Learning Theory Assistant
 const learningTheorySuggestions = [
   "What does my learning style mean?",
   "Give me study tips for my learning type",
   "Tell me about Kolb's Learning Theory",
-  "How can I improve my learning?",
-  "What are my learning strengths and challenges?",
-  "How do I overcome study difficulties?",
-  "Explain the learning cycle to me",
-  "What's the best study environment for me?"
+  "How can I improve my learning?"
 ];
 
 export default function LearningChatbot({ learningStyle }: LearningChatbotProps) {
@@ -224,106 +144,7 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
     };
   };
 
-  const generateResponse = async (userMessage: string): Promise<Message> => {
-    const message = userMessage.toLowerCase();
-    let response = "I'm here to help you understand learning theories and improve your study strategies! Let me provide some insights.";
-    let suggestions: string[] = [];
-
-    // Kolb's Learning Theory explanation
-    if (message.includes('kolb') || message.includes('learning theory') || message.includes('learning cycle')) {
-      const theory = learningTheoryKnowledgeBase.kolbsTheory;
-      response = `**Kolb's Learning Theory** 📚\n\n${theory.overview}\n\n**The Four-Stage Learning Cycle:**\n${theory.cycle.join('\n')}\n\nThis theory helps us understand that people have different preferences for how they like to process information and gain experience. The most effective learning happens when you go through all four stages of the cycle!`;
-      suggestions = ["What's my learning style mean?", "How does this apply to studying?", "Give me practical study tips"];
-    }
-    
-    // Learning style explanation (specific to user's style)
-    else if ((message.includes('what does') && (message.includes('learning style') || message.includes('learning preference'))) || 
-             (message.includes('my style') || message.includes('my learning type')) ||
-             (learningStyle && message.includes(learningStyle.toLowerCase()))) {
-      if (learningStyle && learningTheoryKnowledgeBase.kolbsTheory.styles[learningStyle as keyof typeof learningTheoryKnowledgeBase.kolbsTheory.styles]) {
-        const styleInfo = learningTheoryKnowledgeBase.kolbsTheory.styles[learningStyle as keyof typeof learningTheoryKnowledgeBase.kolbsTheory.styles];
-        response = `**${learningStyle}** 🎯\n\n${styleInfo.description}\n\n**Your Learning Strengths:**\n${styleInfo.strengths.map(s => `✅ ${s}`).join('\n')}\n\n**Potential Challenges:**\n${styleInfo.challenges.map(c => `⚠️ ${c}`).join('\n')}\n\n**Your Ideal Learning Environment:**\n📍 ${styleInfo.ideal_environment}`;
-        suggestions = ["Give me study tips for my type", "How can I overcome my challenges?", "What study environment works best?"];
-      } else {
-        response = "To provide personalized insights about your learning style, you'll need to complete the learning style assessment first! 📝\n\nThe quiz identifies whether you're The Interactor, The Architect, The Problem Solver, or The Adventurer based on Kolb's Learning Theory.\n\nOnce you know your style, I can provide targeted advice for your specific learning preferences.";
-        suggestions = ["Tell me about Kolb's theory", "What are the different learning styles?", "How can I improve my learning in general?"];
-      }
-    }
-    
-    // Study tips and improvement strategies
-    else if (message.includes('study tips') || message.includes('how to study') || message.includes('study better') || 
-             message.includes('improve') || message.includes('learn better')) {
-      if (learningStyle && learningTheoryKnowledgeBase.studyTips[learningStyle as keyof typeof learningTheoryKnowledgeBase.studyTips]) {
-        const tips = learningTheoryKnowledgeBase.studyTips[learningStyle as keyof typeof learningTheoryKnowledgeBase.studyTips];
-        const personalizedStrategy = learningTheoryKnowledgeBase.improvementStrategies.personalized[learningStyle as keyof typeof learningTheoryKnowledgeBase.improvementStrategies.personalized];
-        
-        response = `**Personalized Study Tips for ${learningStyle}** 📚\n\n${tips.map((tip, i) => `${i + 1}. ${tip}`).join('\n')}\n\n**Key Strategy for Your Type:**\n🎯 ${personalizedStrategy}\n\n**Universal Study Techniques:**\n${learningTheoryKnowledgeBase.improvementStrategies.general.join('\n')}`;
-        suggestions = ["What are my learning challenges?", "How to create the best study environment?", "Tell me about my learning strengths"];
-      } else {
-        response = `**Universal Study Strategies** 📚\n\nHere are proven techniques that work for all learning styles:\n\n${learningTheoryKnowledgeBase.improvementStrategies.general.join('\n')}\n\nFor personalized tips based on your specific learning style, complete the learning style assessment first!`;
-        suggestions = ["Tell me about learning styles", "How does Kolb's theory work?", "What's the learning cycle?"];
-      }
-    }
-    
-    // Learning challenges and solutions
-    else if (message.includes('challenge') || message.includes('difficulty') || message.includes('struggle') || 
-             message.includes('problem') || message.includes('overcome')) {
-      if (learningStyle && learningTheoryKnowledgeBase.learningChallenges[learningStyle as keyof typeof learningTheoryKnowledgeBase.learningChallenges]) {
-        const challengeInfo = learningTheoryKnowledgeBase.learningChallenges[learningStyle as keyof typeof learningTheoryKnowledgeBase.learningChallenges];
-        response = `**Common Challenge for ${learningStyle}** ⚠️\n\n${challengeInfo.challenge}\n\n**Solutions to Try:**\n${challengeInfo.solutions.map((sol, i) => `${i + 1}. ${sol}`).join('\n')}\n\nRemember, recognizing your challenges is the first step to overcoming them! 💪`;
-        suggestions = ["Give me more study tips", "What are my learning strengths?", "How to create better study habits?"];
-      } else {
-        response = "Learning challenges are completely normal! 💪\n\nEveryone faces difficulties, but understanding your learning style helps you develop targeted strategies.\n\nCommon challenges include:\n• Difficulty concentrating\n• Information not sticking\n• Feeling overwhelmed\n• Lack of motivation\n\nOnce you know your learning style, I can provide specific strategies to overcome these challenges!";
-        suggestions = ["Tell me about learning styles", "How can I improve my focus?", "What study methods work best?"];
-      }
-    }
-    
-    // Strengths and positive aspects
-    else if (message.includes('strength') || message.includes('good at') || message.includes('advantage') || 
-             message.includes('positive') || message.includes('excel')) {
-      if (learningStyle && learningTheoryKnowledgeBase.kolbsTheory.styles[learningStyle as keyof typeof learningTheoryKnowledgeBase.kolbsTheory.styles]) {
-        const styleInfo = learningTheoryKnowledgeBase.kolbsTheory.styles[learningStyle as keyof typeof learningTheoryKnowledgeBase.kolbsTheory.styles];
-        response = `**Your Learning Strengths as ${learningStyle}** ⭐\n\n${styleInfo.strengths.map(s => `🌟 ${s}`).join('\n')}\n\nThese are your natural advantages! Focus on study methods and environments that leverage these strengths. When you align your learning approach with your natural preferences, you'll find studying becomes more effective and enjoyable! 🚀`;
-        suggestions = ["How can I use these strengths in studying?", "What challenges should I watch out for?", "Give me study tips for my type"];
-      } else {
-        response = "Everyone has unique learning strengths! 🌟\n\nDiscovering your learning style helps you identify and leverage your natural advantages. Whether you're great at:\n• Analytical thinking\n• Creative problem-solving\n• Social collaboration\n• Hands-on application\n\nKnowing your style helps you study smarter, not harder!";
-        suggestions = ["What are the different learning styles?", "How do I find my learning style?", "Tell me about Kolb's theory"];
-      }
-    }
-    
-    // Study environment questions
-    else if (message.includes('environment') || message.includes('where to study') || message.includes('study space')) {
-      if (learningStyle && learningTheoryKnowledgeBase.kolbsTheory.styles[learningStyle as keyof typeof learningTheoryKnowledgeBase.kolbsTheory.styles]) {
-        const styleInfo = learningTheoryKnowledgeBase.kolbsTheory.styles[learningStyle as keyof typeof learningTheoryKnowledgeBase.kolbsTheory.styles];
-        response = `**Ideal Study Environment for ${learningStyle}** 🏫\n\n📍 **Perfect Setting:** ${styleInfo.ideal_environment}\n\n**Additional Environment Tips:**\n• Choose locations that match your energy levels\n• Minimize distractions that don't suit your style\n• Have necessary tools and resources easily accessible\n• Consider lighting, noise levels, and comfort\n• Plan for breaks that recharge you`;
-        suggestions = ["What study methods work best for me?", "How to deal with distractions?", "Tell me about my learning strengths"];
-      } else {
-        response = "Creating the right study environment is crucial for effective learning! 🏫\n\n**General Environment Tips:**\n• Find a quiet, well-lit space\n• Minimize distractions (phone, social media)\n• Keep necessary materials within reach\n• Ensure comfortable temperature\n• Have a dedicated study area\n\nYour specific learning style will determine whether you prefer:\n• Solo vs. group study spaces\n• Structured vs. flexible arrangements\n• Theory-focused vs. hands-on setups";
-        suggestions = ["What are the learning styles?", "How do I improve my focus?", "Tell me about study strategies"];
-      }
-    }
-    
-    // General help and guidance
-    else if (message.includes('help') || message.includes('what can you') || message.includes('how do you')) {
-      response = "I'm your Learning Theory Assistant! 🧠 Here's how I can help you:\n\n🎯 **Learning Style Insights** - Understand what your learning preference means\n📚 **Study Strategies** - Get personalized tips based on your learning type\n🔬 **Learning Theory** - Learn about Kolb's theory and other learning frameworks\n💪 **Overcome Challenges** - Find solutions to common study difficulties\n⭐ **Leverage Strengths** - Discover and use your natural learning advantages\n🏫 **Study Environment** - Create the perfect learning space for your style\n\nWhat specific area would you like to explore?";
-      suggestions = learningTheorySuggestions.slice(0, 4);
-    }
-    
-    // Fallback response
-    else {
-      response = "I specialize in learning theories and helping you understand your learning preferences! 🧠\n\nI can help you with:\n• Understanding Kolb's Learning Theory\n• Explaining your learning style and what it means\n• Providing personalized study tips and strategies\n• Overcoming learning challenges\n• Creating the best study environment for you\n\nTry asking me something specific about learning theories or your learning style!";
-      suggestions = ["What does my learning style mean?", "Tell me about Kolb's theory", "Give me study tips", "How can I learn better?"];
-    }
-
-    return {
-      id: Date.now().toString(),
-      content: response,
-      sender: 'bot',
-      timestamp: new Date(),
-      suggestions: suggestions.length > 0 ? suggestions : undefined
-    };
-  };
-
+  // Send query to RAG backend and show "generating..." message
   const handleSendMessage = async (messageText?: string) => {
     const text = messageText || inputValue.trim();
     if (!text) return;
@@ -339,12 +160,30 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate thinking delay
-    setTimeout(async () => {
-      const botResponse = await generateResponse(text);
-      setMessages(prev => [...prev, botResponse]);
-      setIsTyping(false);
-    }, 800 + Math.random() * 800);
+    // Show "generating..." message
+    const generatingMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      content: "Generating response...",
+      sender: 'bot',
+      timestamp: new Date(),
+      isLoading: true
+    };
+    setMessages(prev => [...prev, generatingMessage]);
+
+    // Fetch reply from backend
+    const botReply = await fetchRagReply(text);
+
+    // Replace "generating..." with actual reply
+    setMessages(prev => [
+      ...prev.filter(msg => !msg.isLoading),
+      {
+        id: (Date.now() + 2).toString(),
+        content: botReply,
+        sender: 'bot',
+        timestamp: new Date()
+      }
+    ]);
+    setIsTyping(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -440,8 +279,7 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
                           : 'bg-gray-100 text-gray-900'
                       } break-words overflow-hidden`}>
                         <p className="text-sm whitespace-pre-line break-words word-wrap leading-relaxed">{message.content}</p>
-                        
-                        {/* Suggestions */}
+                        {/* Suggestions (not used with RAG backend, but kept for future) */}
                         {message.suggestions && message.sender === 'bot' && (
                           <div className="mt-3 space-y-2 max-w-full overflow-hidden">
                             {message.suggestions.map((suggestion, index) => (
