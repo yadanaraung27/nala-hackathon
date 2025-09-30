@@ -9,10 +9,12 @@ import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, Pagi
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { Calendar, Flame, Trophy, Target, Clock, CheckCircle2, X, Star, Play, RotateCcw, Filter, BarChart3, TrendingUp, Info, Search, ArrowUpDown, SlidersHorizontal, RotateCcw as Reset, TrendingDown, Users, ChevronDown, ChevronRight, ArrowLeft, Lightbulb, Rocket } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import GeneralChatbot from '../GeneralChatbot'; // adjust path as needed
 
 interface DailyChallengesPageProps {
   onStartChallenge?: () => void;
 }
+
 
 export default function DailyChallengesPage({ onStartChallenge }: DailyChallengesPageProps = {}) {
   const [selectedMonth, setSelectedMonth] = useState('September 2025');
@@ -28,6 +30,7 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
   const [sortBy, setSortBy] = useState('date');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [showChatbot, setShowChatbot] = useState(false);
 
   // Bloom's taxonomy to Kolb's learning stage mapping
   const getKolbStage = (bloomLevel: string) => {
@@ -69,7 +72,7 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
 
   // Comprehensive challenge history starting from Academic Year 2025 (Aug 11 - Sep 30)
   // Following Mathematics I curriculum progression with varied difficulty, Bloom's, and Kolb stages
-  const challengeHistory = [
+  const [challengeHistory, setChallengeHistory] = useState([
     {
       date: '2025-09-28',
       category: 'Derivatives',
@@ -622,9 +625,32 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
       timeSpent: null,
       answer: null
     }
-  ];
+  ]);
 
-  // Helper function to ensure all challenges have attempts arrays
+function addChallengeAttempt({ question, answer, score }) {
+    const today = new Date();
+    const dateStr = today.toISOString().slice(0, 10);
+    setChallengeHistory(prev => [
+    {
+      date: dateStr,
+      category: '', // Fill in later
+      difficulty: '', // Fill in later
+      bloomLevel: '', // Fill in later
+      question,
+      status: 'completed',
+      score,
+      acceptanceRate: null,
+      timeSpent: null,
+      answer,
+      attempts: [
+        { attemptNumber: 1, score, date: dateStr, timeSpent: null }
+      ]
+    },
+    ...prev
+  ]);
+}
+
+// Helper function to ensure all challenges have attempts arrays
   const processedChallengeHistory = challengeHistory.map(challenge => ({
     ...challenge,
     attempts: challenge.attempts || [
@@ -1229,7 +1255,7 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
                             size="sm"
                             onClick={() => {
                               setSelectedChallenge(challenge);
-                              setShowAnswerModal(true);
+                              setShowChatbot(true);
                             }}
                           >
                             View
@@ -1238,9 +1264,12 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
                           <Button 
                             size="sm"
                             className="bg-blue-600 hover:bg-blue-700"
-                            onClick={() => onStartChallenge?.()}
+                            onClick={() => {
+                              setSelectedChallenge(challenge);
+                              setShowChatbot(true);
+     }}
                           >
-                            Start Challenge
+                            View
                           </Button>
                         )}
                       </div>
@@ -1484,9 +1513,30 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
               </div>
             </CardContent>
           </Card>
+          {showChatbot && selectedChallenge && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl w-full">
+      <GeneralChatbot
+        mode="challenge"
+        initialQuestion={selectedChallenge.question}
+        onChallengeComplete={(data) => {
+          addChallengeAttempt({
+      ...data,
+      category: selectedChallenge.category,
+      difficulty: selectedChallenge.difficulty,
+      bloomLevel: selectedChallenge.bloomLevel
+    }); // <-- This updates challengeHistory
+          setShowChatbot(false);
+        }}
+        onClose={() => setShowChatbot(false)}
+      />
+    </div>
+  </div>
+)}
         </div>
       )}
       </div>
+      
     </TooltipProvider>
   );
 }

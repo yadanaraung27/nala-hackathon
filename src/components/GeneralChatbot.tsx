@@ -12,19 +12,14 @@ import {
   User, 
   Lightbulb, 
   BookOpen, 
-  Code, 
   Calculator, 
-  Zap,
-  MessageCircle,
-  Clock,
-  TrendingUp,
+  CheckCircle,
+  GraduationCap,
+  Target,
+  Sparkles,
   ThumbsUp,
   ThumbsDown,
-  GraduationCap,
-  HelpCircle,
-  CheckCircle,
-  Target,
-  Sparkles
+  MessageCircle
 } from 'lucide-react';
 
 interface GeneralChatbotProps {
@@ -42,6 +37,59 @@ interface Message {
   content: string;
   timestamp: Date;
   category: 'general' | 'homework' | 'concept' | 'motivation';
+}
+
+// Helper function for LLM API call
+async function fetchLLMReply(query: string, system?: string): Promise<string> {
+  try {
+    const response = await fetch("https://nala.ntu.edu.sg/api/llm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-API-Key": "pk_LearnUS_176q45" },
+      body: JSON.stringify(system ? { text: query, system } : { text: query }),
+    });
+    if (!response.ok) throw new Error("Backend error");
+    const data = await response.json();
+    return data.text || "Sorry, I couldn't find an answer.";
+  } catch (err) {
+    return "Error contacting the learning assistant backend.";
+  }
+}
+
+async function postChatHistory(records: any[]) {
+  const res = await fetch("https://nala.ntu.edu.sg/api/chathistory", {
+    method: "POST",
+    headers: {
+      "X-API-Key": "pk_LearnUS_176q45",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(records),
+  });
+  if (!res.ok) {
+    let body;
+    try {
+      body = await res.json();
+    } catch {
+      body = await res.text();
+    }
+    throw new Error(`HTTP ${res.status} ${res.statusText}: ${JSON.stringify(body)}`);
+  }
+  const data = await res.json();
+  console.log("Inserted:", data.inserted);
+  console.log("Errors:", data.errors);
+  return data;
+}
+
+// Helper to get next available convo_id
+async function getNextAvailableConvoId(): Promise<number> {
+  const response = await fetch('http://127.0.0.1:5000/api/weekly_topics');
+  if (!response.ok) throw new Error('Failed to fetch conversation IDs');
+  const data = await response.json();
+  const ids: number[] = (data.conversation_ids || []).map(Number).filter(n => !isNaN(n));
+  let nextId = 1;
+  while (ids.includes(nextId)) {
+    nextId++;
+  }
+  return nextId;
 }
 
 export default function GeneralChatbot({ 
@@ -63,9 +111,8 @@ export default function GeneralChatbot({
   const [challengePhase, setChallengePhase] = useState<'welcome' | 'answering' | 'feedback' | 'conversation'>('welcome');
   const [challengeAnswer, setChallengeAnswer] = useState('');
   const [challengeSessionEnded, setChallengeSessionEnded] = useState(false);
-  const [showHint, setShowHint] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
+  
   // Memoized static data to prevent re-renders
   const quickActions = useMemo(() => [
     {
@@ -133,19 +180,19 @@ export default function GeneralChatbot({
       title: "Chain Rule Applications",
       preview: "Discussing how to apply the chain rule to complex composite functions...",
       time: "2h ago",
-      category: "Derivatives"
+      category: "Homework Help"
     },
     {
       title: "Optimization Problem Strategy",
       preview: "Breaking down the steps for solving max/min problems in calculus...",
       time: "1d ago",
-      category: "Applications"
+      category: "Problem Solving"
     },
     {
       title: "Integration by Parts",
       preview: "Learning when and how to use integration by parts technique...",
       time: "3d ago",
-      category: "Integration"
+      category: "Concept Review"
     },
     {
       title: "Related Rates Setup",
@@ -166,9 +213,6 @@ export default function GeneralChatbot({
     }));
   }, []);
 
-  // No longer initializing welcome message for general mode - using display style instead
-
-  // Handle tab switching
   useEffect(() => {
     if (activeTab === 'general') {
       setShowSuggestions(true);
@@ -179,194 +223,155 @@ export default function GeneralChatbot({
     }
   }, [activeTab, challengeMessages.length]);
 
-  // Initialize challenge messages
-  useEffect(() => {
-    if (mode === 'challenge' && challengeMessages.length === 0) {
-      const now = new Date();
-      
-      if (isNewChallenge) {
-        const challengeMessage: Message = {
-          id: '1',
-          type: 'bot',
-          content: `🎯 **Welcome to Today's Daily Challenge!**
-
-Ready to test your knowledge and deepen your understanding? Let's dive into today's Mathematics I challenge.
-
-📋 **Today's Challenge Question**
-**Topic:** Derivatives and Chain Rule  
-**Difficulty:** ⭐⭐⭐ Intermediate  
-**Question Type:** Conceptual Explanation  
-
-**Question:**  
-Explain how the chain rule works when finding the derivative of composite functions. Use the example f(g(x)) where f(u) = u² and g(x) = 3x + 1 to illustrate your explanation.
-
-⚠️ **Important:** This challenge session will reset at midnight. Any unfinished conversations will be lost, so make sure to complete your challenge today!`,
-          timestamp: now,
-          category: 'homework'
-        };
-
-        setChallengeMessages([challengeMessage]);
-        setActiveTab('challenge');
-        setChallengePhase('answering');
-        setShowSuggestions(false);
-        setShowChallengeButtons(false);
-      } else if (initialQuestion && initialAnswer) {
-        const welcomeMessage: Message = {
-          id: '1',
-          type: 'bot',
-          content: `📚 **Daily Challenge Review Session**
-
-Welcome to your personalized feedback session! I've reviewed your daily challenge submission and I'm here to help you deepen your understanding.
-
-This is a focused session for today's challenge. Once we're done, this conversation will be saved to your challenge history.`,
-          timestamp: now,
-          category: 'general'
-        };
-
-        const userMessage: Message = {
-          id: '2',
-          type: 'user',
-          content: `**My Answer:** ${initialAnswer}`,
-          timestamp: now,
-          category: 'homework'
-        };
-
-        const botResponse: Message = {
-          id: '3',
-          type: 'bot',
-          content: `🎯 **Challenge Assessment: 87% Match**
-
-Great work on your Question of the Day response! I can see you've thought about the chain rule and composite functions. Let me provide some feedback on your answer and help you deepen your understanding.
-
-Your explanation shows good understanding of the basic concept. Here are some additional insights that might help:
-
-• **The Chain Rule Formula**: When we have f(g(x)), the derivative is f'(g(x)) × g'(x)
-• **Common Mistakes**: Students often forget to multiply by the inner derivative g'(x)  
-• **Memory Aid**: Think "outside derivative × inside derivative"
-
-Would you like me to work through a specific example or clarify any particular aspect of the chain rule?`,
-          timestamp: now,
-          category: 'concept'
-        };
-
-        setChallengeMessages([welcomeMessage, userMessage, botResponse]);
-        setActiveTab('challenge');
-        setChallengePhase('conversation');
-        setShowSuggestions(false);
-        setShowChallengeButtons(false);
-      }
-    }
-  }, [mode, isNewChallenge, challengeMessages.length, initialQuestion, initialAnswer]);
-
   useEffect(() => {
     scrollToBottom();
   }, [messages, challengeMessages, scrollToBottom]);
 
-  const handleSendMessage = useCallback(async (message: string) => {
-    if (!message.trim()) return;
+  // Main LLM-powered send message function
+  const handleSendMessage = useCallback(
+    async (message: string, system?: string, isQuickAction: boolean = false) => {
+      if (!message.trim()) return;
 
-    const newUserMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: message,
-      timestamp: new Date(),
-      category: 'general'
-    };
-
-    if (activeTab === 'challenge') {
-      setChallengeMessages(prev => [...prev, newUserMessage]);
-    } else {
-      setMessages(prev => [...prev, newUserMessage]);
-    }
-
-    setInputValue('');
-    setIsLoading(true);
-    setShowSuggestions(false);
-
-    // Simulate AI response
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'bot',
-        content: `Thanks for your question! I understand you're asking about "${message}". Let me help you with that.
-
-This is a simulated response. In a real implementation, this would connect to an AI service to provide personalized explanations based on your ${learningStyle || 'learning preference'}.
-
-Here are some key points:
-• Detailed explanation tailored to your learning preferences
-• Step-by-step breakdown of the concept
-• Practical examples and applications
-• Suggestions for further practice
-
-Would you like me to elaborate on any specific aspect of this topic?`,
+      const newUserMessage: Message = {
+        id: Date.now().toString(),
+        type: 'user',
+        content: message,
         timestamp: new Date(),
-        category: 'concept'
+        category: 'general'
       };
 
       if (activeTab === 'challenge') {
-        setChallengeMessages(prev => [...prev, botResponse]);
+        setChallengeMessages(prev => [...prev, newUserMessage]);
       } else {
-        setMessages(prev => [...prev, botResponse]);
+        setMessages(prev => [...prev, newUserMessage]);
+      }
+
+      setInputValue('');
+      setIsLoading(true);
+      setShowSuggestions(false);
+
+      // Fetch reply from LLM
+      const botReply = await fetchLLMReply(message, system);
+
+      // Replace "generating..." with actual reply
+      if (activeTab === 'challenge') {
+        setChallengeMessages(prev => [
+          ...prev.filter(msg => msg.content !== "Generating response..."),
+          {
+            id: (Date.now() + 2).toString(),
+            type: 'bot',
+            content: botReply,
+            timestamp: new Date(),
+            category: 'concept'
+          }
+        ]);
+      } else {
+        setMessages(prev => [
+          ...prev.filter(msg => msg.content !== "Generating response..."),
+          {
+            id: (Date.now() + 2).toString(),
+            type: 'bot',
+            content: botReply,
+            timestamp: new Date(),
+            category: 'concept'
+          }
+        ]);
       }
       setIsLoading(false);
-    }, 1500);
-  }, [activeTab, learningStyle]);
 
-  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage(inputValue);
+      // Post chat history for general tab (not quick actions)
+      if (!isQuickAction && activeTab === 'general') {
+        try {
+          const convo_id = await getNextAvailableConvoId();
+          await postChatHistory([
+            {
+              text: message,
+              reply: botReply,
+              timestamp: new Date().toISOString(),
+              sender: 'user',
+              type: 'general',
+              convo_id: convo_id
+            }
+          ]);
+          console.log('Chat history posted successfully.');
+        } catch (err) {
+          console.error('Failed to post chat history:', err);
+        }
+      }
+    },
+    [activeTab]
+  );
+
+  // For quick actions, add system instructions
+  const handleQuickAction = useCallback((prompt: string, type?: string) => {
+    let system = "";
+    if (type === "Guide me") {
+      system = "You are a step-by-step guide. Structure your response as a clear, numbered walkthrough.";
+    } else if (type === "Test me") {
+      system = "You are a quizmaster. Provide a practice question and wait for the user's answer.";
+    } else if (type === "Check my answer") {
+      system = "You are an answer checker. Review the user's answer and provide feedback.";
+    } else if (type === "Explain concept") {
+      system = "You are a concept explainer. Give a detailed explanation with examples.";
+    } else if (type === "Study tips") {
+      system = "You are a study coach. Share effective study strategies for this topic.";
     }
-  }, [inputValue, handleSendMessage]);
-
-  const handleQuickAction = useCallback((prompt: string) => {
-    handleSendMessage(prompt);
+    handleSendMessage(prompt, system, true);
   }, [handleSendMessage]);
 
   const handleSuggestedQuestion = useCallback((question: string) => {
     handleSendMessage(question);
   }, [handleSendMessage]);
 
+
   const handleEndChallengeSession = useCallback(() => {
     console.log('Ending challenge session:', challengeMessages);
-    
-    // Set session as ended instead of switching tabs
     setChallengeSessionEnded(true);
-    
     if (onChallengeComplete) {
       onChallengeComplete();
     }
   }, [challengeMessages, onChallengeComplete]);
 
+  const [currentChallengeQuestion, setCurrentChallengeQuestion] = useState<string>('');
+
   const handleStartChallenge = useCallback(() => {
-    const now = new Date();
-    
-    const challengeMessage: Message = {
-      id: '1',
-      type: 'bot',
-      content: `🎯 **Welcome to Today's Daily Challenge!**
+  const now = new Date();
+  const welcomeMessage: Message = {
+    id: '1',
+    type: 'bot',
+    content: `🎯 **Welcome to Today's Challenge!**
 
 Ready to test your knowledge and deepen your understanding? Let's dive into today's Mathematics I challenge.
 
-📋 **Today's Challenge Question**
+⚠️ **Important:** This challenge session will reset at midnight. Any unfinished conversations will be lost, so make sure to complete your challenge today!`,
+    timestamp: now,
+    category: 'general'
+  };
+
+  const questionMessage: Message = {
+    id: '2',
+    type: 'bot',
+    content: `📋 **Today's Challenge Question**
+
 **Topic:** Derivatives and Chain Rule  
 **Difficulty:** ⭐⭐⭐ Intermediate  
 **Question Type:** Conceptual Explanation  
 
 **Question:**  
-Explain how the chain rule works when finding the derivative of composite functions. Use the example f(g(x)) where f(u) = u² and g(x) = 3x + 1 to illustrate your explanation.
+Explain how the chain rule works when finding the derivative of composite functions. Use the example f(g(x)) where f(u) = u² and g(x) = 3x + 1 to illustrate your explanation.`,
+    timestamp: now,
+    category: 'homework'
+  };
 
-⚠️ **Important:** This challenge session will reset at midnight. Any unfinished conversations will be lost, so make sure to complete your challenge today!`,
-      timestamp: now,
-      category: 'homework'
-    };
-
-    setChallengeMessages([challengeMessage]);
-    setChallengePhase('answering');
-    setShowChallengeButtons(false);
-    setShowSuggestions(false);
-  }, []);
-
+  setChallengeMessages([welcomeMessage, questionMessage]);
+  setCurrentChallengeQuestion(
+    `Explain how the chain rule works when finding the derivative of composite functions. Use the example f(g(x)) where f(u) = u² and g(x) = 3x + 1 to illustrate your explanation.`
+  );
+  setChallengePhase('answering');
+  setShowChallengeButtons(false);
+  setShowSuggestions(false);
+}, []);
+  
   const handleShowHint = useCallback(() => {
     const hintMessage: Message = {
       id: Date.now().toString(),
@@ -389,51 +394,72 @@ Now try working through the example step by step!`,
     setChallengeMessages(prev => [...prev, hintMessage]);
   }, []);
 
+  // PATCH: Post challenge response to API
   const handleSubmitChallenge = useCallback(async () => {
-    if (!challengeAnswer.trim()) return;
-    
-    setIsLoading(true);
-    
-    const userAnswerMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: challengeAnswer,
-      timestamp: new Date(),
-      category: 'homework'
-    };
-    
-    const acceptanceRate = Math.floor(Math.random() * 20 + 75);
-    
-    const feedbackMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      type: 'bot',
-      content: `🎯 **Challenge Assessment: ${acceptanceRate}% Match**
+  if (!challengeAnswer.trim()) return;
 
-Great work on your daily challenge! Your explanation demonstrates solid understanding of the chain rule concept. Let me provide some detailed feedback and help you deepen your understanding.
+  setIsLoading(true);
 
-**What you did well:**
-• Clear identification of composite function structure
-• Correct application of chain rule formula
-• Good use of mathematical notation
+  const userAnswerMessage: Message = {
+    id: Date.now().toString(),
+    type: 'user',
+    content: challengeAnswer,
+    timestamp: new Date(),
+    category: 'homework'
+  };
 
-**Areas for enhancement:**
-• Consider explaining the "why" behind each step
-• Include verification by substituting values
-• Practice with more complex composite functions
+  // Compose the prompt for the LLM
+  const llmPrompt = `
+You are a mathematics instructor. Here is a student's answer to a challenge question. 
+Provide detailed, constructive feedback, including what was done well and what could be improved, in a friendly and encouraging tone.
 
-Let's work through this together! Would you like me to:
-- Show alternative solution approaches?
-- Provide similar practice problems?
-- Explain any specific concept in more detail?`,
-      timestamp: new Date(),
-      category: 'concept'
-    };
-    
-    setChallengeMessages(prev => [...prev, userAnswerMessage, feedbackMessage]);
-    setChallengePhase('conversation');
-    setChallengeAnswer('');
-    setIsLoading(false);
-  }, [challengeAnswer]);
+Challenge Question:
+${currentChallengeQuestion}
+
+Student's Answer:
+${challengeAnswer}
+`;
+
+  // Call the LLM API
+  let feedbackText = '';
+  try {
+    feedbackText = await fetchLLMReply(llmPrompt);
+  } catch (err) {
+    feedbackText = "Sorry, I couldn't generate feedback at this time.";
+  }
+
+  const feedbackMessage: Message = {
+    id: (Date.now() + 1).toString(),
+    type: 'bot',
+    content: feedbackText,
+    timestamp: new Date(),
+    category: 'concept'
+  };
+
+  setChallengeMessages(prev => [...prev, userAnswerMessage, feedbackMessage]);
+  setChallengePhase('conversation');
+  setChallengeAnswer('');
+
+  // --- Post challenge response to API ---
+  try {
+    const convo_id = await getNextAvailableConvoId();
+    await postChatHistory([
+      {
+        text: challengeAnswer,
+        reply: feedbackMessage.content,
+        timestamp: new Date().toISOString(),
+        sender: 'user',
+        type: 'challenge',
+        convo_id: convo_id
+      }
+    ]);
+    console.log('Challenge response posted successfully.');
+  } catch (err) {
+    console.error('Failed to post challenge response:', err);
+  }
+
+  setIsLoading(false);
+}, [challengeAnswer, currentChallengeQuestion]);
 
   const renderMessages = useCallback((messageList: Message[]) => (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -524,6 +550,12 @@ Let's work through this together! Would you like me to:
     </div>
   ), [isLoading, messageFeedback, handleFeedback]);
 
+  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(inputValue);
+    }
+  }, [inputValue, handleSendMessage]);
   return (
     <div className="h-screen bg-gray-50 flex overflow-hidden pt-6">
       {/* Left Sidebar - Conversation History */}
@@ -543,6 +575,9 @@ Let's work through this together! Would you like me to:
                       <span className="text-xs text-gray-500 ml-2">{conv.time}</span>
                     </div>
                     <p className="text-sm text-gray-600 truncate">{conv.preview}</p>
+                    <Badge variant="secondary" className="mt-2 text-xs">
+                      {conv.category}
+                    </Badge>
                   </div>
                 ))}
               </div>
@@ -643,7 +678,7 @@ Let's work through this together! Would you like me to:
                           <li>• **Test your understanding** with practice questions</li>
                           <li>• **Check your answers** and provide detailed feedback</li>
                           <li>• **Explain concepts** using examples and analogies</li>
-                          <li>• **Share study tips** tailored to your learning preference</li>
+                          <li>• **Share study tips** tailored to your learning style</li>
                         </ul>
                         
                         <h5 className="font-medium text-blue-900 mb-1 mt-4">Getting Started</h5>
@@ -762,7 +797,7 @@ Let's work through this together! Would you like me to:
 
         {/* Action Buttons and Input Area */}
         <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0">
-          <div className="max-w-4xl mx-auto mr-20"> {/* Added right margin to avoid floating chatbot */}
+          <div className="max-w-4xl mx-auto mr-20">
             {/* Quick Action Buttons - Show only in general tab when suggestions are visible */}
             {activeTab === 'general' && showSuggestions && (
               <div className="mb-4">
@@ -773,7 +808,7 @@ Let's work through this together! Would you like me to:
                       variant="outline"
                       size="sm"
                       className={`${action.color} transition-all duration-200 hover:scale-105`}
-                      onClick={() => handleQuickAction(action.prompt)}
+                      onClick={() => handleQuickAction(action.prompt, action.label)}
                     >
                       <action.icon className="h-4 w-4 mr-2" />
                       {action.label}

@@ -3,18 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { Calendar, Brain, Info, Target, TrendingUp, MessageSquare, Users, Clock, AlertCircle, BarChart3, BookOpen, ChevronRight } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { Calendar, Brain, Info, X, Target, TrendingUp, MessageSquare, Users, Clock, AlertCircle, Flame, BarChart3, BookOpen, Video, PenTool, ChevronRight } from 'lucide-react';
+import ImprovedQuestionOfTheDay from '../ImprovedQuestionOfTheDay';
+import MasteryLevel from '../MasteryLevel';
+import DailyChallengeRow from '../DailyChallengeRow';
 import { getCurrentAcademicWeek, getWeeklyContent, getProgressiveQuestionLevel, formatCurrentWeekRange } from '../../utils/academicWeek';
 
-const learningCycleData = [
-  { phase: 'Experience', engagement: 85, description: 'Hands-on practice' },
-  { phase: 'Reflection', engagement: 72, description: 'Thinking about learning' },
-  { phase: 'Conceptualization', engagement: 68, description: 'Understanding theory' },
-  { phase: 'Experimentation', engagement: 91, description: 'Applying knowledge' }
-];
 
+// Mock data for learning analytics
 const weeklyProgressData = [
   { day: 'Mon', interactions: 12, accuracy: 85, reflection: 4, studyHours: 2.5 },
   { day: 'Tue', interactions: 8, accuracy: 78, reflection: 3, studyHours: 1.8 },
@@ -25,6 +23,24 @@ const weeklyProgressData = [
   { day: 'Sun', interactions: 4, accuracy: 91, reflection: 1, studyHours: 1.2 }
 ];
 
+const questionTypesData = [
+  { name: 'Remembering', value: 15, color: '#f59e0b' },
+  { name: 'Understanding', value: 25, color: '#8b5cf6' },
+  { name: 'Applying', value: 28, color: '#06b6d4' },
+  { name: 'Analyzing', value: 18, color: '#10b981' },
+  { name: 'Evaluating', value: 8, color: '#ef4444' },
+  { name: 'Creating', value: 4, color: '#6366f1' },
+  { name: 'Others', value: 2, color: '#9ca3af' }
+];
+
+const learningCycleData = [
+  { phase: 'Experience', engagement: 85, description: 'Hands-on practice' },
+  { phase: 'Reflection', engagement: 72, description: 'Thinking about learning' },
+  { phase: 'Conceptualization', engagement: 68, description: 'Understanding theory' },
+  { phase: 'Experimentation', engagement: 91, description: 'Applying knowledge' }
+];
+
+
 interface HomepageProps {
   learningPreference: string | null;
   currentDate: string;
@@ -34,7 +50,6 @@ interface HomepageProps {
   onNavigateToAnalytics: () => void;
   onNavigateToCourse: () => void;
   onNavigateToChatbot: () => void;
-  averageAccuracy: number; // <-- add this line
 }
 
 export default function Homepage({ 
@@ -52,8 +67,6 @@ export default function Homepage({
   const [masteryScore, setMasteryScore] = useState(67);
   const [questionLevel, setQuestionLevel] = useState<any>(null);
   const [showBloomsTaxonomy, setShowBloomsTaxonomy] = useState(false);
-
-  // --- Added for Bloom's taxonomy and topic analytics ---
   const [strongestTopic, setStrongestTopic] = useState<string | null>(null);
   const [weakestTopic, setWeakestTopic] = useState<string | null>(null);
   const [bloomMessage, setBloomMessage] = useState<string | null>(null);
@@ -74,8 +87,6 @@ export default function Homepage({
     }
     fetchWeeklyTopics();
   }, []);
-  // ------------------------------------------------------
-
   // Helper function to get learning preference emoji
   const getLearningPreferenceEmoji = (preference: string | null) => {
     switch (preference) {
@@ -171,7 +182,7 @@ export default function Homepage({
         </div>
       </div>
 
-      {/* Today's Challenge - Banner */}
+      {/* Today's Challenge - Moved to Banner Position with Purple Gradient */}
       <Card className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 border-none text-white relative overflow-hidden shadow-lg mb-6" data-tutorial="daily-challenge">
         <CardContent className="p-6 relative z-10">
           <div className="relative z-10">
@@ -283,6 +294,7 @@ export default function Homepage({
             </CardContent>
           </Card>
         </div>
+
       </div>
 
       {/* This Week's Insights - Full Weekly Learning Analytics Summary */}
@@ -407,6 +419,7 @@ export default function Homepage({
           </div>
 
           {/* Charts Row - Reorganized for better layout */}
+          
           {/* Question Types by Topics - First Row */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
@@ -481,7 +494,7 @@ export default function Homepage({
                   Insight:
                 </h5>
                 <p className="text-sm text-purple-700 leading-relaxed">
-                  {bloomMessage || "No Bloom's taxonomy insight available."}
+                   {bloomMessage || "No Bloom's taxonomy insight available."}
                 </p>
                 <div className="mt-3 p-2 bg-purple-100 rounded border border-purple-300">
                   <p className="text-xs text-purple-600">
@@ -492,6 +505,54 @@ export default function Homepage({
             </div>
           </div>
 
+          {/* Weekly Learning Pattern - Second Row */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-medium flex items-center gap-2">
+                Weekly Learning Pattern
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-gray-400" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-sm">
+                      <p className="mb-2"><strong>This graph shows your daily learning activity:</strong></p>
+                      <p className="mb-1">• <span className="text-purple-600">Purple line (Left Y-axis):</span> Number of chat sessions per day</p>
+                      <p>• <span className="text-orange-600">Orange line (Right Y-axis):</span> Study duration in hours per day</p>
+                      <p className="mt-2 text-xs">Both metrics help track your consistency and engagement patterns throughout the week.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </h4>
+            </div>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={weeklyProgressData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="day" />
+                <YAxis 
+                  yAxisId="left" 
+                  orientation="left" 
+                  domain={[0, 'dataMax + 2']}
+                  label={{ value: 'Chat Sessions', angle: -90, position: 'insideLeft' }} 
+                />
+                <YAxis 
+                  yAxisId="right" 
+                  orientation="right" 
+                  domain={[0, 'dataMax + 0.5']}
+                  label={{ value: 'Study Hours', angle: 90, position: 'insideRight' }} 
+                />
+                <RechartsTooltip 
+                  formatter={(value, name) => [
+                    name === 'interactions' ? [value, 'Chat Sessions'] : [value + 'h', 'Study Hours'],
+                    ''
+                  ]}
+                  labelFormatter={(label) => `${label}`}
+                />
+                <Line yAxisId="left" type="monotone" dataKey="interactions" stroke="#8b5cf6" strokeWidth={3} name="interactions" />
+                <Line yAxisId="right" type="monotone" dataKey="studyHours" stroke="#f97316" strokeWidth={3} name="studyHours" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
 
           {/* Kolb's Learning Cycle Progress */}
           {learningPreference && (

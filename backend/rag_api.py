@@ -180,13 +180,13 @@ def get_chat_history(chatbot_id: int, **filters):
     # Generate message
     if highest_index > lowest_index:
         custom_msg = (
-            f"Negative: Your strongest cognitive skill is '{highest_level}' ({bloom_percentages[highest_level]:.1f}%), "
+            f"Your strongest cognitive skill is '{highest_level}' ({bloom_percentages[highest_level]:.1f}%), "
             f"which is {diff:.1f}% higher than your weakest skill '{lowest_level}' ({bloom_percentages[lowest_level]:.1f}%). "
             "This suggests you excel at higher-order thinking tasks!"
         )
     else:
         custom_msg = (
-            f"Positive: Your strongest cognitive skill is '{highest_level}' ({bloom_percentages[highest_level]:.1f}%), "
+            f"Your strongest cognitive skill is '{highest_level}' ({bloom_percentages[highest_level]:.1f}%), "
             f"but it is at a lower Bloom's level than your weakest skill '{lowest_level}' ({bloom_percentages[lowest_level]:.1f}%). "
             "Consider practicing more higher-order thinking tasks."
         )
