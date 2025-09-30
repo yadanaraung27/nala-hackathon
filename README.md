@@ -23,7 +23,7 @@ This repository contains the code for the Learning Analytics Dashboard, original
 4. **Expected Output:**
    - On successful execution, you should see output similar to the screenshot below:
 
-     ![Executed npm run dev](../../media/successful_npm_run_dev.png)
+     ![Executed npm run dev](media/successful_npm_run_dev.png)
    - The dashboard UI will appear as shown:
    
-     ![Figma Make UI](../../media/figma_make_ui.png)
+     ![Figma Make UI](media/homepage_ui.png)

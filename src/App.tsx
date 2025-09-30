@@ -15,8 +15,6 @@ import ChangePasswordPage from './components/pages/ChangePasswordPage';
 import EditProfilePage from './components/pages/EditProfilePage';
 import FeedbackPage from './components/pages/FeedbackPage';
 import { getCurrentAcademicWeek } from './utils/academicWeek';
-import logoImage from 'figma:asset/34647faf9321524b7219035ccc30e447dd7e8f0c.png';
-import mathIcon from 'figma:asset/1ad425a32e03709d44c34771ec9a2688d270859e.png';
 
 
 // Learning preference detailed information (Based on Kolb's Learning Theory)
@@ -478,7 +476,7 @@ export default function App() {
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center p-1">
                 <img 
-                  src={mathIcon} 
+                  src="../media/math1_icon.png"
                   alt="Mathematics Function" 
                   className="w-full h-full object-contain"
                 />
@@ -659,7 +657,7 @@ export default function App() {
               <div className="flex items-center justify-center mb-2">
                 <div className="flex items-center gap-2">
                   <img 
-                    src={logoImage} 
+                    src="../media/learnus_logo.png"
                     alt="LearnUs Logo" 
                     className="w-6 h-6"
                   />

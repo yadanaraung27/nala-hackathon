@@ -6,7 +6,6 @@ import { Progress } from '../ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { Calendar, Clock, BookOpen, Target, CheckCircle2, AlertCircle, ChevronDown, ChevronRight, Video, FileText, Users, Play } from 'lucide-react';
-import exampleImage from 'figma:asset/7f77702042ff249087a3e5efcca6a7b0b4ef2be4.png';
 
 interface CoursesPageProps {
   onNavigateToChatbot?: () => void;
