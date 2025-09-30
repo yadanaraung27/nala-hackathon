@@ -180,9 +180,9 @@ export default function Homepage({
                 <Target className="h-4 w-4 text-white" />
               </div>
               <h2 className="text-2xl font-semibold text-white">Today's Challenge</h2>
-              <Badge className="bg-yellow-500 text-yellow-900 hover:bg-yellow-400 font-medium">
-                Day 7 Streak 🔥
-              </Badge>
+              <span className="text-white font-medium">
+                🔥7
+              </span>
             </div>
             
             <div className="flex items-end gap-6">
@@ -277,8 +277,8 @@ export default function Homepage({
               </div>
               
               <div className="space-y-2">
-                <h4 className="font-semibold text-lg text-orange-900">Derivatives Assignment</h4>
-                <p className="text-sm text-orange-700">Due in 5 days • Oct 11, 2025</p>
+                <h4 className="font-semibold text-lg text-orange-900">Midterm Exam</h4>
+                <p className="text-sm text-orange-700">Due in 10 days • Oct 11, 2025</p>
               </div>
             </CardContent>
           </Card>
@@ -345,27 +345,8 @@ export default function Homepage({
             </div>
           </div>
 
-          {/* Key Metrics Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <MessageSquare className="h-8 w-8 text-purple-600" />
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-4 w-4 text-purple-400" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Number of learning conversations this week. Higher engagement typically leads to better retention and understanding.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">47</p>
-              <p className="text-sm text-gray-600">Chat Sessions</p>
-              <p className="text-xs text-green-600 mt-1">↑ 12% vs last week</p>
-            </div>
-            
+          
+          <div>
             <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <Brain className="h-8 w-8 text-blue-600" />
@@ -385,25 +366,7 @@ export default function Homepage({
               <p className="text-xs text-green-600 mt-1">Above class avg (78%)</p>
             </div>
             
-            <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <Clock className="h-8 w-8 text-orange-600" />
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-4 w-4 text-orange-400" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Total active learning time this week and average per session. Quality focused practice is more valuable than quantity - optimal study sessions are typically 45-90 minutes.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">18h</p>
-              <p className="text-sm text-gray-600">Study Time</p>
-              <p className="text-xs text-blue-600 mt-1">1.8h avg/session</p>
-              <p className="text-xs text-green-600">↑ 3h vs last week</p>
-            </div>
+            
           </div>
 
           {/* Charts Row - Reorganized for better layout */}

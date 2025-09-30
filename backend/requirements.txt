@@ -11,6 +11,7 @@ openai                          # or litellm, ollama, vllm client
 
 # Added for backend API and utilities
 flask
+flask_cors
 python-dotenv
 scikit-learn
 PyPDF2

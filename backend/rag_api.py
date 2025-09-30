@@ -271,8 +271,8 @@ def process_weekly_topics():
     results,bloom_message, conversation_ids = get_chat_history(chatbot_id, user_id=user_id, convo_id=convo_id)
     strongest, weakest = determine_topic_aptitude(results)
     return {
-        "strongest": strongest,
-        "weakest": weakest,
+        "strongest": strongest.title(),
+        "weakest": weakest.title(),
         "topic_list": topic_list,
         "bloom_message": bloom_message,
         "conversation_ids": conversation_ids
