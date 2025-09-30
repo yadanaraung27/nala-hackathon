@@ -17,6 +17,69 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
   const [assessmentFilter, setAssessmentFilter] = useState<'upcoming' | 'completed' | 'all'>('upcoming');
   const [completedAssessments, setCompletedAssessments] = useState<Set<number>>(new Set()); // Track completed assessments
 
+  const courseworkAssessments = [
+    {
+      id: 1,
+      type: 'assignment',
+      title: 'Online Assignment 1',
+      description: 'Complex numbers and vector problems',
+      dueDate: '15/09/2025',
+      daysLeft: -13,
+      status: 'completed',
+      weightage: 'Part of 16%'
+    },
+    {
+      id: 2,
+      type: 'assignment',
+      title: 'Online Assignment 2',
+      description: 'Matrices and limits problems',
+      dueDate: '29/09/2025',
+      daysLeft: 1,
+      status: 'upcoming',
+      weightage: 'Part of 16%'
+    },
+    {
+      id: 3,
+      type: 'assignment',
+      title: 'Online Assignment 3',
+      description: 'Derivatives and applications problems',
+      dueDate: '13/10/2025',
+      daysLeft: 15,
+      status: 'upcoming',
+      weightage: 'Part of 16%'
+    },
+    {
+      id: 4,
+      type: 'exam',
+      title: 'Midterm Exam',
+      description: 'Complex numbers, vectors, matrices, limits, derivatives',
+      dueDate: '11/10/2025',
+      daysLeft: 13,
+      status: 'upcoming',
+      weightage: '15% weightage'
+    },
+    {
+      id: 5,
+      type: 'assignment',
+      title: 'Take-home Test',
+      description: 'Differentiation and Integration',
+      dueDate: '11/11/2025',
+      daysLeft: 44,
+      status: 'upcoming',
+      weightage: '9% weightage'
+    },
+    {
+      id: 6,
+      type: 'exam',
+      title: 'Final Exam',
+      description: 'Comprehensive exam',
+      dueDate: '24/11/2025',
+      daysLeft: 57,
+      status: 'upcoming',
+      weightage: '60% weightage'
+    }
+  ];
+
   // Load completed assessments from localStorage on component mount
   useEffect(() => {
     try {
@@ -29,6 +92,29 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       console.error('Error loading completed assessments:', error);
     }
   }, []);
+
+  // Auto-complete overdue assessments
+  useEffect(() => {
+    const overdueAssessments = courseworkAssessments.filter(assessment => assessment.daysLeft <= 0);
+    const newCompleted = new Set(completedAssessments);
+    let hasChanges = false;
+    
+    overdueAssessments.forEach(assessment => {
+      if (!newCompleted.has(assessment.id)) {
+        newCompleted.add(assessment.id);
+        hasChanges = true;
+      }
+    });
+    
+    if (hasChanges) {
+      setCompletedAssessments(newCompleted);
+      try {
+        localStorage.setItem('completedAssessments', JSON.stringify(Array.from(newCompleted)));
+      } catch (error) {
+        console.error('Error saving auto-completed assessments:', error);
+      }
+    }
+  }, []); // Only run once on mount
 
   const toggleTopic = (index: number) => {
     const newExpanded = new Set(expandedTopics);
@@ -56,49 +142,6 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       console.error('Error saving completed assessments:', error);
     }
   };
-
-  const courseworkAssessments = [
-    {
-      id: 1,
-      type: 'assignment',
-      title: 'Online Assignment 3',
-      description: 'Derivatives and applications problems',
-      dueDate: '05/10/2025',
-      daysLeft: 11,
-      status: 'upcoming',
-      weightage: null
-    },
-    {
-      id: 2,
-      type: 'exam',
-      title: 'Midterm Exam',
-      description: 'Complex numbers, vectors, matrices, limits, derivatives - 15% weightage',
-      dueDate: '11/10/2025',
-      daysLeft: 17,
-      status: 'upcoming',
-      weightage: '15% weightage'
-    },
-    {
-      id: 3,
-      type: 'assignment',
-      title: 'Take-home Test',
-      description: 'Differentiation and Integration - Submit by 11th Nov - 9% weightage',
-      dueDate: '11/11/2025',
-      daysLeft: 48,
-      status: 'upcoming',
-      weightage: '9% weightage'
-    },
-    {
-      id: 4,
-      type: 'exam',
-      title: 'Final Exam',
-      description: 'Comprehensive exam 9am-11am - 60% weightage',
-      dueDate: '24/11/2025',
-      daysLeft: 61,
-      status: 'upcoming',
-      weightage: '60% weightage'
-    }
-  ];
 
   const courseTopics = [
     {
@@ -225,21 +268,6 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
                     />
                     <span className="text-sm text-white transition-all duration-200">Lecture 7a: Applications of Derivatives</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <input 
-                      type="checkbox" 
-                      className="w-4 h-4 rounded border-2 border-white/40 bg-transparent checked:bg-white checked:border-white focus:ring-2 focus:ring-white/30"
-                      onChange={(e) => {
-                        // This will be replaced with proper state management
-                        const span = e.target.nextElementSibling;
-                        if (span) {
-                          span.style.textDecoration = e.target.checked ? 'line-through' : 'none';
-                          span.style.opacity = e.target.checked ? '0.6' : '1';
-                        }
-                      }}
-                    />
-                    <span className="text-sm text-white transition-all duration-200">Lecture 7b: Optimization Problems</span>
-                  </div>
                 </div>
               </div>
               
@@ -264,21 +292,6 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
                       }}
                     />
                     <span className="text-sm text-white transition-all duration-200">Tutorial 6b: L'Hopital's Rule</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <input 
-                      type="checkbox" 
-                      className="w-4 h-4 rounded border-2 border-white/40 bg-transparent checked:bg-white checked:border-white focus:ring-2 focus:ring-white/30"
-                      onChange={(e) => {
-                        // This will be replaced with proper state management
-                        const span = e.target.nextElementSibling;
-                        if (span) {
-                          span.style.textDecoration = e.target.checked ? 'line-through' : 'none';
-                          span.style.opacity = e.target.checked ? '0.6' : '1';
-                        }
-                      }}
-                    />
-                    <span className="text-sm text-white transition-all duration-200">Tutorial 7a: Curve Sketching</span>
                   </div>
                 </div>
               </div>
@@ -325,14 +338,14 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
             </div>
             <div className="space-y-3">
               <div>
-                <div className="text-lg font-bold">Assignment Due</div>
-                <div className="text-orange-100 text-sm">Derivatives • Oct 11</div>
-                <div className="text-orange-200 text-xs">5 days remaining</div>
+                <div className="text-lg font-bold">Midterm Exam</div>
+                <div className="text-orange-100 text-sm">Oct 11, 2025 • 15% weightage</div>
+                <div className="text-orange-200 text-xs">13 days remaining</div>
               </div>
               <hr className="border-white/20" />
               <div>
-                <div className="text-sm font-medium">Midterm Exam</div>
-                <div className="text-orange-200 text-xs">Oct 25 • 19 days</div>
+                <div className="text-sm font-medium">Online Assignment 3</div>
+                <div className="text-orange-200 text-xs">Oct 13 • 15 days</div>
               </div>
             </div>
           </CardContent>
@@ -393,11 +406,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
                                     >
                                       {course.topic}
                                     </Badge>
-                                    {course.grade && (
-                                      <Badge variant="outline" className="bg-purple-50 text-purple-700">
-                                        Grade: {course.grade}
-                                      </Badge>
-                                    )}
+
                                   </div>
                                   <h3 className="font-semibold text-lg text-gray-900">{course.title}</h3>
                                   <p className="text-sm text-gray-600">{course.deadline}</p>
@@ -556,6 +565,20 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
                       
                       return true;
                     })
+                    .sort((a, b) => {
+                      // Sort by daysLeft (ascending) - closest deadlines first
+                      // For completed items or when viewing all, maintain original order by using id as secondary sort
+                      if (assessmentFilter === 'upcoming') {
+                        return a.daysLeft - b.daysLeft;
+                      }
+                      // For 'all' and 'completed' views, sort by daysLeft but keep negative values at the end
+                      if (a.daysLeft <= 0 && b.daysLeft <= 0) {
+                        return a.id - b.id; // Original order for completed/overdue items
+                      }
+                      if (a.daysLeft <= 0) return 1; // Move completed to end
+                      if (b.daysLeft <= 0) return -1; // Move completed to end
+                      return a.daysLeft - b.daysLeft; // Sort upcoming by days left
+                    })
                     .map((assessment) => (
                     <Card 
                       key={assessment.id} 
@@ -604,10 +627,12 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
                                   <Calendar className="h-4 w-4" />
                                   <span>{assessment.dueDate}</span>
                                 </div>
-                                <div className="flex items-center gap-1 text-gray-500">
-                                  <Clock className="h-4 w-4" />
-                                  <span>{assessment.daysLeft} days left</span>
-                                </div>
+                                {assessment.daysLeft > 0 && (
+                                  <div className="flex items-center gap-1 text-gray-500">
+                                    <Clock className="h-4 w-4" />
+                                    <span>{assessment.daysLeft} days left</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
 

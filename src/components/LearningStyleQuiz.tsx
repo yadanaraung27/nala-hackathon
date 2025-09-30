@@ -5,6 +5,7 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
 import { Progress } from './ui/progress';
 import { Brain, MessageCircle, Building, Lightbulb, Mountain, Info, X } from 'lucide-react';
+import kolbLearningCycleImage from 'figma:asset/8d8853dedcebe6c554a94386c0a84c09051ffafc.png';
 
 interface Question {
   id: number;
@@ -161,6 +162,18 @@ export default function LearningStyleQuiz({ onComplete, onSkip, allowSkip = fals
                 <p className="text-gray-700 mb-4">
                   Developed by educational theorist David Kolb, this theory identifies how individuals prefer to learn and process information through a continuous cycle of experience, reflection, conceptualization, and experimentation.
                 </p>
+                <p className="text-gray-700 mb-4">
+                  Our development team has derived the learning preference framework based on Kolb's Learning Theory to help you understand your natural learning tendencies and encourage growth through all stages of the learning cycle.
+                </p>
+              </div>
+
+              {/* Kolb's Learning Cycle Image */}
+              <div className="flex justify-center mb-6">
+                <img 
+                  src={kolbLearningCycleImage} 
+                  alt="Kolb's Learning Cycle showing the four stages: Concrete Experience, Reflective Observation, Abstract Conceptualization, and Active Experimentation" 
+                  className="max-w-full h-auto rounded-lg shadow-sm"
+                />
               </div>
 
               <div>
@@ -205,19 +218,19 @@ export default function LearningStyleQuiz({ onComplete, onSkip, allowSkip = fals
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-start gap-2">
                     <span className="text-purple-500 mt-1 flex-shrink-0">•</span>
-                    <span>Personalized study recommendations based on your preferred learning approach</span>
+                    <span>Understanding your natural learning preference while encouraging growth through all stages of the learning cycle</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-purple-500 mt-1 flex-shrink-0">•</span>
-                    <span>Customized chatbot interactions that match your learning style</span>
+                    <span>Guidance to help you experience the complete learning cycle: concrete experience, reflection, conceptualization, and experimentation</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-purple-500 mt-1 flex-shrink-0">•</span>
-                    <span>Daily questions and challenges tailored to your preferences</span>
+                    <span>Daily questions and challenges that guide you through different learning approaches, not just your preferred one</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-purple-500 mt-1 flex-shrink-0">•</span>
-                    <span>Better understanding of your own learning processes and strengths</span>
+                    <span>Better understanding of your own learning processes while developing skills in all learning preference areas</span>
                   </li>
                 </ul>
               </div>

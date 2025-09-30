@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Clock, Users, Star, Video, PenTool, AlertCircle, BookOpen } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { Clock, Users, Star, Video, PenTool, AlertCircle, BookOpen, ArrowLeft, Search, Lightbulb, Rocket } from 'lucide-react';
 import { getCurrentAcademicWeek, getWeeklyContent } from '../utils/academicWeek';
 
 interface DailyChallengeRowProps {
@@ -25,21 +26,42 @@ export default function DailyChallengeRow({ onStartChallenge, onNavigateToCourse
     }
   }, []);
 
+  // Bloom's taxonomy to Kolb's learning stage mapping
+  const getKolbStage = (bloomLevel: string) => {
+    switch (bloomLevel.toLowerCase()) {
+      case 'remember':
+      case 'understand':
+        return { stage: 'Experience', icon: ArrowLeft, tooltip: 'Experience: Start with what you know - connect to real situations' };
+      case 'apply':
+      case 'analyze':
+        return { stage: 'Reflect', icon: Search, tooltip: 'Reflect: Think about why this works or fails - compare different approaches' };
+      case 'evaluate':
+        return { stage: 'Conceptualize', icon: Lightbulb, tooltip: 'Conceptualize: Build the big picture - understand the principles behind it' };
+      case 'create':
+        return { stage: 'Experiment', icon: Rocket, tooltip: 'Experiment: Try something new - apply your understanding creatively' };
+      default:
+        return { stage: 'Experience', icon: ArrowLeft, tooltip: 'Experience: Start with what you know - connect to real situations' };
+    }
+  };
+
   // Mock today's question data
   const todaysQuestion = {
     category: 'Derivatives',
     difficulty: 'Medium',
-    questionType: 'Understand',
+    bloomLevel: 'Understand', // Changed from questionType
     question: "Imagine you're explaining the chain rule to a study group. How would you describe when and why we use it for composite functions, and what common mistakes should your classmates avoid?",
     estimatedTime: "3-5 min",
     participantCount: 342,
     correctAnswers: 287
   };
 
+  const kolbStage = getKolbStage(todaysQuestion.bloomLevel);
+
   const successRate = Math.round((todaysQuestion.correctAnswers / todaysQuestion.participantCount) * 100);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-8 gap-4">
+    <TooltipProvider>
+      <div className="grid grid-cols-1 lg:grid-cols-8 gap-4">
       {/* Daily Challenge Section - 50% width (4/8 columns) - Distinguished styling */}
       <div className="lg:col-span-4">
         <Card className="h-full bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 shadow-md">
@@ -51,25 +73,46 @@ export default function DailyChallengeRow({ onStartChallenge, onNavigateToCourse
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Today's Question Header */}
-            <div className="flex items-center justify-between">
+            <div className="space-y-3">
               <h3 className="text-base font-medium text-blue-900">Today's Question</h3>
-              <div className="flex items-center gap-1">
-                <Badge variant="outline" className="text-sm bg-blue-100 text-blue-700 border-blue-300">
-                  {todaysQuestion.category}
-                </Badge>
+              
+              {/* Learning Level Tags - Bloom's + Kolb's */}
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <Badge 
                   variant="outline" 
-                  className={`text-sm ${
+                  className={`text-xs px-2.5 py-1 rounded-full ${
                     todaysQuestion.difficulty === 'Easy' ? 'bg-green-100 text-green-700 border-green-300' :
                     todaysQuestion.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-700 border-yellow-300' :
                     'bg-red-100 text-red-700 border-red-300'
                   }`}
                 >
-                  {todaysQuestion.difficulty}
+                  {todaysQuestion.difficulty} difficulty
                 </Badge>
-                <Badge variant="outline" className="text-sm bg-purple-100 text-purple-700 border-purple-300">
-                  Understand
+                
+                <Badge 
+                  variant="outline" 
+                  className="text-xs px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 border-blue-300"
+                >
+                  {todaysQuestion.bloomLevel} level
                 </Badge>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge 
+                      variant="outline" 
+                      className="text-xs px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 border-purple-300 flex items-center gap-1 cursor-help"
+                    >
+                      {(() => {
+                        const IconComponent = kolbStage.icon;
+                        return <IconComponent className="h-3 w-3" />;
+                      })()}
+                      {kolbStage.stage} stage
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-64">
+                    <p className="text-sm">{kolbStage.tooltip}</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
 
@@ -121,11 +164,15 @@ export default function DailyChallengeRow({ onStartChallenge, onNavigateToCourse
             {/* Compact deadline items */}
             <div className="space-y-2">
               <div className="p-3 bg-orange-50 rounded border-l-4 border-orange-400">
-                <p className="text-sm font-medium text-gray-900">Midterm Exam</p>
+                <p className="text-sm font-medium text-gray-900">Midterm Exam (15%)</p>
                 <p className="text-sm text-gray-500">Oct 11, 2025</p>
               </div>
+              <div className="p-3 bg-blue-50 rounded border-l-4 border-blue-400">
+                <p className="text-sm font-medium text-gray-900">Online Assignment 3</p>
+                <p className="text-sm text-gray-500">Oct 13, 2025</p>
+              </div>
               <div className="p-3 bg-red-50 rounded border-l-4 border-red-400">
-                <p className="text-sm font-medium text-gray-900">Take-home Test</p>
+                <p className="text-sm font-medium text-gray-900">Take-home Test (9%)</p>
                 <p className="text-sm text-red-600 font-medium">Nov 11, 2025</p>
               </div>
             </div>
@@ -154,7 +201,6 @@ export default function DailyChallengeRow({ onStartChallenge, onNavigateToCourse
               </div>
               <div className="pl-6 space-y-1">
                 <p className="text-sm text-gray-600">Lecture 7a: Applications of Derivatives</p>
-                <p className="text-sm text-gray-600">Lecture 7b: Optimization Problems</p>
               </div>
             </div>
 
@@ -166,12 +212,12 @@ export default function DailyChallengeRow({ onStartChallenge, onNavigateToCourse
               </div>
               <div className="pl-6 space-y-1">
                 <p className="text-sm text-gray-600">Tutorial 6b: L'Hopital's Rule</p>
-                <p className="text-sm text-gray-600">Tutorial 7a: Curve Sketching</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

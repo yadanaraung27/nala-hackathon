@@ -3,14 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { Calendar, Brain, Info, X, Target, TrendingUp, MessageSquare, Users, Clock, AlertCircle, Flame, BarChart3, BookOpen, Video, PenTool, ChevronRight } from 'lucide-react';
 import ImprovedQuestionOfTheDay from '../ImprovedQuestionOfTheDay';
 import MasteryLevel from '../MasteryLevel';
 import DailyChallengeRow from '../DailyChallengeRow';
 import { getCurrentAcademicWeek, getWeeklyContent, getProgressiveQuestionLevel, formatCurrentWeekRange } from '../../utils/academicWeek';
-
 
 // Mock data for learning analytics
 const weeklyProgressData = [
@@ -40,7 +39,6 @@ const learningCycleData = [
   { phase: 'Experimentation', engagement: 91, description: 'Applying knowledge' }
 ];
 
-
 interface HomepageProps {
   learningPreference: string | null;
   currentDate: string;
@@ -51,6 +49,20 @@ interface HomepageProps {
   onNavigateToCourse: () => void;
   onNavigateToChatbot: () => void;
 }
+
+// Helper function to convert Bloom's taxonomy to Kolb's learning stages
+const getKolbStage = (bloomLevel: string): string => {
+  const bloomToKolbMapping = {
+    'Remember': 'Experience',
+    'Understand': 'Reflect', 
+    'Apply': 'Experience',
+    'Analyze': 'Reflect',
+    'Evaluate': 'Conceptualize',
+    'Create': 'Experience'
+  };
+  
+  return bloomToKolbMapping[bloomLevel as keyof typeof bloomToKolbMapping] || 'Experience';
+};
 
 export default function Homepage({ 
   learningPreference, 
@@ -67,26 +79,7 @@ export default function Homepage({
   const [masteryScore, setMasteryScore] = useState(67);
   const [questionLevel, setQuestionLevel] = useState<any>(null);
   const [showBloomsTaxonomy, setShowBloomsTaxonomy] = useState(false);
-  const [strongestTopic, setStrongestTopic] = useState<string | null>(null);
-  const [weakestTopic, setWeakestTopic] = useState<string | null>(null);
-  const [bloomMessage, setBloomMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchWeeklyTopics() {
-      try {
-        const response = await fetch('http://127.0.0.1:5000/api/weekly_topics?chatbot_id=3&user_id=20&convo_id=84');
-        if (response.ok) {
-          const data = await response.json();
-          setStrongestTopic(data.strongest);
-          setWeakestTopic(data.weakest);
-          setBloomMessage(data.bloom_message);
-        }
-      } catch (err) {
-        console.error('Error fetching weekly topics:', err);
-      }
-    }
-    fetchWeeklyTopics();
-  }, []);
   // Helper function to get learning preference emoji
   const getLearningPreferenceEmoji = (preference: string | null) => {
     switch (preference) {
@@ -145,14 +138,14 @@ export default function Homepage({
             </div>
           </div>
           
-          {/* Learning Style Button */}
+          {/* Learning Preference Button */}
           <div className="flex-shrink-0">
             {!learningPreference ? (
               <Button 
                 onClick={onShowQuiz}
                 className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium shadow-lg"
               >
-                Discover Your Learning Style
+                Discover Your Learning Preference
               </Button>
             ) : (
               <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg shadow-sm">
@@ -191,31 +184,35 @@ export default function Homepage({
                 <Target className="h-4 w-4 text-white" />
               </div>
               <h2 className="text-2xl font-semibold text-white">Today's Challenge</h2>
-              <Badge className="bg-yellow-500 text-yellow-900 hover:bg-yellow-400 font-medium">
-                Day 7 Streak 🔥
-              </Badge>
+              <span className="text-white font-medium">
+                🔥 7
+              </span>
             </div>
             
             <div className="flex items-end gap-6">
               {/* Question container with transparent background */}
               <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-6 flex-1">
                 <p className="text-white leading-relaxed mb-3">
-                  <span className="font-semibold">Chain Rule Application:</span> Imagine you're explaining the chain rule to a study group. How would you describe when and why we use it for composite functions?
+                  <span className="font-semibold">Optimization Problem:</span> A company wants to design a cylindrical container with a volume of 1000 cm³. The material for the top and bottom costs $0.05/cm², while the side material costs $0.03/cm². Find the dimensions that minimize the total cost and calculate the minimum cost.
                 </p>
                 
                 {/* Badges inside the same container */}
                 <div className="flex items-center gap-3 text-sm">
                   <div className="flex items-center gap-1 text-white/90">
                     <BookOpen className="h-4 w-4" />
-                    <span>Derivatives</span>
+                    <span>Applications of derivatives</span>
                   </div>
                   <div className="flex items-center gap-1 text-white/90">
                     <Clock className="h-4 w-4" />
-                    <span>Medium difficulty</span>
+                    <span>Hard</span>
                   </div>
                   <div className="flex items-center gap-1 text-white/90">
                     <Brain className="h-4 w-4" />
-                    <span>Understand level</span>
+                    <span>Analyze</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-white/90">
+                    <Target className="h-4 w-4" />
+                    <span>Reflect</span>
                   </div>
                 </div>
               </div>
@@ -226,14 +223,30 @@ export default function Homepage({
               </div>
             </div>
 
-            <Button 
-              onClick={onStartChallenge}
-              className="bg-white text-purple-700 hover:bg-gray-50 hover:text-purple-800 font-semibold px-6 py-2 shadow-md"
-              size="default"
-            >
-              Start Challenge
-              <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
+            <div className="flex items-center gap-4">
+              <Button 
+                onClick={onStartChallenge}
+                className="bg-white text-purple-700 hover:bg-gray-50 hover:text-purple-800 font-semibold px-6 py-2 shadow-md"
+                size="default"
+              >
+                Start Challenge
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div className="text-white/70 text-xs flex items-center gap-1 cursor-help">
+                      <Info className="h-3 w-3" />
+                      <span>Daily practice</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p><strong>Retrieval Practice:</strong> Daily challenges use spaced repetition to combat the forgetting curve - you'll retain 90% more after 7 days compared to passive review.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -288,8 +301,8 @@ export default function Homepage({
               </div>
               
               <div className="space-y-2">
-                <h4 className="font-semibold text-lg text-orange-900">Derivatives Assignment</h4>
-                <p className="text-sm text-orange-700">Due in 5 days • Oct 11, 2025</p>
+                <h4 className="font-semibold text-lg text-orange-900">Midterm Exam</h4>
+                <p className="text-sm text-orange-700">Due in 13 days • Oct 11, 2025</p>
               </div>
             </CardContent>
           </Card>
@@ -330,7 +343,7 @@ export default function Homepage({
                 Strong This Week
               </h5>
               <p className="text-green-700 text-sm leading-relaxed mb-3">
-                Great work on <strong>{strongestTopic || '...'}</strong>
+                Great work on <strong>derivatives</strong> and <strong>vectors</strong>! Your 84% daily challenge accuracy is above class average.
               </p>
             </div>
             
@@ -340,7 +353,7 @@ export default function Homepage({
                 Focus Area
               </h5>
               <p className="text-amber-700 text-sm leading-relaxed mb-2">
-                <strong>{weakestTopic || '...'}</strong> needs more practice. Try fundamental techniques first.
+                <strong>Integration concepts</strong> need more practice. Your daily challenges will adapt to provide targeted retrieval practice.
               </p>
               {learningPreference && (
                 <p className="text-amber-600 text-sm flex items-start gap-2 bg-amber-100 p-2 rounded border border-amber-200">
@@ -354,30 +367,24 @@ export default function Homepage({
                   </span>
                 </p>
               )}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div className="mt-2 text-xs text-amber-600 cursor-help flex items-center gap-1">
+                      <Info className="h-3 w-3" />
+                      <span>Why targeted practice works</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm">
+                    <p><strong>Deliberate Practice:</strong> Focusing on your weak areas (Integration) with immediate feedback creates stronger neural pathways than random practice. Expect 3x faster improvement in targeted topics.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
 
           {/* Key Metrics Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <MessageSquare className="h-8 w-8 text-purple-600" />
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-4 w-4 text-purple-400" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Number of learning conversations this week. Higher engagement typically leads to better retention and understanding.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">47</p>
-              <p className="text-sm text-gray-600">Chat Sessions</p>
-              <p className="text-xs text-green-600 mt-1">↑ 12% vs last week</p>
-            </div>
-            
+          <div className="grid grid-cols-1 gap-4 mb-6">
             <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <Brain className="h-8 w-8 text-blue-600" />
@@ -386,35 +393,20 @@ export default function Homepage({
                     <TooltipTrigger>
                       <Info className="h-4 w-4 text-blue-400" />
                     </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Average accuracy across all question types this week. Higher percentages indicate more consistent understanding of concepts.</p>
+                    <TooltipContent className="max-w-sm">
+                      <p className="mb-2"><strong>Active Learning Analytics:</strong> Your daily challenge accuracy creates a feedback loop that adapts future questions to your learning pace.</p>
+                      <p>This week's 84% shows consistent improvement over time, helping optimize retrieval practice for better retention.</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
               <p className="text-2xl font-bold text-gray-900">84%</p>
-              <p className="text-sm text-gray-600">Avg Accuracy</p>
-              <p className="text-xs text-green-600 mt-1">Above class avg (78%)</p>
-            </div>
-            
-            <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <Clock className="h-8 w-8 text-orange-600" />
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-4 w-4 text-orange-400" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Total active learning time this week and average per session. Quality focused practice is more valuable than quantity - optimal study sessions are typically 45-90 minutes.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+              <p className="text-sm text-gray-600">Challenge Accuracy</p>
+              <div className="flex items-center justify-center gap-2 mt-1">
+                <p className="text-xs text-green-600">Above class avg (78%)</p>
+                <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                <p className="text-xs text-blue-600">↗ Active Learning</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">18h</p>
-              <p className="text-sm text-gray-600">Study Time</p>
-              <p className="text-xs text-blue-600 mt-1">1.8h avg/session</p>
-              <p className="text-xs text-green-600">↑ 3h vs last week</p>
             </div>
           </div>
 
@@ -494,7 +486,8 @@ export default function Homepage({
                   Insight:
                 </h5>
                 <p className="text-sm text-purple-700 leading-relaxed">
-                   {bloomMessage || "No Bloom's taxonomy insight available."}
+                  Your questions are evolving well in <strong>Derivatives</strong>, showing strong progression through Bloom's taxonomy levels. 
+                  You're moving from basic remembering (15%) to higher-order thinking with applying (28%) and analyzing (18%).
                 </p>
                 <div className="mt-3 p-2 bg-purple-100 rounded border border-purple-300">
                   <p className="text-xs text-purple-600">
@@ -505,54 +498,7 @@ export default function Homepage({
             </div>
           </div>
 
-          {/* Weekly Learning Pattern - Second Row */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="font-medium flex items-center gap-2">
-                Weekly Learning Pattern
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-4 w-4 text-gray-400" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-sm">
-                      <p className="mb-2"><strong>This graph shows your daily learning activity:</strong></p>
-                      <p className="mb-1">• <span className="text-purple-600">Purple line (Left Y-axis):</span> Number of chat sessions per day</p>
-                      <p>• <span className="text-orange-600">Orange line (Right Y-axis):</span> Study duration in hours per day</p>
-                      <p className="mt-2 text-xs">Both metrics help track your consistency and engagement patterns throughout the week.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </h4>
-            </div>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={weeklyProgressData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis 
-                  yAxisId="left" 
-                  orientation="left" 
-                  domain={[0, 'dataMax + 2']}
-                  label={{ value: 'Chat Sessions', angle: -90, position: 'insideLeft' }} 
-                />
-                <YAxis 
-                  yAxisId="right" 
-                  orientation="right" 
-                  domain={[0, 'dataMax + 0.5']}
-                  label={{ value: 'Study Hours', angle: 90, position: 'insideRight' }} 
-                />
-                <RechartsTooltip 
-                  formatter={(value, name) => [
-                    name === 'interactions' ? [value, 'Chat Sessions'] : [value + 'h', 'Study Hours'],
-                    ''
-                  ]}
-                  labelFormatter={(label) => `${label}`}
-                />
-                <Line yAxisId="left" type="monotone" dataKey="interactions" stroke="#8b5cf6" strokeWidth={3} name="interactions" />
-                <Line yAxisId="right" type="monotone" dataKey="studyHours" stroke="#f97316" strokeWidth={3} name="studyHours" />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+
 
           {/* Kolb's Learning Cycle Progress */}
           {learningPreference && (
@@ -607,6 +553,9 @@ export default function Homepage({
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Understanding Bloom's Taxonomy in Mathematics</DialogTitle>
+            <DialogDescription>
+              Learn about the six levels of cognitive thinking in mathematics education and how they help you progress from basic recall to advanced problem-solving.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 text-sm">
             <p>Bloom's Taxonomy provides an elegant framework for understanding different levels of mathematical thinking and problem-solving. In mathematics education, this taxonomy helps students progress from basic recall to advanced mathematical reasoning and creation.</p>

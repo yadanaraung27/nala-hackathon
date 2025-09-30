@@ -1,21 +1,14 @@
-# Learning Analytics Dashboard (Figma Make Export)
+# Learning Analytics Dashboard
 
 This repository contains the code for the Learning Analytics Dashboard, originally designed in [Figma](https://www.figma.com/make/Lxw10CtJdqt4UIYsRb07Cu/Learning-Analytics-Dashboard?fullscreen=1).
 
-All code for testing is located in the `samples/figma_make` directory. You will need to set up dependencies before running the project.
-
 ## Getting Started
 
-1. **Navigate to the project directory:**
-   ```bash
-   cd samples/figma_make
-   ```
-
-2. **Install dependencies:**
+1. **Install dependencies:**
    ```bash
    npm install
    ```
-   This will create a `node_modules` folder in the `figma_make` project.
+   This will create a `node_modules` folder.
 
 3. **Run the development server:**
    ```bash

@@ -45,12 +45,12 @@ export default function ProfilePage({ onChangePassword, onEditProfile }: Profile
           <div className="max-w-md mx-auto space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Username:</label>
-              <p className="text-base text-gray-900">yada007</p>
+              <p className="text-base text-gray-900">student</p>
             </div>
             
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Email:</label>
-              <p className="text-base text-gray-900">yada007@e.ntu.edu.sg</p>
+              <p className="text-base text-gray-900">student@e.ntu.edu.sg</p>
             </div>
           </div>
         </CardContent>

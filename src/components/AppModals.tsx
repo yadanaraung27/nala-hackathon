@@ -120,10 +120,7 @@ export default function AppModals({
                 </ul>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => {}}>
-                  Customize Features
-                </Button>
+              <div className="flex justify-end pt-4">
                 <Button onClick={onCloseLearningStyleDetails}>
                   Got it!
                 </Button>
@@ -193,7 +190,7 @@ export default function AppModals({
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="text-sm font-medium">Course Difficulty</h4>
-                    <p className="text-xs text-gray-600">Personalized course difficulty based on learning style</p>
+                    <p className="text-xs text-gray-600">Personalized course difficulty based on learning preference</p>
                   </div>
                   <Switch
                     checked={features.courseDifficulty}

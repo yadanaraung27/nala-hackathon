@@ -86,7 +86,7 @@ export default function LearningStyleProfile({ learningStyle, onRetakeQuiz }: Le
             </Avatar>
             <div className="text-left">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-900">Your Learning Style</span>
+                <span className="text-sm font-medium text-gray-900">Your Learning Preference</span>
               </div>
               <Badge className={`${styleInfo.badgeColor} text-xs mt-1`}>
                 {learningStyle}

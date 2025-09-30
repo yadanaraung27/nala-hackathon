@@ -36,10 +36,10 @@ const learningPreferenceDetails = {
       'Use collaborative online platforms for projects'
     ],
     platformFeatures: [
-      'Chatbot interactions are designed to be conversational and interactive',
-      'Daily questions include discussion prompts and collaborative elements',
-      'Course recommendations prioritize group projects and interactive assignments',
-      'Analytics track your engagement in collaborative features'
+      'Chatbot provides conversational-style responses but follows pre-designed interaction patterns',
+      'Daily questions include some discussion prompts, though individual engagement varies by topic',
+      'Course content is the same for all users; recommendations are based on general course structure',
+      'Analytics show your activity patterns but cannot track real collaborative engagement with others'
     ]
   },
   'The Architect': {
@@ -57,10 +57,10 @@ const learningPreferenceDetails = {
       'Use mind maps and organizational tools'
     ],
     platformFeatures: [
-      'Chatbot provides detailed, structured explanations',
-      'Daily questions focus on theoretical understanding and analysis',
-      'Course difficulty analysis helps plan your learning path',
-      'Mastery tracking shows detailed progress across competency levels'
+      'Chatbot can provide detailed explanations when asked specific questions about course content',
+      'Daily questions cover theoretical concepts but are not specifically tailored to individual preferences',
+      'Course information shows general difficulty indicators, not personalized learning path recommendations',
+      'Progress tracking displays completion statistics but does not analyze learning competency depth'
     ]
   },
   'The Problem Solver': {
@@ -78,10 +78,10 @@ const learningPreferenceDetails = {
       'Focus on learning through doing rather than just reading'
     ],
     platformFeatures: [
-      'Chatbot emphasizes practical examples and code solutions',
-      'Daily questions include coding challenges and practical problems',
-      'Course recommendations highlight hands-on and project-based learning',
-      'Analytics track your performance on practical vs theoretical content'
+      'Chatbot can help with mathematical examples and problem-solving approaches for course topics',
+      'Daily questions include some practical problems, but question types are fixed rather than adaptive',
+      'Course content follows the same curriculum structure for all users with standard mathematical concepts',
+      'Analytics track question completion and scores but cannot distinguish between practical vs theoretical mastery'
     ]
   },
   'The Adventurer': {
@@ -95,14 +95,14 @@ const learningPreferenceDetails = {
     studyTips: [
       'Mix different learning formats and resources',
       'Explore creative projects and unconventional approaches',
-      'Set flexible goals and adapt your learning style',
+      'Set flexible goals and adapt your learning preference',
       'Seek out interdisciplinary connections and applications'
     ],
     platformFeatures: [
-      'Chatbot adapts its communication style to keep interactions fresh',
-      'Daily questions vary in format and incorporate creative elements',
-      'Course recommendations include diverse and interdisciplinary options',
-      'Platform features can be customized to match your preferences'
+      'Chatbot uses consistent response patterns but you can explore different types of questions',
+      'Daily questions have some variety in format but follow a predetermined rotation rather than real-time adaptation',
+      'Course content is standardized for Mathematics I curriculum requirements',
+      'Platform features can be enabled/disabled but core functionality remains the same for all users'
     ]
   }
 };

@@ -140,7 +140,7 @@ export default function QuestionChatbot({ learningStyle, onBack, onSubmitAnswer 
                 <Textarea
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}
-                  placeholder="Share your detailed thoughts here... Remember to consider the approach that best matches your learning style and explain your reasoning step by step."
+                  placeholder="Share your detailed thoughts here... Remember to consider the approach that best matches your learning preference and explain your reasoning step by step."
                   className="min-h-[250px] resize-y bg-white border-2 border-gray-200 focus:border-blue-500 focus:ring-blue-200 rounded-xl text-base p-4"
                 />
               </div>
@@ -158,7 +158,7 @@ export default function QuestionChatbot({ learningStyle, onBack, onSubmitAnswer 
 
 
 
-              {/* Personalized tip based on learning style */}
+              {/* Personalized tip based on learning preference */}
               {learningStyle && (
                 <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
                   <div className="flex items-start gap-3">

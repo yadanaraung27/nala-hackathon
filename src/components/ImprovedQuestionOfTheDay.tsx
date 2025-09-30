@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
-import { Flame, Trophy, Users, Clock, CheckCircle2, Star, Zap, Target } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { Flame, Trophy, Users, Clock, CheckCircle2, Star, Zap, Target, ArrowLeft, Search, Lightbulb, Rocket } from 'lucide-react';
 
 interface ImprovedQuestionOfTheDayProps {
   learningStyle?: string | null;
@@ -15,18 +16,38 @@ export default function ImprovedQuestionOfTheDay({ learningStyle, onStartChallen
   const [hasAnsweredToday, setHasAnsweredToday] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
 
+  // Bloom's taxonomy to Kolb's learning stage mapping
+  const getKolbStage = (bloomLevel: string) => {
+    switch (bloomLevel.toLowerCase()) {
+      case 'remember':
+      case 'understand':
+        return { stage: 'Experience', icon: ArrowLeft, tooltip: 'Experience: Start with what you know - connect to real situations' };
+      case 'apply':
+      case 'analyze':
+        return { stage: 'Reflect', icon: Search, tooltip: 'Reflect: Think about why this works or fails - compare different approaches' };
+      case 'evaluate':
+        return { stage: 'Conceptualize', icon: Lightbulb, tooltip: 'Conceptualize: Build the big picture - understand the principles behind it' };
+      case 'create':
+        return { stage: 'Experiment', icon: Rocket, tooltip: 'Experiment: Try something new - apply your understanding creatively' };
+      default:
+        return { stage: 'Experience', icon: ArrowLeft, tooltip: 'Experience: Start with what you know - connect to real situations' };
+    }
+  };
+
   // Mock data - would come from backend
   const todaysQuestion = {
     id: 'q_2024_01_15',
     category: 'Derivatives',
     difficulty: 'Medium',
-    questionType: 'Understand',
+    bloomLevel: 'Understand', // Changed from questionType
     question: "Imagine you're explaining the chain rule to a study group. How would you describe when and why we use it for composite functions, and what common mistakes should your classmates avoid?",
     hint: "Think about identifying outer and inner functions and common differentiation errors...",
     estimatedTime: "3-5 min",
     participantCount: 342,
     correctAnswers: 287
   };
+
+  const kolbStage = getKolbStage(todaysQuestion.bloomLevel);
 
   const streakMilestones = [
     { days: 3, reward: "🎯 Focus Badge", unlocked: true },
@@ -43,7 +64,8 @@ export default function ImprovedQuestionOfTheDay({ learningStyle, onStartChallen
   };
 
   return (
-    <div className="space-y-6">
+    <TooltipProvider>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -93,33 +115,50 @@ export default function ImprovedQuestionOfTheDay({ learningStyle, onStartChallen
         <Card className="lg:col-span-2 border-l-4 border-l-blue-500 shadow-lg hover:shadow-xl transition-shadow">
           <CardHeader className="pb-4">
             <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-xl text-gray-900">Today's Question</CardTitle>
-                  <Badge variant="outline" className="text-xs">
-                    {todaysQuestion.category}
-                  </Badge>
-                  <Badge 
-                    variant="secondary" 
-                    className={`text-xs ${
-                      todaysQuestion.difficulty === 'Easy' ? 'bg-green-100 text-green-800' :
-                      todaysQuestion.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {todaysQuestion.difficulty}
-                  </Badge>
-                  <Badge 
-                    variant="secondary" 
-                    className={`text-xs ${
-                      todaysQuestion.questionType === 'Definition' ? 'bg-blue-100 text-blue-800' :
-                      todaysQuestion.questionType === 'Understand' ? 'bg-green-100 text-green-800' :
-                      'bg-purple-100 text-purple-800'
-                    }`}
-                  >
-                    {todaysQuestion.questionType}
-                  </Badge>
+              <div className="space-y-3">
+                <div>
+                  <CardTitle className="text-xl text-gray-900 mb-3">Today's Question</CardTitle>
+                  
+                  {/* Learning Level Tags - Bloom's + Kolb's */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge 
+                      variant="secondary" 
+                      className={`text-xs px-3 py-1 rounded-full ${
+                        todaysQuestion.difficulty === 'Easy' ? 'bg-green-100 text-green-800 border-green-200' :
+                        todaysQuestion.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                        'bg-red-100 text-red-800 border-red-200'
+                      }`}
+                    >
+                      {todaysQuestion.difficulty} difficulty
+                    </Badge>
+                    
+                    <Badge 
+                      variant="secondary" 
+                      className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-800 border-blue-200"
+                    >
+                      {todaysQuestion.bloomLevel} level
+                    </Badge>
+                    
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge 
+                          variant="secondary" 
+                          className="text-xs px-3 py-1 rounded-full bg-purple-100 text-purple-800 border-purple-200 flex items-center gap-1 cursor-help"
+                        >
+                          {(() => {
+                            const IconComponent = kolbStage.icon;
+                            return <IconComponent className="h-3 w-3" />;
+                          })()}
+                          {kolbStage.stage} stage
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-64">
+                        <p className="text-sm">{kolbStage.tooltip}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
+                
                 <div className="flex items-center gap-4 text-sm text-gray-500">
                   <div className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
@@ -197,6 +236,7 @@ export default function ImprovedQuestionOfTheDay({ learningStyle, onStartChallen
       </div>
 
 
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

@@ -134,6 +134,29 @@ export default function AnalyticsPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-semibold text-gray-900">Learning Analytics</h1>
         <p className="text-sm text-gray-500 mt-1">Deep insights into your learning patterns • {formatCurrentWeekRange()}</p>
+        
+        {/* Subtle Learning Science Banner */}
+        <div className="mt-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Brain className="h-4 w-4 text-purple-600" />
+              <p className="text-sm text-purple-700">
+                <strong>Active Learning:</strong> Your daily challenges create feedback loops that adapt to optimize retention and understanding.
+              </p>
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="h-4 w-4 text-purple-400 hover:text-purple-600 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-sm">
+                  <p className="mb-2"><strong>Evidence-Based Learning:</strong></p>
+                  <p>This platform uses spaced repetition, retrieval practice, and adaptive difficulty based on cognitive science research to maximize your learning efficiency.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
       </div>
 
       {/* Key Performance Indicators - Updated design matching the image */}
@@ -175,14 +198,14 @@ export default function AnalyticsPage() {
                     <Info className="h-4 w-4 text-blue-400 hover:text-blue-600" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Average accuracy across all question types this week</p>
+                    <p>Average accuracy on daily challenges this week, calculated from your performance across all challenge question types and difficulty levels</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
             <div className="space-y-1">
               <p className="text-3xl font-bold text-gray-900">84%</p>
-              <p className="text-sm font-medium text-gray-700">Avg Accuracy</p>
+              <p className="text-sm font-medium text-gray-700">Challenge Accuracy</p>
               <p className="text-sm text-green-600">Above class avg (78%)</p>
             </div>
           </CardContent>
@@ -354,14 +377,110 @@ export default function AnalyticsPage() {
                 Topic Mastery Assessment
               </h5>
               <p className="text-sm text-green-700 leading-relaxed">
-                <strong>Complex Numbers:</strong> 92% accuracy rate with 85% retention over 2 weeks.<br/>
-                <strong>Derivatives:</strong> 78% accuracy, improving consistency (+12% this week).<br/>
-                <strong>Integration:</strong> Early exploration phase - foundation building needed.
+                <strong>Complex Numbers:</strong> 92% daily challenge accuracy with strong long-term retention - ready for advanced applications.<br/>
+                <strong>Derivatives:</strong> 78% accuracy improving (+12% this week) as challenges adapt to your learning pace.<br/>
+                <strong>Integration:</strong> Starting phase - daily challenges will introduce concepts gradually based on your readiness.
               </p>
               <div className="mt-2 p-2 bg-green-100 rounded border border-green-300">
                 <p className="text-xs text-green-600">
                   <strong>Mastery Metric:</strong> Based on accuracy rate × retention × higher-order thinking success.
                 </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Daily Challenge Performance Feedback Loop */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5 text-green-600" />
+            Daily Challenge Performance Trends
+          </CardTitle>
+          <p className="text-sm text-gray-500">How your challenge accuracy creates active learning feedback loops</p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Performance Trend Chart */}
+            <div>
+              <h4 className="font-medium mb-3 flex items-center gap-2">
+                Accuracy Improvement Over Time
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-gray-400" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-sm">
+                      <p>Shows how your daily challenge performance creates a feedback loop - better accuracy leads to more challenging questions, driving continuous improvement</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </h4>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={[
+                  { week: 'Week 3', accuracy: 72, difficulty: 'Basic' },
+                  { week: 'Week 4', accuracy: 78, difficulty: 'Basic' },
+                  { week: 'Week 5', accuracy: 81, difficulty: 'Medium' },
+                  { week: 'Week 6', accuracy: 79, difficulty: 'Medium' },
+                  { week: 'Week 7', accuracy: 84, difficulty: 'Medium' }
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="week" />
+                  <YAxis domain={[70, 90]} />
+                  <RechartsTooltip 
+                    formatter={(value, name) => [value + '%', 'Challenge Accuracy']}
+                    labelFormatter={(label) => `${label}`}
+                  />
+                  <Line type="monotone" dataKey="accuracy" stroke="#10b981" strokeWidth={3} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Adaptive Learning Insights */}
+            <div className="space-y-4">
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <h5 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Active Learning Feedback Loop
+                </h5>
+                <div className="space-y-2 text-sm text-green-700">
+                  <p>• <strong>Week 5:</strong> 81% accuracy triggered difficulty increase to Medium level</p>
+                  <p>• <strong>Week 6:</strong> Slight dip (79%) as system adapted to your improved skills</p>
+                  <p>• <strong>Week 7:</strong> Strong recovery (84%) shows successful adaptation</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <h6 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
+                  <Brain className="h-4 w-4" />
+                  Retrieval Strength Building
+                </h6>
+                <p className="text-sm text-blue-700">
+                  Your consistent daily practice is building <strong>retrieval strength</strong> - the ability to recall information under pressure. 
+                  This week's performance shows 40% improvement in complex problem-solving speed.
+                </p>
+              </div>
+
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger className="w-full">
+                      <div className="text-left">
+                        <h6 className="font-medium text-amber-800 mb-1 flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          Forgetting Curve Optimization
+                        </h6>
+                        <p className="text-sm text-amber-700">
+                          Next review of Derivatives concepts in 2 days for optimal retention
+                        </p>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-sm">
+                      <p><strong>Spaced Repetition:</strong> Based on Ebbinghaus's forgetting curve, reviewing Derivatives in 2 days will maximize long-term retention and prevent the typical 50% memory loss within 24 hours.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
           </div>
@@ -415,26 +534,59 @@ export default function AnalyticsPage() {
             </AreaChart>
           </ResponsiveContainer>
           
-          <div className="mt-4 p-3 bg-orange-50 rounded-lg">
-            <p className="text-sm text-orange-800 mb-2">
-              <strong>Activity Insights:</strong> {
-                activityTimeframe === 'past7days' ? 'Peak activity on Wednesday with 15 conversations. Your engagement follows a typical weekly pattern with higher activity mid-week.' :
-                activityTimeframe === 'past14days' ? 'Consistent engagement pattern over two weeks. Notice the improvement in conversation frequency in the recent week.' :
-                activityTimeframe === 'past30days' ? 'Monthly view shows steady learning progression with notable increases around key topic transitions.' :
-                'Long-term trend reveals steady growth in engagement from 45 to 95 conversations per month, indicating developing learning habits.'
+          <div className="mt-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
+            <h5 className="font-semibold text-orange-800 mb-2 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Activity Pattern Insights
+            </h5>
+            <p className="text-sm text-orange-700 leading-relaxed mb-3">
+              {
+                activityTimeframe === 'past7days' ? 'Your learning activity peaks on Wednesday-Thursday with the highest conversation counts. This aligns with optimal mid-week concentration levels when cognitive performance is typically strongest.' :
+                activityTimeframe === 'past14days' ? 'Two-week pattern shows consistent mid-week peaks, with notable improvement in overall engagement frequency during the recent week.' :
+                activityTimeframe === 'past30days' ? 'Monthly analysis reveals steady learning progression with strategic increases around key topic transitions, following natural cognitive performance cycles.' :
+                'Long-term trend shows excellent development from 45 to 95 conversations per month, with consistent mid-week performance peaks throughout the period.'
               }
             </p>
-            <p className="text-sm text-orange-700">
-              <strong>Recommendation:</strong> {
-                activityTimeframe === 'past7days' ? 'Maintain your Wednesday peak performance and try to increase weekend engagement for better consistency.' :
-                activityTimeframe === 'past14days' ? 'Your recent week shows improvement. Focus on maintaining this upward trend.' :
-                activityTimeframe === 'past30days' ? 'Consider spacing out your conversations more evenly to optimize retention and understanding.' :
-                'Excellent long-term progress! Continue building on this foundation for sustained learning success.'
-              }
-            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+              <div className="p-2 bg-orange-100 rounded border border-orange-300">
+                <p className="text-orange-800">
+                  <strong>Peak Performance:</strong> {
+                    activityTimeframe === 'past7days' ? 'Wednesday (15 conversations)' :
+                    activityTimeframe === 'past14days' ? 'Mid-week consistency' :
+                    activityTimeframe === 'past30days' ? 'Steady monthly growth' :
+                    'Sustained improvement'
+                  }
+                </p>
+              </div>
+              <div className="p-2 bg-orange-100 rounded border border-orange-300">
+                <p className="text-orange-800">
+                  <strong>Goal:</strong> {
+                    activityTimeframe === 'past7days' ? 'Maintain weekend engagement' :
+                    activityTimeframe === 'past14days' ? 'Continue upward trend' :
+                    activityTimeframe === 'past30days' ? 'Even distribution' :
+                    'Build on foundation'
+                  }
+                </p>
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div className="p-2 bg-orange-100 rounded border border-orange-300 cursor-help">
+                      <p className="text-orange-800">
+                        <strong>Optimal Spacing:</strong> 2-3 day gaps for retention
+                      </p>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p><strong>Distributed Practice:</strong> Research shows 2-3 day gaps between learning sessions improve retention by 60% compared to daily practice, allowing memory consolidation.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
         </CardContent>
       </Card>
+
 
 
     </div>

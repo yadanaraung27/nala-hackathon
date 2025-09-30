@@ -6,7 +6,7 @@ import { Progress } from './ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { CheckCircle2, AlertCircle, TrendingUp, TrendingDown, BookOpen, Lightbulb, Users, Target } from 'lucide-react';
 
-// Course difficulty mapping based on learning styles
+// Course difficulty mapping based on learning preferences
 const courseDifficultyMapping = {
   'The Interactor': {
     easier: [
@@ -219,7 +219,7 @@ export default function PersonalizedCourseDifficulty({ learningStyle }: Personal
               <div>
                 <p className="text-sm text-green-700">Easier Courses</p>
                 <p className="text-2xl font-bold text-green-900">{courseData.easier.length}</p>
-                <p className="text-xs text-green-600">Based on your learning style</p>
+                <p className="text-xs text-green-600">Based on your learning preference</p>
               </div>
               <div className="p-2 bg-green-100 rounded-lg">
                 <TrendingUp className="h-5 w-5 text-green-600" />
@@ -271,7 +271,7 @@ export default function PersonalizedCourseDifficulty({ learningStyle }: Personal
                 Personalized Course Difficulty
               </CardTitle>
               <CardDescription>
-                Course difficulty tailored to your learning style: <strong>{learningStyle}</strong>
+                Course difficulty tailored to your learning preference: <strong>{learningStyle}</strong>
               </CardDescription>
             </div>
           </div>
@@ -412,7 +412,7 @@ export default function PersonalizedCourseDifficulty({ learningStyle }: Personal
                     <div>
                       <h4 className="font-medium text-orange-900 mb-1">Courses That Need Extra Attention</h4>
                       <p className="text-sm text-orange-700">
-                        These courses may not align perfectly with your learning style, but with the right strategies, you can excel!
+                        These courses may not align perfectly with your learning preference, but with the right strategies, you can excel!
                       </p>
                     </div>
                   </div>
