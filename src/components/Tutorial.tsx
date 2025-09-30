@@ -15,10 +15,10 @@ interface TutorialProps {
 const getTutorialSteps = () => [
   {
     id: 1,
-    title: "Welcome to DiscreteMath!",
+    title: "Welcome to Mathematics I (MH1810)!",
     description: "Let's quickly show you around your personalized learning dashboard.",
     highlight: null,
-    image: "/api/placeholder/400/200",
+    image: '../media/homepage_ui.png',
     action: "Let's start"
   },
   {
@@ -26,7 +26,7 @@ const getTutorialSteps = () => [
     title: "Navigation Sidebar",
     description: "Access Homepage, Courses, Daily Challenges, and Analytics from here.",
     highlight: "sidebar",
-    image: "/api/placeholder/300/400",
+    image: null,
     action: "Got it"
   },
   {
@@ -34,7 +34,7 @@ const getTutorialSteps = () => [
     title: "Your Dashboard",
     description: "View your learning progress, upcoming deadlines, and daily challenges.",
     highlight: "main-content",
-    image: "/api/placeholder/600/350",
+    image: "../media/homepage_ui_2.png",
     action: "Next"
   },
   {
@@ -42,7 +42,7 @@ const getTutorialSteps = () => [
     title: "Daily Challenges",
     description: "Build streaks by answering personalized questions every day.",
     highlight: "daily-challenge",
-    image: "/api/placeholder/400/250",
+    image: "../media/daily_challenges_ui.png",
     action: "Continue"
   },
   {
@@ -50,7 +50,7 @@ const getTutorialSteps = () => [
     title: "AI Assistant",
     description: "Get help with your modules and navigate the platform easily.",
     highlight: "chatbot",
-    image: "/api/placeholder/350/200",
+    image: "../media/chatbot_ui.png",
     action: "Next"
   },
   {
@@ -58,7 +58,7 @@ const getTutorialSteps = () => [
     title: "Learning Theory Assistant",
     description: "Ask questions about learning theories and get insights about your learning preferences using this specialized assistant.",
     highlight: "learning-theory-assistant",
-    image: "/api/placeholder/400/280",
+    image: "../media/learning_theory_assistant_ui.png",
     action: "Next"
   },
   {
@@ -66,7 +66,7 @@ const getTutorialSteps = () => [
     title: "Feedback Section",
     description: "Report bugs, request new features, or suggest improvements to help us make your learning experience better.",
     highlight: "feedback-section",
-    image: "/api/placeholder/400/250",
+    image: "../media/feedback_ui.png",
     action: "Almost done"
   },
   {
@@ -74,7 +74,7 @@ const getTutorialSteps = () => [
     title: "Discover Your Learning Preferences",
     description: "Take a quick quiz based on Kolb's Learning Theory to personalize your experience and get tailored study recommendations.",
     highlight: "learning-prefs",
-    image: "/api/placeholder/450/300",
+    image: "../media/learning_preference_quiz_ui.png",
     action: "Get Started"
   }
 ];
@@ -263,13 +263,15 @@ export default function Tutorial({ onComplete, onSkip, onShowQuiz, learningPrefe
               </h3>
               
               {/* Screenshot placeholder */}
-              <div className="bg-gray-100 rounded-lg overflow-hidden">
-                <ImageWithFallback 
-                  src={currentStepData.image}
-                  alt={currentStepData.title}
-                  className="w-full h-32 object-cover"
-                />
-              </div>
+              {currentStepData.image && (
+                <div className="bg-gray-100 rounded-lg overflow-hidden border-2 border-black">
+                  <ImageWithFallback 
+                    src={currentStepData.image}
+                    alt={currentStepData.title}
+                    className="w-full h-70 object-cover"
+                  />
+                </div>
+              )}
 
               <p className="text-sm text-gray-600 leading-relaxed">
                 {currentStepData.description}

@@ -5,7 +5,6 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
 import { Progress } from './ui/progress';
 import { Brain, MessageCircle, Building, Lightbulb, Mountain, Info, X } from 'lucide-react';
-import kolbLearningCycleImage from 'figma:asset/8d8853dedcebe6c554a94386c0a84c09051ffafc.png';
 
 interface Question {
   id: number;
@@ -162,18 +161,17 @@ export default function LearningStyleQuiz({ onComplete, onSkip, allowSkip = fals
                 <p className="text-gray-700 mb-4">
                   Developed by educational theorist David Kolb, this theory identifies how individuals prefer to learn and process information through a continuous cycle of experience, reflection, conceptualization, and experimentation.
                 </p>
+                {/* Kolb's Learning Cycle Image */}
+                <div className="flex justify-center mb-6">
+                  <img 
+                    src="../../media/kolb_learning_cycle.png"
+                    alt="Kolb's Learning Cycle showing the four stages: Concrete Experience, Reflective Observation, Abstract Conceptualization, and Active Experimentation" 
+                    className="max-w-full h-auto rounded-lg shadow-sm"
+                  />
+                </div>
                 <p className="text-gray-700 mb-4">
                   Our development team has derived the learning preference framework based on Kolb's Learning Theory to help you understand your natural learning tendencies and encourage growth through all stages of the learning cycle.
                 </p>
-              </div>
-
-              {/* Kolb's Learning Cycle Image */}
-              <div className="flex justify-center mb-6">
-                <img 
-                  src={kolbLearningCycleImage} 
-                  alt="Kolb's Learning Cycle showing the four stages: Concrete Experience, Reflective Observation, Abstract Conceptualization, and Active Experimentation" 
-                  className="max-w-full h-auto rounded-lg shadow-sm"
-                />
               </div>
 
               <div>
