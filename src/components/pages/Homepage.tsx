@@ -181,7 +181,7 @@ export default function Homepage({
               </div>
               <h2 className="text-2xl font-semibold text-white">Today's Challenge</h2>
               <span className="text-white font-medium">
-                🔥7
+                🔥10
               </span>
             </div>
             
