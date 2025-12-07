@@ -114,7 +114,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showLearningStyleDetails, setShowLearningStyleDetails] = useState(false);
   const [activeSection, setActiveSection] = useState('Homepage');
-  const [currentDate, setCurrentDate] = useState('Sunday, September 28, 2025');
+  const [currentDate, setCurrentDate] = useState('Tuesday, October 1, 2025');
   const [currentWeek, setCurrentWeek] = useState<any>(null);
   const [showQuestionChatbot, setShowQuestionChatbot] = useState(false);
   const [showGeneralChatbot, setShowGeneralChatbot] = useState(false);
@@ -195,13 +195,13 @@ export default function App() {
         console.error('Error setting date and week:', error);
         setInitializationError('Failed to initialize date and week');
         // Set fallback values
-        setCurrentDate('Sunday, September 28, 2025');
+        setCurrentDate('Tuesday, October 1, 2025');
         setCurrentWeek({
-          name: 'Teaching Week 7',
+          name: 'Teaching Week 8',
           type: 'teaching',
-          weekNumber: 7,
-          start: new Date('2025-09-22'),
-          end: new Date('2025-09-28')
+          weekNumber: 8,
+          start: new Date('2025-10-06'),
+          end: new Date('2025-10-12')
         });
       } finally {
         // Always mark initialization as complete after a timeout
@@ -466,24 +466,24 @@ export default function App() {
 
       {/* Left Sidebar */}
       <div 
-        className={`${sidebarCollapsed ? 'w-24' : 'w-64'} text-white flex-shrink-0 transition-all duration-300`}
+        className={`${sidebarCollapsed ? 'w-24' : 'w-64'} text-white flex-shrink-0 transition-all duration-300 flex flex-col`}
         style={{ background: '#5200F5' }}
         data-tutorial="sidebar"
       >
         {/* Logo/Header */}
-        <div className="p-6 border-b border-purple-500/30">
+        <div className="p-6 border-b border-purple-500/30 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center p-1">
                 <img 
-                  src="../media/math1_icon.png"
-                  alt="Mathematics Function" 
+                  src="../media/learnus_logo.png"
+                  alt="NALA Logo" 
                   className="w-full h-full object-contain"
                 />
               </div>
               {!sidebarCollapsed && (
                 <div>
-                  <h2 className="font-semibold text-white">Mathematics I</h2>
+                  <h2 className="font-semibold text-white">NALA Dashboard</h2>
                 </div>
               )}
             </div>
@@ -507,7 +507,7 @@ export default function App() {
         </div>
 
         {/* Navigation Menu */}
-        <div className="p-4 space-y-2">
+        <div className="p-4 space-y-2 flex-shrink-0">
           {[
             { name: 'Homepage', icon: Home },
             { name: 'Course', icon: BookOpen },
@@ -544,7 +544,7 @@ export default function App() {
             }`}
             onClick={() => {
               setShowGeneralChatbot(true);
-              setActiveSection('');  // Clear active section to remove other highlights
+              setActiveSection('');
             }}
             data-tutorial="chatbot"
             title={sidebarCollapsed ? 'Go to Chatbot' : undefined}
@@ -556,19 +556,19 @@ export default function App() {
 
         {/* Personalization Section */}
         {!sidebarCollapsed && (
-          <div className="p-4 mt-6">
-            <h3 className="text-xs uppercase tracking-wider text-purple-200 mb-4">CUSTOMIZATION</h3>
-            <div className="space-y-3">
+          <div className="px-4 py-3 border-t border-purple-500/20 flex-shrink-0">
+            <h3 className="text-xs uppercase tracking-wider text-purple-200 mb-3">Preferences</h3>
+            <div className="space-y-2">
               {learningPreference && (
-                <div className="flex items-center justify-between p-3 bg-purple-500/20 rounded-lg" data-tutorial="learning-prefs">
-                  <div className="flex items-center gap-2">
-                    <Brain className="h-4 w-4 text-purple-200" />
-                    <span className="text-sm text-purple-100">{learningPreference}</span>
+                <div className="flex items-center justify-between p-2 bg-purple-500/20 rounded" data-tutorial="learning-prefs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Brain className="h-4 w-4 text-purple-200 flex-shrink-0" />
+                    <span className="text-xs text-purple-100 truncate">{learningPreference}</span>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-purple-200 hover:text-white hover:bg-purple-500/20 p-1 h-auto"
+                    className="text-purple-200 hover:text-white hover:bg-purple-500/20 p-0 h-auto w-5 flex-shrink-0"
                     onClick={() => setShowLearningStyleDetails(true)}
                   >
                     <Info className="h-3 w-3" />
@@ -579,7 +579,8 @@ export default function App() {
               {/* Profile */}
               <Button
                 variant="ghost"
-                className={`w-full justify-start ${
+                size="sm"
+                className={`w-full justify-start text-xs py-2 ${
                   activeSection === 'Profile' 
                     ? 'bg-white text-purple-700 hover:bg-white hover:text-purple-700' 
                     : 'text-purple-100 hover:bg-purple-500/20 hover:text-white'
@@ -591,32 +592,31 @@ export default function App() {
                   setShowQuestionChatbot(false);
                 }}
               >
-                <Users className="h-4 w-4 mr-3" />
+                <Users className="h-3 w-3 mr-2" />
                 Profile
               </Button>
             </div>
           </div>
         )}
 
-        {/* Support Section */}
+        {/* Quick Links Section - Moved below Preferences */}
         {!sidebarCollapsed && (
-          <div className="p-4 mt-6">
-            <h3 className="text-xs uppercase tracking-wider text-purple-200 mb-4">SUPPORT</h3>
-            <div className="space-y-2">
-              {/* Show Tutorial */}
+          <div className="px-4 py-3 border-t border-purple-500/20 flex-shrink-0">
+            <div className="space-y-0.5">
               <Button
                 variant="ghost"
-                className="w-full justify-start text-purple-100 hover:bg-purple-500/20 hover:text-white border-none"
+                size="sm"
+                className="w-full justify-start text-xs py-1 h-8 text-purple-100 hover:bg-purple-500/20 hover:text-white"
                 onClick={handleShowTutorial}
               >
-                <HelpCircle className="h-4 w-4 mr-3" />
-                View Tutorial
+                <HelpCircle className="h-3 w-3 mr-2" />
+                Tutorial
               </Button>
 
-              {/* Feedback Button */}
               <Button
                 variant="ghost"
-                className={`w-full justify-start border-none ${
+                size="sm"
+                className={`w-full justify-start text-xs py-1 h-8 ${
                   activeSection === 'Feedback' 
                     ? 'bg-white text-purple-700 hover:bg-white hover:text-purple-700' 
                     : 'text-purple-100 hover:bg-purple-500/20 hover:text-white'
@@ -628,48 +628,40 @@ export default function App() {
                 }}
                 data-tutorial="feedback-section"
               >
-                <MessageSquare className="h-4 w-4 mr-3" />
+                <MessageSquare className="h-3 w-3 mr-2" />
                 Feedback
               </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-xs py-1 h-8 text-purple-100 hover:bg-purple-500/20 hover:text-white"
+                title="Log out"
+              >
+                <svg className="h-3 w-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Log out
+              </Button>
+            </div>
+
+            {/* Footer - Minimal */}
+            <div className="pt-1.5 border-t border-purple-500/20 mt-2">
+              <div className="flex items-center justify-center gap-1">
+                <img 
+                  src="../media/learnus_logo.png"
+                  alt="LearnUs Logo" 
+                  className="w-4 h-4"
+                />
+                <span className="text-xs font-semibold text-purple-200">LearnUs</span>
+              </div>
+              <p className="text-xs text-purple-300 text-center mt-0.5">© 2025 Dev Team</p>
             </div>
           </div>
         )}
 
-        {/* Bottom Actions */}
-        <div className={`absolute bottom-0 left-0 ${sidebarCollapsed ? 'w-24' : 'w-64'} p-4 space-y-6`}>
-          {/* Log out - Separated with larger gap */}
-          <div className="pt-6">
-            <Button
-              variant="ghost"
-              className={`w-full ${sidebarCollapsed ? 'justify-center px-0' : 'justify-start'} text-white hover:bg-purple-500/20 hover:text-white py-3 max-w-none`}
-              title={sidebarCollapsed ? 'Log out' : undefined}
-            >
-              <svg className={`h-5 w-5 ${sidebarCollapsed ? '' : 'mr-3'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              {!sidebarCollapsed && 'Log out'}
-            </Button>
-          </div>
-          
-          {/* Footer */}
-          {!sidebarCollapsed && (
-            <div className="pt-4 border-t border-purple-500/30 max-w-full">
-              <div className="flex items-center justify-center mb-2">
-                <div className="flex items-center gap-2">
-                  <img 
-                    src="../media/learnus_logo.png"
-                    alt="LearnUs Logo" 
-                    className="w-6 h-6"
-                  />
-                  <span className="text-sm font-semibold text-purple-100">LearnUs</span>
-                </div>
-              </div>
-              <p className="text-xs text-purple-200 text-center break-words px-2 leading-tight">
-                © 2025 LearnUs Dev Team.<br />All rights reserved.
-              </p>
-            </div>
-          )}
-        </div>
+        {/* Spacer to push remaining content down */}
+        <div className="flex-1"></div>
       </div>
 
       {/* Main Content */}

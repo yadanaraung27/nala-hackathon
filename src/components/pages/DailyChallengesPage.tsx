@@ -7,13 +7,129 @@ import { Input } from '../ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../ui/pagination';
 import { Calendar, Flame, Trophy, Target, Clock, CheckCircle2, X, Star, Play, RotateCcw, Filter, BarChart3, TrendingUp, Info, Search, ArrowUpDown, SlidersHorizontal, RotateCcw as Reset } from 'lucide-react';
+import { InlineMath, BlockMath } from 'react-katex';
+import 'katex/dist/katex.min.css';
 
 interface DailyChallengesPageProps {
   onStartChallenge?: () => void;
 }
 
+// Helper function to render math content with KaTeX
+const renderMathContent = (content: string): React.ReactNode[] => {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+
+  // Match display math ($$...$$) first, then inline math ($...$), then bold (**....**)
+  const displayMathRegex = /\$\$([\s\S]*?)\$\$/g;
+  const inlineMathRegex = /\$([^\$\n]+?)\$/g;
+  const boldRegex = /\*\*([^\*]+?)\*\*/g;
+  
+  let displayMatches: any[] = [];
+  let inlineMatches: any[] = [];
+  let boldMatches: any[] = [];
+  
+  let displayMatch: RegExpExecArray | null;
+  while ((displayMatch = displayMathRegex.exec(content)) !== null) {
+    displayMatches.push({ 
+      index: displayMatch.index, 
+      length: displayMatch[0].length, 
+      content: displayMatch[1],
+      type: 'display'
+    });
+  }
+  
+  let inlineMatch: RegExpExecArray | null;
+  while ((inlineMatch = inlineMathRegex.exec(content)) !== null) {
+    const isPartOfDisplay = displayMatches.some(dm => 
+      inlineMatch !== null && inlineMatch.index >= dm.index && 
+      inlineMatch.index < dm.index + dm.length
+    );
+    if (!isPartOfDisplay) {
+      inlineMatches.push({
+        index: inlineMatch.index,
+        length: inlineMatch[0].length,
+        content: inlineMatch[1],
+        type: 'inline'
+      });
+    }
+  }
+
+  let boldMatch: RegExpExecArray | null;
+  while ((boldMatch = boldRegex.exec(content)) !== null) {
+    const isPartOfMath = [...displayMatches, ...inlineMatches].some(m => 
+      boldMatch !== null && boldMatch.index >= m.index && 
+      boldMatch.index < m.index + m.length
+    );
+    if (!isPartOfMath) {
+      boldMatches.push({
+        index: boldMatch.index,
+        length: boldMatch[0].length,
+        content: boldMatch[1],
+        type: 'bold'
+      });
+    }
+  }
+  
+  const allMatches = [...displayMatches, ...inlineMatches, ...boldMatches].sort((a, b) => a.index - b.index);
+
+  allMatches.forEach((match, idx) => {
+    if (match.index > lastIndex) {
+      const textBefore = content.substring(lastIndex, match.index);
+      if (textBefore.trim()) {
+        parts.push(
+          <span key={`text-${idx}`} className="whitespace-pre-wrap">
+            {textBefore}
+          </span>
+        );
+      }
+    }
+
+    try {
+      if (match.type === 'display') {
+        parts.push(
+          <div key={`math-${idx}`} className="my-3 flex justify-center overflow-x-auto">
+            <BlockMath math={match.content} />
+          </div>
+        );
+      } else if (match.type === 'inline') {
+        parts.push(
+          <InlineMath key={`math-${idx}`} math={match.content} />
+        );
+      } else if (match.type === 'bold') {
+        parts.push(
+          <strong key={`bold-${idx}`} className="font-semibold">
+            {match.content}
+          </strong>
+        );
+      }
+    } catch (e) {
+      parts.push(
+        <span key={`error-${idx}`} className="text-red-500 text-xs">
+          [Rendering error]
+        </span>
+      );
+    }
+
+    lastIndex = match.index + match.length;
+  });
+
+  if (lastIndex < content.length) {
+    const remaining = content.substring(lastIndex);
+    if (remaining.trim()) {
+      parts.push(
+        <span key="text-end" className="whitespace-pre-wrap">
+          {remaining}
+        </span>
+      );
+    }
+  }
+
+  return parts.length > 0 ? parts : [<span key="empty" className="whitespace-pre-wrap">{content}</span>];
+};
+
+
 export default function DailyChallengesPage({ onStartChallenge }: DailyChallengesPageProps = {}) {
-  const [selectedMonth, setSelectedMonth] = useState('September 2025');
+  const [selectedMonth, setSelectedMonth] = useState('All Time');
   const [selectedTopic, setSelectedTopic] = useState('All Topics');
   const [selectedDifficulty, setSelectedDifficulty] = useState('All Levels');
   const [selectedStatus, setSelectedStatus] = useState('All Status');
@@ -42,10 +158,10 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
   const longestStreak = 23;
   const monthlyAttempts = 35;
 
-  // Updated challenge history with August-September 2025 data (50+ challenges)
+  // Updated challenge history with September-October 2025 data (50+ challenges)
   const challengeHistory = [
     {
-      date: '2025-09-28',
+      date: '2025-10-01',
       category: 'Derivatives',
       difficulty: 'Medium',
       question: "Chain Rule Application: Imagine you're explaining the chain rule to a study group. How would you describe when and why we use it for composite functions?",
@@ -53,153 +169,153 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
       score: 85,
       acceptanceRate: 84,
       timeSpent: '4 minutes',
-      answer: "The chain rule applies when differentiating composite functions f(g(x)). Steps: 1) Identify outer and inner functions, 2) Find derivative of outer function, 3) Multiply by derivative of inner function. Common mistakes: Forgetting the inner derivative, incorrect function identification, sign errors. Example: d/dx[sin(x²)] = cos(x²) · 2x"
+      answer: "The chain rule applies when differentiating composite functions $f(g(x))$. Steps: 1) Identify outer and inner functions, 2) Find derivative of outer function, 3) Multiply by derivative of inner function. Common mistakes: Forgetting the inner derivative, incorrect function identification, sign errors. Example: $$\\frac{d}{dx}[\\sin(x^2)] = \\cos(x^2) \\cdot 2x$$"
     },
     {
-      date: '2025-09-27',
+      date: '2025-09-30',
       category: 'Integration',
       difficulty: 'Hard',
-      question: "Integration by Parts: Explain when and how to use integration by parts, including the strategy for choosing u and dv.",
+      question: "Integration by Parts Strategy: Explain the LIATE method for choosing u and dv in integration by parts problems.",
       status: 'completed',
-      score: 92,
-      acceptanceRate: 65,
-      timeSpent: '7 minutes',
-      answer: "Integration by parts: ∫u dv = uv - ∫v du. Strategy for choosing u (LIATE): Logarithmic, Inverse trig, Algebraic, Trigonometric, Exponential. Choose u as the function that becomes simpler when differentiated. Example: ∫x ln(x) dx, let u = ln(x), dv = x dx."
+      score: 82,
+      acceptanceRate: 70,
+      timeSpent: '6 minutes',
+      answer: "LIATE priority: Logarithmic (highest), Inverse trig, Algebraic, Trigonometric, Exponential (lowest). Choose u from highest priority term available. Example: For $\\int x \\ln(x) dx$, choose $u = \\ln(x)$ and $dv = x dx$ since Logarithmic > Algebraic. Result: $\\frac{x^2}{2}\\ln(x) - \\int \\frac{x^2}{2} \\cdot \\frac{1}{x} dx = \\frac{x^2}{2}\\ln(x) - \\frac{x^2}{4}$"
     },
     {
-      date: '2025-09-26',
+      date: '2025-09-29',
       category: 'Limits',
       difficulty: 'Easy',
-      question: "Limit Evaluation: Explain the concept of limits and describe three methods for evaluating limits.",
+      question: "Limit Evaluation Methods: Compare three major approaches for evaluating limits and when to use each.",
       status: 'completed',
       score: 78,
       acceptanceRate: 92,
       timeSpent: '3 minutes',
-      answer: "Limits describe function behavior as input approaches a value. Methods: 1) Direct substitution (if function is continuous), 2) Factoring and cancellation for indeterminate forms, 3) L'Hôpital's rule for 0/0 or ∞/∞ forms. Limits form the foundation for derivatives and integrals."
+      answer: "Method 1: Direct substitution (if function continuous). Method 2: Factoring/cancellation for indeterminate forms like $\\frac{0}{0}$. Method 3: L'Hôpital's rule for $\\frac{0}{0}$ or $\\frac{\\infty}{\\infty}$, use $\\lim \\frac{f(x)}{g(x)} = \\lim \\frac{f'(x)}{g'(x)}$. Choose based on function form and indeterminacy type."
     },
     {
-      date: '2025-09-25',
+      date: '2025-09-28',
       category: 'Complex Numbers',
       difficulty: 'Medium',
-      question: "Complex Number Forms: Explain how to convert between rectangular and polar forms of complex numbers.",
+      question: "Complex Number Conversion: How do you convert between rectangular form (a+bi) and polar form (r, θ)?",
       status: 'completed',
       score: 88,
       acceptanceRate: 76,
       timeSpent: '5 minutes',
-      answer: "Rectangular: z = a + bi. Polar: z = r(cos θ + i sin θ) = re^(iθ). Conversion: r = √(a² + b²), θ = arctan(b/a). Polar form is useful for multiplication/division and finding powers/roots. Rectangular form is better for addition/subtraction."
+      answer: "Rectangular to polar: $r = \\sqrt{a^2 + b^2}$, $\\theta = \\arctan(b/a)$ (adjust quadrant). Polar to rectangular: $a = r\\cos(\\theta)$, $b = r\\sin(\\theta)$. Polar form: $z = r(\\cos\\theta + i\\sin\\theta) = re^{i\\theta}$ (Euler's form). Polar useful for products/powers, rectangular for addition/subtraction."
     },
     {
-      date: '2025-09-24',
-      category: 'Applications',
+      date: '2025-09-27',
+      category: 'Optimization',
       difficulty: 'Hard',
-      question: "Optimization Problems: Explain how to solve optimization problems using calculus, including the complete process.",
+      question: "Lagrange Multipliers: Explain how to use Lagrange multipliers for constrained optimization problems.",
       status: 'completed',
       score: 76,
       acceptanceRate: 58,
-      timeSpent: '6 minutes',
-      answer: "Optimization process: 1) Define variables and constraints, 2) Express objective function in terms of one variable, 3) Find critical points (f'(x) = 0), 4) Use second derivative test or endpoint comparison, 5) Verify answer makes physical sense. Always check boundary conditions."
+      timeSpent: '7 minutes',
+      answer: "To optimize $f(x,y)$ subject to constraint $g(x,y) = 0$: solve $\\nabla f = \\lambda \\nabla g$ with constraint. Set up: $\\frac{\\partial f}{\\partial x} = \\lambda \\frac{\\partial g}{\\partial x}$, $\\frac{\\partial f}{\\partial y} = \\lambda \\frac{\\partial g}{\\partial y}$, and $g(x,y) = 0$. The multiplier $\\lambda$ scales the constraint gradient. Extends to multiple constraints."
     },
     {
-      date: '2025-09-23',
+      date: '2025-09-26',
       category: 'Vectors',
       difficulty: 'Easy',
-      question: "Vector Operations: Explain dot product and cross product of vectors, including their geometric interpretations.",
+      question: "Vector Products: Explain dot product and cross product, including their geometric interpretations.",
       status: 'completed',
       score: 94,
       acceptanceRate: 89,
       timeSpent: '4 minutes',
-      answer: "Dot product: a·b = |a||b|cos(θ), gives scalar. Cross product: a×b = |a||b|sin(θ)n̂, gives vector perpendicular to both. Dot product measures projection, cross product gives area of parallelogram and perpendicular vector."
+      answer: "Dot product: $\\mathbf{a} \\cdot \\mathbf{b} = |\\mathbf{a}||\\mathbf{b}|\\cos(\\theta)$, scalar output, measures projection. Cross product: $|\\mathbf{a} \\times \\mathbf{b}| = |\\mathbf{a}||\\mathbf{b}|\\sin(\\theta)$, vector output perpendicular to both. Dot product zero means orthogonal; cross product zero means parallel. Used in physics and geometry."
     },
     {
-      date: '2025-09-22',
+      date: '2025-09-25',
       category: 'Integration',
       difficulty: 'Medium',
-      question: "Definite Integrals: Explain the Fundamental Theorem of Calculus and its applications.",
+      question: "Fundamental Theorem of Calculus: How does FTC connect integration and differentiation?",
       status: 'completed',
       score: 82,
       acceptanceRate: 71,
       timeSpent: '5 minutes',
-      answer: "FTC Part 1: If f is continuous on [a,b], then F(x) = ∫ᵃˣ f(t)dt is differentiable and F'(x) = f(x). FTC Part 2: ∫ᵃᵇ f(x)dx = F(b) - F(a) where F'(x) = f(x). Links differentiation and integration."
+      answer: "FTC Part 1: If $f$ continuous on $[a,b]$, then $F(x) = \\int_a^x f(t)dt$ is differentiable and $F'(x) = f(x)$. FTC Part 2: $\\int_a^b f(x)dx = F(b) - F(a)$ where $F'(x) = f(x)$. This connects the antiderivative (reverse of differentiation) to computing definite integrals. Foundation of calculus."
     },
     {
-      date: '2025-09-21',
+      date: '2025-09-24',
       category: 'Functions',
       difficulty: 'Easy',
-      question: "Function Composition: Explain function composition and how to evaluate composite functions f(g(x)).",
+      question: "Function Composition: How do you find and evaluate composite functions f(g(x))?",
       status: 'completed',
       score: 87,
       acceptanceRate: 91,
       timeSpent: '3 minutes',
-      answer: "Function composition (f∘g)(x) = f(g(x)) means applying g first, then f to the result. Domain of f∘g is restricted to values where g(x) is in domain of f. Example: If f(x) = x² and g(x) = x+1, then (f∘g)(x) = (x+1)²."
+      answer: "Composite function $(f \\circ g)(x) = f(g(x))$ means apply $g$ first, then $f$. Domain: $x$ must be in domain of $g$, and $g(x)$ must be in domain of $f$. Example: If $f(x) = x^2$ and $g(x) = x+1$, then $(f \\circ g)(x) = (x+1)^2 = x^2 + 2x + 1$. Order matters: $(f \\circ g) \\neq (g \\circ f)$ generally."
     },
     {
-      date: '2025-09-20',
-      category: 'Derivatives',
+      date: '2025-09-23',
+      category: 'Implicit Differentiation',
       difficulty: 'Medium',
-      question: "Implicit Differentiation: Explain when and how to use implicit differentiation with examples.",
+      question: "Implicit Differentiation: When should you use implicit differentiation and what's the process?",
       status: 'completed',
       score: 79,
       acceptanceRate: 68,
       timeSpent: '5 minutes',
-      answer: "Use implicit differentiation when y cannot be easily solved explicitly. Differentiate both sides with respect to x, treating y as function of x. Remember dy/dx appears in chain rule applications. Example: x² + y² = 25 → 2x + 2y(dy/dx) = 0 → dy/dx = -x/y."
+      answer: "Use when $y$ cannot be easily solved explicitly. Differentiate both sides with respect to $x$, treating $y$ as function of $x$. Remember $\\frac{d}{dx}[y^2] = 2y\\frac{dy}{dx}$. Example: $x^2 + y^2 = 25$ gives $2x + 2y\\frac{dy}{dx} = 0$, so $\\frac{dy}{dx} = -\\frac{x}{y}$. Useful for curves and relations."
     },
     {
-      date: '2025-09-19',
+      date: '2025-09-22',
       category: 'Trigonometry',
       difficulty: 'Medium',
-      question: "Trigonometric Identities: Explain the Pythagorean identities and how they're derived from the unit circle.",
+      question: "Trigonometric Identities: What are the Pythagorean identities and how are they derived?",
       status: 'completed',
       score: 84,
       acceptanceRate: 73,
       timeSpent: '4 minutes',
-      answer: "Main identity: sin²θ + cos²θ = 1 (from unit circle: x² + y² = 1). Dividing by cos²θ gives 1 + tan²θ = sec²θ. Dividing by sin²θ gives cot²θ + 1 = csc²θ. These form the foundation for solving trigonometric equations."
+      answer: "From unit circle ($x^2 + y^2 = 1$): $\\sin^2\\theta + \\cos^2\\theta = 1$. Divide by $\\cos^2\\theta$: $1 + \\tan^2\\theta = \\sec^2\\theta$. Divide by $\\sin^2\\theta$: $1 + \\cot^2\\theta = \\csc^2\\theta$. These identities are fundamental for solving trigonometric equations and proving other identities."
     },
     {
-      date: '2025-09-18',
+      date: '2025-09-21',
       category: 'Sequences',
       difficulty: 'Easy',
-      question: "Arithmetic Sequences: Explain arithmetic sequences and how to find the nth term and sum formulas.",
+      question: "Arithmetic Sequences: How do you find the nth term and sum of an arithmetic sequence?",
       status: 'completed',
       score: 91,
       acceptanceRate: 88,
       timeSpent: '3 minutes',
-      answer: "Arithmetic sequence has constant difference d. nth term: aₙ = a₁ + (n-1)d. Sum of first n terms: Sₙ = n/2[2a₁ + (n-1)d] or Sₙ = n/2(a₁ + aₙ). Example: 2, 5, 8, 11... has d=3, so a₁₀ = 2 + 9(3) = 29."
+      answer: "Arithmetic sequence with common difference $d$: $a_n = a_1 + (n-1)d$ for nth term. Sum of first $n$ terms: $S_n = \\frac{n}{2}[2a_1 + (n-1)d]$ or $S_n = \\frac{n}{2}(a_1 + a_n)$. Example: 2, 5, 8, 11,... has $d=3$, so $a_{10} = 2 + 9(3) = 29$ and $S_{10} = 5(2+29) = 155$."
     },
     {
-      date: '2025-09-17',
+      date: '2025-09-20',
       category: 'Logarithms',
       difficulty: 'Medium',
-      question: "Logarithmic Properties: Explain the three main logarithmic properties and their applications.",
+      question: "Logarithmic Properties: What are the three main logarithmic properties and their applications?",
       status: 'completed',
       score: 86,
       acceptanceRate: 75,
       timeSpent: '4 minutes',
-      answer: "Three main properties: 1) log(ab) = log(a) + log(b), 2) log(a/b) = log(a) - log(b), 3) log(aⁿ) = n·log(a). These follow from exponential properties. Useful for solving exponential equations and simplifying complex logarithmic expressions."
+      answer: "Property 1: $\\log(ab) = \\log a + \\log b$ (product rule). Property 2: $\\log(a/b) = \\log a - \\log b$ (quotient rule). Property 3: $\\log(a^n) = n \\log a$ (power rule). These come from exponent laws and help solve exponential equations, simplify expressions, and solve logarithmic equations."
     },
     {
-      date: '2025-09-16',
+      date: '2025-09-19',
       category: 'Matrices',
       difficulty: 'Hard',
-      question: "Matrix Multiplication: Explain matrix multiplication rules and when two matrices can be multiplied.",
+      question: "Matrix Multiplication: Explain when matrices can be multiplied and how the operation works.",
       status: 'completed',
       score: 73,
       acceptanceRate: 61,
       timeSpent: '6 minutes',
-      answer: "Matrices A(m×n) and B(p×q) can multiply if n=p, resulting in (m×q) matrix. Element (i,j) = sum of products of row i of A with column j of B. Not commutative: AB ≠ BA generally. Important for linear transformations and systems of equations."
+      answer: "Matrices $A_{m \\times n}$ and $B_{p \\times q}$ can multiply if $n = p$, producing $C_{m \\times q}$. Element $c_{ij}$ = dot product of row $i$ of $A$ with column $j$ of $B$. Not commutative: $AB \\neq BA$. Important for: linear transformations, systems of equations, computer graphics."
     },
     {
-      date: '2025-09-15',
+      date: '2025-09-18',
       category: 'Probability',
       difficulty: 'Easy',
-      question: "Basic Probability: Explain probability fundamentals including sample space, events, and basic probability rules.",
+      question: "Basic Probability: What are the fundamental concepts of probability and basic rules?",
       status: 'completed',
       score: 89,
       acceptanceRate: 86,
       timeSpent: '3 minutes',
-      answer: "Probability P(E) = favorable outcomes / total outcomes. Sample space Ω contains all possible outcomes. Events are subsets of Ω. Basic rules: 0 ≤ P(E) ≤ 1, P(Ω) = 1, P(A∪B) = P(A) + P(B) - P(A∩B) for any events A,B."
+      answer: "$P(E) = \\frac{\\text{favorable outcomes}}{\\text{total outcomes}}$. Properties: $0 \\leq P(E) \\leq 1$, $P(\\Omega) = 1$. Addition rule: $P(A \\cup B) = P(A) + P(B) - P(A \\cap B)$. Complement rule: $P(A^c) = 1 - P(A)$. Conditional: $P(A|B) = \\frac{P(A \\cap B)}{P(B)}$."
     },
     {
-      date: '2025-09-14',
+      date: '2025-09-17',
       category: 'Polynomials',
       difficulty: 'Medium',
       question: "Polynomial Division: Explain long division and synthetic division for polynomials.",
@@ -207,228 +323,406 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
       score: 81,
       acceptanceRate: 69,
       timeSpent: '5 minutes',
-      answer: "Long division: Divide highest degree terms, multiply back, subtract, repeat. Synthetic division: Shortcut for (x-c) divisors using only coefficients. Both give quotient and remainder. If remainder = 0, divisor is a factor. Useful for factoring and finding roots."
+      answer: "Long division: Divide leading terms, multiply back, subtract, repeat. Synthetic division: Shortcut for dividing by $(x-c)$ using only coefficients. Both yield quotient and remainder. If remainder is 0, divisor is a factor. Example: $\\frac{x^3 - 2x^2 + 5}{x-1}$ has remainder 4 by synthetic division."
     },
     {
-      date: '2025-09-13',
+      date: '2025-09-16',
       category: 'Integration',
       difficulty: 'Hard',
-      question: "Trigonometric Substitution: Explain when and how to use trigonometric substitution in integration.",
+      question: "Trigonometric Substitution: When and how do you use trigonometric substitution in integration?",
       status: 'completed',
       score: 77,
       acceptanceRate: 54,
       timeSpent: '7 minutes',
-      answer: "Use for integrands with √(a²-x²), √(x²+a²), or √(x²-a²). Substitutions: x=a·sin(θ), x=a·tan(θ), x=a·sec(θ) respectively. Draw reference triangles to convert back. Transforms algebraic expressions to trigonometric ones that are easier to integrate."
+      answer: "Use for expressions containing $\\sqrt{a^2-x^2}$, $\\sqrt{x^2+a^2}$, or $\\sqrt{x^2-a^2}$. Substitutions: $x = a\\sin\\theta$, $x = a\\tan\\theta$, $x = a\\sec\\theta$ respectively. Draw right triangle to convert back. Example: $\\int \\sqrt{1-x^2}dx$ with $x = \\sin\\theta$ becomes $\\int \\cos^2\\theta d\\theta = \\frac{\\theta}{2} + \\frac{\\sin(2\\theta)}{4}$."
     },
     {
-      date: '2025-09-12',
+      date: '2025-09-15',
       category: 'Series',
       difficulty: 'Hard',
-      question: "Convergence Tests: Explain three different tests for determining series convergence.",
+      question: "Convergence Tests: Compare three major tests for determining series convergence.",
       status: 'completed',
       score: 71,
       acceptanceRate: 48,
       timeSpent: '8 minutes',
-      answer: "1) Ratio test: lim|aₙ₊₁/aₙ| < 1 converges, > 1 diverges. 2) Root test: lim|aₙ|^(1/n) < 1 converges. 3) Integral test: If f(x) integrable and decreasing, ∫f(x)dx and Σf(n) have same convergence. Choose test based on series form."
+      answer: "Ratio Test: $\\lim_{n \\to \\infty} |a_{n+1}/a_n| < 1$ converges, $> 1$ diverges. Root Test: $\\lim_{n \\to \\infty} |a_n|^{1/n} < 1$ converges. Integral Test: For positive decreasing $f$, $\\int f(x)dx$ and $\\sum f(n)$ have same convergence. Choose based on series form: ratio for factorials/exponentials, integral for functions."
     },
     {
-      date: '2025-09-11',
+      date: '2025-09-14',
       category: 'Limits',
       difficulty: 'Medium',
-      question: "L'Hôpital's Rule: Explain L'Hôpital's rule and when it can be applied to evaluate limits.",
+      question: "L'Hôpital's Rule: When can you apply L'Hôpital's rule and how does it work?",
       status: 'completed',
       score: 83,
       acceptanceRate: 72,
       timeSpent: '4 minutes',
-      answer: "L'Hôpital's rule applies to indeterminate forms 0/0 or ∞/∞. If lim f(x)/g(x) gives these forms, then lim f(x)/g(x) = lim f'(x)/g'(x) (if this limit exists). Can apply repeatedly. Also works for 0·∞, ∞-∞ after algebraic manipulation."
+      answer: "Apply to indeterminate forms $\\frac{0}{0}$ or $\\frac{\\infty}{\\infty}$. If $\\lim \\frac{f(x)}{g(x)}$ gives these forms, then $\\lim \\frac{f(x)}{g(x)} = \\lim \\frac{f'(x)}{g'(x)}$ (if limit exists). Can apply repeatedly. Also works for $0 \\cdot \\infty$, $\\infty - \\infty$ after algebraic manipulation into fraction form."
     },
     {
-      date: '2025-09-10',
+      date: '2025-09-13',
       category: 'Exponentials',
       difficulty: 'Easy',
-      question: "Exponential Functions: Explain properties of exponential functions and their graphs.",
+      question: "Exponential Functions: What are the key properties of exponential functions and their behavior?",
       status: 'completed',
       score: 92,
       acceptanceRate: 89,
       timeSpent: '3 minutes',
-      answer: "f(x) = aˣ where a > 0, a ≠ 1. Properties: Domain ℝ, range (0,∞), horizontal asymptote y=0. If a > 1: increasing, if 0 < a < 1: decreasing. Key property: aˣ⁺ʸ = aˣ · aʸ. Base e gives natural exponential function eˣ."
+      answer: "Exponential function $f(x) = a^x$ where $a > 0, a \\neq 1$. Domain: $\\mathbb{R}$, Range: $(0, \\infty)$. Horizontal asymptote: $y = 0$. If $a > 1$: increasing (growth), if $0 < a < 1$: decreasing (decay). Key property: $a^{x+y} = a^x \\cdot a^y$. Natural exponential $e^x$ has special properties in calculus."
     },
     {
-      date: '2025-09-09',
+      date: '2025-09-12',
       category: 'Derivatives',
       difficulty: 'Easy',
-      question: "Power Rule: Explain the power rule for differentiation and provide examples.",
+      question: "Power Rule for Differentiation: How do you use the power rule and what are its limitations?",
       status: 'completed',
       score: 95,
       acceptanceRate: 94,
       timeSpent: '2 minutes',
-      answer: "Power rule: d/dx[xⁿ] = n·xⁿ⁻¹ for any real number n. Examples: d/dx[x³] = 3x², d/dx[√x] = d/dx[x^(1/2)] = (1/2)x^(-1/2) = 1/(2√x). Works for negative and fractional exponents too."
+      answer: "Power rule: $\\frac{d}{dx}[x^n] = n \\cdot x^{n-1}$ for any real $n$. Examples: $\\frac{d}{dx}[x^3] = 3x^2$, $\\frac{d}{dx}[\\sqrt{x}] = \\frac{1}{2\\sqrt{x}}$, $\\frac{d}{dx}[x^{-1}] = -x^{-2}$. Works for negative and fractional exponents. Combine with chain rule and product rule for complex functions."
     },
     {
-      date: '2025-09-08',
+      date: '2025-09-11',
       category: 'Geometry',
       difficulty: 'Medium',
-      question: "Circle Equations: Explain standard and general forms of circle equations and how to convert between them.",
+      question: "Circle Equations: How do you convert between standard and general forms of circle equations?",
       status: 'completed',
       score: 88,
       acceptanceRate: 76,
       timeSpent: '4 minutes',
-      answer: "Standard form: (x-h)² + (y-k)² = r² with center (h,k) and radius r. General form: x² + y² + Dx + Ey + F = 0. Convert by completing the square: group x and y terms, complete squares, rearrange to standard form."
+      answer: "Standard form: $(x-h)^2 + (y-k)^2 = r^2$ with center $(h,k)$ and radius $r$. General form: $x^2 + y^2 + Dx + Ey + F = 0$. Convert to standard by completing the square: group $x$ and $y$ terms, complete each square separately, rearrange. Center: $(-D/2, -E/2)$, Radius: $\\sqrt{(D/2)^2 + (E/2)^2 - F}$."
     },
     {
-      date: '2025-08-30',
+      date: '2025-09-10',
       category: 'Matrices',
       difficulty: 'Hard',
-      question: "Matrix Determinants: Explain methods for calculating determinants and their geometric significance.",
+      question: "Matrix Determinants: How are determinants calculated and what do they represent?",
       status: 'completed',
       score: 69,
       acceptanceRate: 52,
       timeSpent: '8 minutes',
-      answer: "For 2×2: det(A) = ad - bc. For 3×3: use cofactor expansion. Geometric meaning: determinant gives scaling factor of linear transformation. Zero determinant means matrix is singular (not invertible). Sign indicates orientation preservation."
+      answer: "For $2 \\times 2$: $\\det(A) = ad - bc$ where $A = \\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}$. For $3 \\times 3$: use cofactor expansion along any row/column. Geometric meaning: determinant is the scaling factor of linear transformation. Zero determinant means singular matrix (not invertible). Sign indicates orientation change."
     },
     {
-      date: '2025-08-29',
+      date: '2025-09-09',
       category: 'Statistics',
       difficulty: 'Medium',
-      question: "Standard Deviation: Explain how to calculate and interpret standard deviation in data analysis.",
+      question: "Standard Deviation: How do you calculate and interpret standard deviation?",
       status: 'completed',
       score: 85,
       acceptanceRate: 74,
       timeSpent: '4 minutes',
-      answer: "Standard deviation σ = √(Σ(xᵢ-μ)²/N) for population, s = √(Σ(xᵢ-x̄)²/(n-1)) for sample. Measures spread of data around mean. Smaller σ means data clustered near mean. About 68% of normal data falls within 1σ of mean."
+      answer: "Population: $\\sigma = \\sqrt{\\frac{\\sum(x_i - \\mu)^2}{N}}$. Sample: $s = \\sqrt{\\frac{\\sum(x_i - \\bar{x})^2}{n-1}}$. Measures data spread around mean. Smaller $\\sigma$ means data clustered tighter. Empirical rule: 68% within 1$\\sigma$, 95% within 2$\\sigma$, 99.7% within 3$\\sigma$ for normal distributions."
     },
     {
-      date: '2025-08-28',
+      date: '2025-09-08',
       category: 'Quadratics',
       difficulty: 'Easy',
-      question: "Quadratic Formula: Explain the quadratic formula and how to use the discriminant.",
+      question: "Quadratic Formula and Discriminant: What does the discriminant tell you about quadratic equation solutions?",
       status: 'completed',
       score: 91,
       acceptanceRate: 87,
       timeSpent: '3 minutes',
-      answer: "For ax² + bx + c = 0: x = (-b ± √(b²-4ac))/(2a). Discriminant Δ = b²-4ac determines nature of roots: Δ > 0 (two real roots), Δ = 0 (one repeated root), Δ < 0 (no real roots, two complex roots)."
+      answer: "For $ax^2 + bx + c = 0$: $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$. Discriminant $\\Delta = b^2 - 4ac$ determines roots: $\\Delta > 0$ (two distinct real roots), $\\Delta = 0$ (one repeated real root), $\\Delta < 0$ (no real roots, two complex conjugate roots). Sign of $a$ determines parabola direction."
     },
     {
-      date: '2025-08-27',
+      date: '2025-09-07',
       category: 'Vectors',
       difficulty: 'Medium',
-      question: "Vector Projections: Explain how to find the projection of one vector onto another.",
+      question: "Vector Projections: How do you find the projection of one vector onto another?",
       status: 'completed',
       score: 82,
       acceptanceRate: 71,
       timeSpent: '5 minutes',
-      answer: "Projection of vector a onto b: proj_b(a) = ((a·b)/|b|²)b. This gives the component of a in direction of b. Scalar projection (length): comp_b(a) = (a·b)/|b|. Useful in physics for finding components and work calculations."
+      answer: "Projection of $\\mathbf{a}$ onto $\\mathbf{b}$: $\\text{proj}_{\\mathbf{b}}(\\mathbf{a}) = \\frac{\\mathbf{a} \\cdot \\mathbf{b}}{|\\mathbf{b}|^2} \\mathbf{b}$. Scalar projection (component): $\\text{comp}_{\\mathbf{b}}(\\mathbf{a}) = \\frac{\\mathbf{a} \\cdot \\mathbf{b}}{|\\mathbf{b}|}$. Gives the component of $\\mathbf{a}$ in direction of $\\mathbf{b}$. Used in physics for force components and work calculations."
+    },
+    {
+      date: '2025-09-06',
+      category: 'Functions',
+      difficulty: 'Easy',
+      question: "Function Inverses: How do you find, verify, and graph function inverses?",
+      status: 'completed',
+      score: 86,
+      acceptanceRate: 82,
+      timeSpent: '4 minutes',
+      answer: "To find: swap $x$ and $y$, solve for $y$. To verify: check $f^{-1}(f(x)) = x$ and $f(f^{-1}(x)) = x$. Graph of $f^{-1}$ is reflection of $f$ across line $y = x$. Domain of $f$ becomes range of $f^{-1}$ and vice versa. Function must be one-to-one (pass horizontal line test) to have inverse."
+    },
+    {
+      date: '2025-09-05',
+      category: 'Algebra',
+      difficulty: 'Medium',
+      question: "Solving Quadratic Equations: What are the main methods and when to use each?",
+      status: 'completed',
+      score: 89,
+      acceptanceRate: 87,
+      timeSpent: '4 minutes',
+      answer: "Method 1: Factoring (fastest if factors are obvious). Method 2: Completing the square (shows vertex form, works always). Method 3: Quadratic formula $x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$ (always works). Discriminant $\\Delta = b^2 - 4ac$ determines solution type: positive (two real), zero (one), negative (complex). Choose based on form."
+    },
+    {
+      date: '2025-09-04',
+      category: 'Geometry',
+      difficulty: 'Easy',
+      question: "Triangle Properties and Pythagorean Theorem: What are the key triangle properties and relationships?",
+      status: 'completed',
+      score: 91,
+      acceptanceRate: 88,
+      timeSpent: '3 minutes',
+      answer: "Triangle types: equilateral (all equal, 60° angles), isosceles (two equal sides), scalene (all different). Angle sum: 180°. Area: $\\frac{1}{2}bh$. Pythagorean theorem: $a^2 + b^2 = c^2$ for right triangles. Special right triangles: 45-45-90 (sides $1:1:\\sqrt{2}$) and 30-60-90 (sides $1:\\sqrt{3}:2$)."
+    },
+    {
+      date: '2025-09-03',
+      category: 'Linear Systems',
+      difficulty: 'Medium',
+      question: "Systems of Linear Equations: What are the main methods for solving systems?",
+      status: 'completed',
+      score: 85,
+      acceptanceRate: 79,
+      timeSpent: '5 minutes',
+      answer: "Method 1: Substitution (solve one variable, substitute into other). Method 2: Elimination (add/subtract equations to eliminate variable). Method 3: Graphing (find intersection point). Method 4: Matrix methods (row reduction to row echelon form). Solutions: unique (consistent, independent), infinitely many (consistent, dependent), or none (inconsistent)."
+    },
+    {
+      date: '2025-09-02',
+      category: 'Trigonometry',
+      difficulty: 'Medium',
+      question: "Solving Trigonometric Equations: How do you find all solutions to trigonometric equations?",
+      status: 'completed',
+      score: 80,
+      acceptanceRate: 72,
+      timeSpent: '5 minutes',
+      answer: "Process: 1) Isolate trig function, 2) Find reference angle, 3) Use unit circle and periodicity. General solutions: $\\sin(\\theta) = a$ gives $\\theta = \\arcsin(a) + 2\\pi k$ or $\\pi - \\arcsin(a) + 2\\pi k$. $\\cos(\\theta) = a$ gives $\\theta = \\pm \\arccos(a) + 2\\pi k$. $\\tan(\\theta) = a$ gives $\\theta = \\arctan(a) + \\pi k$ where $k \\in \\mathbb{Z}$."
+    },
+    {
+      date: '2025-09-01',
+      category: 'Algebra',
+      difficulty: 'Easy',
+      question: "Laws of Exponents: How do you apply exponent rules to simplify expressions?",
+      status: 'completed',
+      score: 93,
+      acceptanceRate: 92,
+      timeSpent: '3 minutes',
+      answer: "Product rule: $a^m \\cdot a^n = a^{m+n}$. Quotient rule: $\\frac{a^m}{a^n} = a^{m-n}$. Power rule: $(a^m)^n = a^{mn}$. Product to power: $(ab)^n = a^n b^n$. Special: $a^0 = 1$, $a^{-n} = \\frac{1}{a^n}$, $a^{1/n} = \\sqrt[n]{a}$. These rules apply to all real numbers and are foundational."
+    },
+    {
+      date: '2025-08-31',
+      category: 'Calculus',
+      difficulty: 'Medium',
+      question: "Continuity and Differentiability: What's the relationship between these concepts?",
+      status: 'completed',
+      score: 87,
+      acceptanceRate: 81,
+      timeSpent: '4 minutes',
+      answer: "Continuous at $x=c$: $\\lim_{x \\to c} f(x) = f(c)$. Differentiable at $c$: $f'(c)$ exists (function is smooth). Key: Differentiability implies continuity, but continuity doesn't guarantee differentiability (e.g., $|x|$ at $x=0$ is continuous but not differentiable). Check derivatives from left and right for sharp corners."
+    },
+    {
+      date: '2025-08-30',
+      category: 'Discrete Math',
+      difficulty: 'Medium',
+      question: "Combinations and Permutations: When do you use each and how do you calculate them?",
+      status: 'completed',
+      score: 84,
+      acceptanceRate: 78,
+      timeSpent: '4 minutes',
+      answer: "Permutations $P(n,r) = \\frac{n!}{(n-r)!}$ when order matters (arrangements). Combinations $C(n,r) = \\frac{n!}{r!(n-r)!}$ when order doesn't matter (selections). Example: President/VP from 5 people is $P(5,2) = 20$ (order matters). Selecting 2 committee members from 5 is $C(5,2) = 10$ (order irrelevant). Use in probability and counting problems."
+    },
+    {
+      date: '2025-08-29',
+      category: 'Analysis',
+      difficulty: 'Hard',
+      question: "Mean Value Theorem: What does MVT state and what are its implications?",
+      status: 'completed',
+      score: 76,
+      acceptanceRate: 62,
+      timeSpent: '6 minutes',
+      answer: "MVT: If $f$ continuous on $[a,b]$ and differentiable on $(a,b)$, then $\\exists c \\in (a,b)$ where $f'(c) = \\frac{f(b)-f(a)}{b-a}$. Geometric meaning: instantaneous rate equals average rate at some point. Applications: prove constant functions have $f'=0$, increasing functions have $f'>0$, understand function behavior from derivatives."
+    },
+    {
+      date: '2025-08-28',
+      category: 'Sequences',
+      difficulty: 'Medium',
+      question: "Convergence of Sequences: When does a sequence converge and how do you find limits?",
+      status: 'completed',
+      score: 81,
+      acceptanceRate: 69,
+      timeSpent: '5 minutes',
+      answer: "Sequence $\\{a_n\\}$ converges to $L$ if: for every $\\epsilon > 0$, $\\exists N$ where $|a_n - L| < \\epsilon$ for all $n > N$. Examples: $a_n = \\frac{1}{n} \\to 0$, $a_n = c \\to c$, $a_n = r^n \\to 0$ if $|r| < 1$. Algebra limit theorem: limits of sums equal sums of limits (when both exist). Useful for series and analyzing function behavior."
+    },
+    {
+      date: '2025-08-27',
+      category: 'Calculus',
+      difficulty: 'Hard',
+      question: "Improper Integrals: How do you evaluate integrals with infinite limits or discontinuities?",
+      status: 'completed',
+      score: 73,
+      acceptanceRate: 57,
+      timeSpent: '7 minutes',
+      answer: "For $\\int_a^\\infty f(x)dx$, compute $\\lim_{t \\to \\infty} \\int_a^t f(x)dx$. For discontinuity at $c \\in (a,b)$, split integral and use limits. Converges if limit is finite. Example: $\\int_1^\\infty \\frac{1}{x^2}dx = \\lim_{t \\to \\infty}[-\\frac{1}{x}]_1^t = 1$ (converges). Use comparison test if direct evaluation difficult."
     },
     {
       date: '2025-08-26',
-      category: 'Rational Functions',
-      difficulty: 'Hard',
-      question: "Partial Fractions: Explain the method of partial fraction decomposition for rational functions.",
+      category: 'Linear Algebra',
+      difficulty: 'Medium',
+      question: "Eigenvalues and Eigenvectors: What do they represent and how are they found?",
       status: 'completed',
-      score: 74,
-      acceptanceRate: 59,
+      score: 78,
+      acceptanceRate: 65,
       timeSpent: '6 minutes',
-      answer: "Decompose P(x)/Q(x) where degree P < degree Q. Factor Q(x), write as sum: A/(x-a) for linear factors, (Ax+B)/(x²+bx+c) for irreducible quadratics. Solve for constants by clearing denominators or substitution. Essential for integration of rational functions."
+      answer: "For matrix $A$, eigenvector $\\mathbf{v}$ with eigenvalue $\\lambda$ satisfies $A\\mathbf{v} = \\lambda\\mathbf{v}$. Find eigenvalues from $\\det(A - \\lambda I) = 0$ (characteristic equation). Eigenvectors found by solving $(A - \\lambda I)\\mathbf{v} = \\mathbf{0}$. Geometric meaning: eigenvectors not rotated by transformation, only scaled. Used in diagonalization and stability analysis."
     },
     {
       date: '2025-08-25',
-      category: 'Trigonometry',
+      category: 'Statistics',
       difficulty: 'Easy',
-      question: "Unit Circle: Explain the unit circle and how to find exact trigonometric values.",
+      question: "Probability Distributions: Which distributions apply to which situations?",
       status: 'completed',
-      score: 93,
-      acceptanceRate: 90,
-      timeSpent: '3 minutes',
-      answer: "Unit circle has radius 1 centered at origin. Point (cos θ, sin θ) corresponds to angle θ. Key angles: 0°, 30°, 45°, 60°, 90° and their multiples. Exact values use √2/2, √3/2, 1/2. All trig functions can be derived from coordinates."
+      score: 89,
+      acceptanceRate: 84,
+      timeSpent: '4 minutes',
+      answer: "Normal: continuous data, bell curve, mean=median=mode. Binomial: discrete, $n$ trials, probability $p$ each trial. Poisson: rare events, count data. Uniform: equal probability across range. Exponential: time between events, decay. Student's t: small sample means. Choose based on data type and context. Normal widely applicable by Central Limit Theorem."
     },
     {
       date: '2025-08-24',
-      category: 'Inequalities',
+      category: 'Functions',
       difficulty: 'Medium',
-      question: "Solving Inequalities: Explain methods for solving polynomial and rational inequalities.",
+      question: "Asymptotes: How do you find vertical, horizontal, and oblique asymptotes?",
       status: 'completed',
-      score: 79,
-      acceptanceRate: 67,
-      timeSpent: '5 minutes',
-      answer: "For polynomial inequalities: 1) Find zeros, 2) Test intervals between zeros, 3) Consider sign changes. For rational inequalities: also find where denominator = 0 (vertical asymptotes). Use sign charts or graphing. Remember inequality reverses when multiplying/dividing by negatives."
+      score: 86,
+      acceptanceRate: 77,
+      timeSpent: '4 minutes',
+      answer: "Vertical: set denominator $= 0$ (check not canceled by numerator). Horizontal: compare polynomial degrees in rational function. Degree(numerator) $<$ degree(denominator) → $y=0$. Equal degrees → $y =$ ratio of leading coefficients. Degree(num) $>$ degree(denom) by 1 → oblique asymptote from polynomial division. Sketch using asymptotes as guides."
     },
     {
       date: '2025-08-23',
-      category: 'Complex Numbers',
-      difficulty: 'Hard',
-      question: "De Moivre's Theorem: Explain De Moivre's theorem and its applications to powers and roots.",
+      category: 'Discrete Math',
+      difficulty: 'Easy',
+      question: "Boolean Algebra: What are the fundamental operations and properties?",
       status: 'completed',
-      score: 68,
-      acceptanceRate: 51,
-      timeSpent: '7 minutes',
-      answer: "De Moivre's theorem: (r(cos θ + i sin θ))ⁿ = rⁿ(cos nθ + i sin nθ). Used for powers of complex numbers in polar form. For nth roots: if z = r(cos θ + i sin θ), then nth roots are r^(1/n)(cos((θ+2πk)/n) + i sin((θ+2πk)/n)) for k = 0,1,...,n-1."
+      score: 90,
+      acceptanceRate: 86,
+      timeSpent: '3 minutes',
+      answer: "Boolean values: 1 (true), 0 (false). Operations: AND (·, true only if both true), OR (+, true if any true), NOT (', inverts). De Morgan's Laws: $(A \\cdot B)' = A' + B'$, $(A + B)' = A' \\cdot B'$. Truth tables show all input/output combinations. Used in logic circuits, programming, and switching theory."
     },
     {
       date: '2025-08-22',
       category: 'Calculus',
       difficulty: 'Medium',
-      question: "Related Rates: Explain the approach to solving related rates problems in calculus.",
+      question: "Concavity and Inflection Points: How do you analyze these properties?",
       status: 'completed',
-      score: 80,
-      acceptanceRate: 70,
-      timeSpent: '5 minutes',
-      answer: "Related rates steps: 1) Identify given and unknown rates, 2) Draw diagram and define variables, 3) Write equation relating variables, 4) Differentiate implicitly with respect to time, 5) Substitute known values and solve. Chain rule is essential."
+      score: 82,
+      acceptanceRate: 74,
+      timeSpent: '4 minutes',
+      answer: "Concave up: $f''(x) > 0$, graph shaped like $\\cup$. Concave down: $f''(x) < 0$, shaped like $\\cap$. Inflection point: where $f''(x) = 0$ and changes sign. Find by: 1) compute $f''(x)$, 2) solve $f''(x) = 0$, 3) test sign on each side. Graph changes from concave up to down (or vice versa) at inflection point. Helps sketch accurate graphs."
     },
     {
       date: '2025-08-21',
-      category: 'Functions',
-      difficulty: 'Easy',
-      question: "Domain and Range: Explain how to find the domain and range of various types of functions.",
+      category: 'Algebra',
+      difficulty: 'Medium',
+      question: "Rational Functions: What are their properties and how do you graph them?",
       status: 'completed',
-      score: 88,
-      acceptanceRate: 85,
-      timeSpent: '3 minutes',
-      answer: "Domain: all valid input values. Restrictions: division by zero, negative under square roots, negative bases with fractional exponents. Range: all possible output values. For polynomials: domain = ℝ. Use graphs, end behavior, and critical points to find range."
+      score: 85,
+      acceptanceRate: 76,
+      timeSpent: '5 minutes',
+      answer: "Rational function: $f(x) = \\frac{P(x)}{Q(x)}$. Domain: all real except where $Q(x) = 0$. Vertical asymptotes at zeros of denominator (if not canceled). Horizontal/oblique from degree analysis. Holes where both cancel. X-intercepts: $P(x) = 0$. Y-intercept: $f(0)$. Sketch by analyzing all features systematically."
     },
     {
       date: '2025-08-20',
-      category: 'Series',
-      difficulty: 'Medium',
-      question: "Geometric Series: Explain geometric series and their convergence conditions.",
+      category: 'Trigonometry',
+      difficulty: 'Easy',
+      question: "Inverse Trigonometric Functions: What are their domains, ranges, and uses?",
       status: 'completed',
-      score: 84,
-      acceptanceRate: 73,
-      timeSpent: '4 minutes',
-      answer: "Geometric series: Σar^n from n=0 to ∞. Converges if |r| < 1 with sum a/(1-r). Diverges if |r| ≥ 1. Partial sum: Sₙ = a(1-r^(n+1))/(1-r). Common applications: infinite decimals, compound interest, population models."
+      score: 92,
+      acceptanceRate: 89,
+      timeSpent: '3 minutes',
+      answer: "$\\arcsin$: domain $[-1,1]$, range $[-\\pi/2, \\pi/2]$. $\\arccos$: domain $[-1,1]$, range $[0, \\pi]$. $\\arctan$: domain $\\mathbb{R}$, range $(-\\pi/2, \\pi/2)$. Properties: $\\arcsin(\\sin(\\theta)) = \\theta$ only if $\\theta \\in [-\\pi/2, \\pi/2]$. Used to find angles from trigonometric ratios and solve inverse trig equations."
     },
     {
-      date: '2025-09-29',
+      date: '2025-08-19',
+      category: 'Linear Algebra',
+      difficulty: 'Hard',
+      question: "Vector Spaces and Subspaces: What defines them and how do you verify properties?",
+      status: 'completed',
+      score: 72,
+      acceptanceRate: 58,
+      timeSpent: '7 minutes',
+      answer: "Vector space: closed under addition and scalar multiplication, contains zero vector, has additive inverses, satisfies distributive laws. Subspace: subset of vector space that's itself a vector space. Verify subspace: non-empty, closed under addition and scalar multiplication. Examples: null space, column space, row space. Important for understanding linear transformations."
+    },
+    {
+      date: '2025-08-18',
+      category: 'Calculus',
+      difficulty: 'Easy',
+      question: "Derivatives of Exponential Functions: How do you differentiate exponential functions?",
+      status: 'completed',
+      score: 94,
+      acceptanceRate: 91,
+      timeSpent: '2 minutes',
+      answer: "$\\frac{d}{dx}[e^x] = e^x$. $\\frac{d}{dx}[a^x] = a^x \\ln(a)$ for any base $a > 0$. Chain rule: $\\frac{d}{dx}[e^{f(x)}] = e^{f(x)} \\cdot f'(x)$. Example: $\\frac{d}{dx}[e^{x^2}] = 2x e^{x^2}$. Natural exponential is special: derivative equals itself. Essential for modeling growth and decay."
+    },
+    {
+      date: '2025-08-17',
+      category: 'Statistics',
+      difficulty: 'Medium',
+      question: "Hypothesis Testing: What are the key steps and how do you interpret p-values?",
+      status: 'completed',
+      score: 81,
+      acceptanceRate: 71,
+      timeSpent: '5 minutes',
+      answer: "Steps: 1) State null hypothesis $H_0$ and alternative $H_1$, 2) Choose significance level $\\alpha$, 3) Compute test statistic, 4) Calculate p-value, 5) Reject $H_0$ if $p < \\alpha$. P-value: probability of data assuming $H_0$ true. Smaller $p$ is stronger evidence against $H_0$. Common significance: $\\alpha = 0.05$ (5% error rate)."
+    },
+    {
+      date: '2025-08-16',
       category: 'Calculus',
       difficulty: 'Medium',
-      question: "Fundamental Theorem of Calculus: Explain both parts and provide practical applications in real-world scenarios.",
+      question: "Logarithmic Differentiation: When is it useful and how do you apply it?",
       status: 'completed',
-      score: null,
-      acceptanceRate: 78,
-      timeSpent: null,
-      answer: null
+      score: 79,
+      acceptanceRate: 68,
+      timeSpent: '5 minutes',
+      answer: "Useful for: 1) Products/quotients (logs simplify), 2) Functions like $x^x$ where variable is base and exponent. Process: 1) Take $\\ln$ both sides, 2) differentiate implicitly, 3) solve for $\\frac{dy}{dx}$, 4) substitute. Example: $y = x^x$, so $\\ln(y) = x\\ln(x)$, then $\\frac{y'}{y} = \\ln(x) + 1$, so $y' = x^x(\\ln(x) + 1)$."
     },
     {
-      date: '2025-09-30',
-      category: 'Statistics',
-      difficulty: 'Easy',
-      question: "Central Limit Theorem: Explain what it states and why it's important in statistical analysis.",
+      date: '2025-08-15',
+      category: 'Discrete Math',
+      difficulty: 'Medium',
+      question: "Graph Theory Basics: What are vertices, edges, paths, and graph types?",
       status: 'completed',
-      score: null,
-      acceptanceRate: 85,
-      timeSpent: null,
-      answer: null
+      score: 83,
+      acceptanceRate: 75,
+      timeSpent: '4 minutes',
+      answer: "Graph: set of vertices (nodes) and edges (connections). Path: sequence of vertices connected by edges, length is number of edges. Cycle: path returning to starting vertex. Types: directed/undirected, weighted/unweighted, simple/multigraph. Degree: edges incident to vertex. Eulerian path visits each edge once; Hamiltonian visits each vertex once."
     },
-    {date: '2025-10-01',
-     category: 'Derivatives',
-     difficulty: 'Medium',
-     question: 'Explain how the chain rule works when finding the derivative of composite functions. Use the example f(g(x)) where f(u) = u² and g(x) = 3x + 1 to illustrate your explanation.',
-     status: 'completed',
-     score: null,
-     acceptanceRate: 80,
-     timeSpent:null,
-     answer:null,
+    {
+      date: '2025-08-14',
+      category: 'Algebra',
+      difficulty: 'Easy',
+      question: "Radicals and Rational Exponents: How do you simplify radical expressions?",
+      status: 'completed',
+      score: 91,
+      acceptanceRate: 87,
+      timeSpent: '3 minutes',
+      answer: "$\\sqrt[n]{a} = a^{1/n}$. Simplify by factoring perfect powers: $\\sqrt[3]{24} = \\sqrt[3]{8 \\cdot 3} = 2\\sqrt[3]{3}$. Rationalize denominator: multiply by conjugate or appropriate form. Properties: $\\sqrt[n]{a} \\cdot \\sqrt[n]{b} = \\sqrt[n]{ab}$, $\\sqrt[n]{a^m} = a^{m/n}$. Works for negative and fractional exponents."
+    },
+    {
+      date: '2025-08-13',
+      category: 'Calculus',
+      difficulty: 'Hard',
+      question: "Optimization with Constraints: How do Lagrange multipliers work?",
+      status: 'completed',
+      score: 74,
+      acceptanceRate: 61,
+      timeSpent: '7 minutes',
+      answer: "To optimize $f(x,y)$ subject to $g(x,y) = 0$, solve $\\nabla f = \\lambda \\nabla g$ with constraint. Set up system: $\\frac{\\partial f}{\\partial x} = \\lambda \\frac{\\partial g}{\\partial x}$, $\\frac{\\partial f}{\\partial y} = \\lambda \\frac{\\partial g}{\\partial y}$, and $g(x,y) = 0$. Multiplier $\\lambda$ scales constraint gradient. Extends to multiple constraints by adding more multipliers. Powerful for constrained optimization."
+    },
+    {
+      date: '2025-08-12',
+      category: 'Functions',
+      difficulty: 'Medium',
+      question: "Piecewise Functions: How do you define, graph, and evaluate piecewise functions?",
+      status: 'completed',
+      score: 80,
+      acceptanceRate: 73,
+      timeSpent: '4 minutes',
+      answer: "Piecewise function defined by different formulas on different intervals. Example: $f(x) = \\begin{cases} x^2 & \\text{if } x < 0 \\\\ x+1 & \\text{if } x \\geq 0 \\end{cases}$. To evaluate: identify applicable piece, use its formula. To graph: draw each piece on its domain, watch for jumps/holes at boundaries. Check continuity at transition points to determine smoothness."
     }
   ];
+    
 
   const validAcceptanceRates = challengeHistory
   .map(ch => ch.acceptanceRate)
@@ -466,8 +760,9 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
   const getFilteredChallenges = () => {
     let filtered = challengeHistory.filter(challenge => {
       const monthMatch = selectedMonth === 'All Time' || 
+        (selectedMonth === 'August 2025' && challenge.date.startsWith('2025-08')) ||
         (selectedMonth === 'September 2025' && challenge.date.startsWith('2025-09')) ||
-        (selectedMonth === 'August 2025' && challenge.date.startsWith('2025-08'));
+        (selectedMonth === 'October 2025' && challenge.date.startsWith('2025-10'));
       
       const topicMatch = selectedTopic === 'All Topics' || challenge.category === selectedTopic;
       
@@ -779,6 +1074,7 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="All Time">All Time</SelectItem>
+                          <SelectItem value="October 2025">October 2025</SelectItem>
                           <SelectItem value="September 2025">September 2025</SelectItem>
                           <SelectItem value="August 2025">August 2025</SelectItem>
                         </SelectContent>
@@ -1038,9 +1334,9 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
               <div>
                 <h4 className="font-semibold text-gray-900 mb-3">Your Response:</h4>
                 <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
-                  <p className="text-gray-800 leading-relaxed">
-                    {selectedChallenge.answer}
-                  </p>
+                  <div className="text-gray-800 leading-relaxed">
+                    {selectedChallenge.answer ? renderMathContent(selectedChallenge.answer) : 'No answer provided'}
+                  </div>
                 </div>
               </div>
 

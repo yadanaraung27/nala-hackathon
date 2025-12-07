@@ -15,7 +15,7 @@ interface TutorialProps {
 const getTutorialSteps = () => [
   {
     id: 1,
-    title: "Welcome to Mathematics I (MH1810)!",
+    title: "Welcome to NALA!",
     description: "Let's quickly show you around your personalized learning dashboard.",
     highlight: null,
     image: '../media/homepage_ui.png',

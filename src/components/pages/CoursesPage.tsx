@@ -23,7 +23,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       title: 'Online Assignment 1',
       description: 'Complex numbers and vector problems',
       dueDate: '15/09/2025',
-      daysLeft: -13,
+      daysLeft: -16,
       status: 'completed',
       weightage: 'Part of 16%'
     },
@@ -33,8 +33,8 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       title: 'Online Assignment 2',
       description: 'Matrices and limits problems',
       dueDate: '29/09/2025',
-      daysLeft: 1,
-      status: 'upcoming',
+      daysLeft: -2,
+      status: 'completed',
       weightage: 'Part of 16%'
     },
     {
@@ -43,7 +43,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       title: 'Online Assignment 3',
       description: 'Derivatives and applications problems',
       dueDate: '13/10/2025',
-      daysLeft: 15,
+      daysLeft: 12,
       status: 'upcoming',
       weightage: 'Part of 16%'
     },
@@ -53,7 +53,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       title: 'Midterm Exam',
       description: 'Complex numbers, vectors, matrices, limits, derivatives',
       dueDate: '11/10/2025',
-      daysLeft: 13,
+      daysLeft: 10,
       status: 'upcoming',
       weightage: '15% weightage'
     },
@@ -63,7 +63,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       title: 'Take-home Test',
       description: 'Differentiation and Integration',
       dueDate: '11/11/2025',
-      daysLeft: 44,
+      daysLeft: 41,
       status: 'upcoming',
       weightage: '9% weightage'
     },
@@ -73,7 +73,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       title: 'Final Exam',
       description: 'Comprehensive exam',
       dueDate: '24/11/2025',
-      daysLeft: 57,
+      daysLeft: 54,
       status: 'upcoming',
       weightage: '60% weightage'
     }
@@ -339,12 +339,12 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
               <div>
                 <div className="text-lg font-bold">Midterm Exam</div>
                 <div className="text-orange-100 text-sm">Oct 11, 2025 • 15% weightage</div>
-                <div className="text-orange-200 text-xs">13 days remaining</div>
+                <div className="text-orange-200 text-xs">10 days remaining</div>
               </div>
               <hr className="border-white/20" />
               <div>
                 <div className="text-sm font-medium">Online Assignment 3</div>
-                <div className="text-orange-200 text-xs">Oct 13 • 15 days</div>
+                <div className="text-orange-200 text-xs">Oct 13 • 12 days</div>
               </div>
             </div>
           </CardContent>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -83,15 +83,29 @@ const qotdQuestions: QOTDQuestion[] = [
 
 interface QuestionOfTheDayProps {
   learningStyle?: string;
+  currentDate?: string;
 }
 
-export default function QuestionOfTheDay({ learningStyle }: QuestionOfTheDayProps) {
+export default function QuestionOfTheDay({ learningStyle, currentDate }: QuestionOfTheDayProps) {
   const [currentStreak, setCurrentStreak] = useState(7);
   const [longestStreak, setLongestStreak] = useState(12);
   const [todayCompleted, setTodayCompleted] = useState(false);
   const [answer, setAnswer] = useState('');
   const [showHint, setShowHint] = useState(false);
   const [todaysQuestion, setTodaysQuestion] = useState<QOTDQuestion | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Helper function to get today's date string
+  const getTodayDateString = (): string => {
+    if (currentDate) {
+      // Parse the currentDate string (e.g., "Tuesday, October 1, 2025")
+      // Extract just the date part for comparison
+      const dateObj = new Date(currentDate.split(', ').slice(1).join(', '));
+      return dateObj.toDateString();
+    } else {
+      return new Date().toDateString();
+    }
+  };
 
   useEffect(() => {
     // Select question based on learning style or default
@@ -114,15 +128,18 @@ export default function QuestionOfTheDay({ learningStyle }: QuestionOfTheDayProp
     const savedStreak = localStorage.getItem('qotd-current-streak');
     const savedLongestStreak = localStorage.getItem('qotd-longest-streak');
     const lastCompleted = localStorage.getItem('qotd-last-completed');
-    const today = new Date().toDateString();
+    const today = getTodayDateString();
 
     if (savedStreak) setCurrentStreak(parseInt(savedStreak));
     if (savedLongestStreak) setLongestStreak(parseInt(savedLongestStreak));
     if (lastCompleted === today) setTodayCompleted(true);
-  }, [learningStyle]);
+  }, [learningStyle, currentDate]);
 
   const handleSubmitAnswer = () => {
     if (answer.trim()) {
+      // Prevent scroll jump by temporarily disabling scroll behavior
+      const scrollY = window.scrollY;
+      
       setTodayCompleted(true);
       const newStreak = currentStreak + 1;
       setCurrentStreak(newStreak);
@@ -133,7 +150,12 @@ export default function QuestionOfTheDay({ learningStyle }: QuestionOfTheDayProp
       }
       
       localStorage.setItem('qotd-current-streak', newStreak.toString());
-      localStorage.setItem('qotd-last-completed', new Date().toDateString());
+      localStorage.setItem('qotd-last-completed', getTodayDateString());
+      
+      // Restore scroll position after state update
+      setTimeout(() => {
+        window.scrollTo(0, scrollY);
+      }, 0);
     }
   };
 
@@ -218,7 +240,7 @@ export default function QuestionOfTheDay({ learningStyle }: QuestionOfTheDayProp
       </div>
 
       {/* Today's Question */}
-      <Card className={`bg-white ${todayCompleted ? 'border-green-200' : 'border-blue-200'}`}>
+      <Card ref={cardRef} className={`bg-white ${todayCompleted ? 'border-green-200' : 'border-blue-200'}`}>
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>

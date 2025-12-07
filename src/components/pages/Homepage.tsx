@@ -6,7 +6,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Calendar, Brain, Info, Target, TrendingUp, MessageSquare, Users, Clock, AlertCircle, BarChart3, BookOpen, ChevronRight } from 'lucide-react';
-import { getCurrentAcademicWeek, getWeeklyContent, getProgressiveQuestionLevel, formatCurrentWeekRange } from '../../utils/academicWeek';
+import { InlineMath, BlockMath } from 'react-katex';
+import 'katex/dist/katex.min.css';
+import { getCurrentAcademicWeek, getWeeklyContent, getProgressiveQuestionLevel } from '../../utils/academicWeek';
 
 const learningCycleData = [
   { phase: 'Experience', engagement: 85, description: 'Hands-on practice' },
@@ -36,6 +38,95 @@ interface HomepageProps {
   onNavigateToChatbot: () => void;
   averageAccuracy: number; // <-- add this line
 }
+
+// Helper function to parse and render math content with better regex
+const renderMathContent = (content: string): React.ReactNode[] => {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+
+  // Match display math ($$...$$) first, then inline math ($...$)
+  const displayMathRegex = /\$\$([\s\S]*?)\$\$/g;
+  const inlineMathRegex = /\$([^\$\n]+?)\$/g;
+  
+  let displayMatches = [];
+  let inlineMatches = [];
+  
+  let displayMatch;
+  while ((displayMatch = displayMathRegex.exec(content)) !== null) {
+    displayMatches.push({ 
+      index: displayMatch.index, 
+      length: displayMatch[0].length, 
+      content: displayMatch[1],
+      type: 'display'
+    });
+  }
+  
+  let inlineMatch;
+  while ((inlineMatch = inlineMathRegex.exec(content)) !== null) {
+    const isPartOfDisplay = displayMatches.some(dm => 
+      inlineMatch.index >= dm.index && 
+      inlineMatch.index < dm.index + dm.length
+    );
+    if (!isPartOfDisplay) {
+      inlineMatches.push({
+        index: inlineMatch.index,
+        length: inlineMatch[0].length,
+        content: inlineMatch[1],
+        type: 'inline'
+      });
+    }
+  }
+  
+  const allMatches = [...displayMatches, ...inlineMatches].sort((a, b) => a.index - b.index);
+
+  allMatches.forEach((match, idx) => {
+    if (match.index > lastIndex) {
+      const textBefore = content.substring(lastIndex, match.index);
+      if (textBefore.trim()) {
+        parts.push(
+          <span key={`text-${idx}`} className="whitespace-pre-wrap">
+            {textBefore}
+          </span>
+        );
+      }
+    }
+
+    try {
+      if (match.type === 'display') {
+        parts.push(
+          <div key={`math-${idx}`} className="my-3 flex justify-center overflow-x-auto">
+            <BlockMath math={match.content} />
+          </div>
+        );
+      } else {
+        parts.push(
+          <InlineMath key={`math-${idx}`} math={match.content} />
+        );
+      }
+    } catch (e) {
+      parts.push(
+        <span key={`error-${idx}`} className="text-red-500 text-xs">
+          [Math rendering error]
+        </span>
+      );
+    }
+
+    lastIndex = match.index + match.length;
+  });
+
+  if (lastIndex < content.length) {
+    const remaining = content.substring(lastIndex);
+    if (remaining.trim()) {
+      parts.push(
+        <span key="text-end" className="whitespace-pre-wrap">
+          {remaining}
+        </span>
+      );
+    }
+  }
+
+  return parts.length > 0 ? parts : [<span key="empty" className="whitespace-pre-wrap">{content}</span>];
+};
 
 export default function Homepage({ 
   learningPreference, 
@@ -89,13 +180,20 @@ export default function Homepage({
 
   useEffect(() => {
     try {
-      const week = getCurrentAcademicWeek();
+      // October 1, 2025 is in Teaching Week 8 (Oct 6-12, but recess is Sept 29-Oct 5)
+      // Actually, October 1 is in Recess Week (Sept 29 - Oct 5)
+      const week = {
+        start: new Date('2025-09-29'),
+        end: new Date('2025-10-05'),
+        name: 'Recess Week',
+        type: 'recess' as const,
+        weekNumber: undefined
+      };
+      
       setCurrentWeek(week);
       
-      if (week && week.weekNumber) {
-        const content = getWeeklyContent(week.weekNumber);
-        setWeeklyContent(content);
-      }
+      // For recess week, we don't have specific weekly content, so set null
+      setWeeklyContent(null);
       
       const level = getProgressiveQuestionLevel(masteryScore);
       setQuestionLevel(level);
@@ -116,7 +214,7 @@ export default function Homepage({
           <div>
             <h1 className="text-4xl font-semibold text-gray-900">Welcome back, Student 👋</h1>
             <div className="flex items-center gap-3 mt-1">
-              <p className="text-sm text-gray-500">{currentDate}</p>
+              <p className="text-sm text-gray-500">Tuesday, October 1, 2025</p>
               {currentWeek && (
                 <Badge 
                   variant={currentWeek.type === 'teaching' ? 'default' : 
@@ -189,7 +287,7 @@ export default function Homepage({
               {/* Question container with transparent background */}
               <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-6 flex-1">
                 <p className="text-white leading-relaxed mb-3">
-                  <span className="font-semibold">Chain Rule Application:</span> Imagine you're explaining the chain rule to a study group. How would you describe when and why we use it for composite functions?
+                  <span className="font-semibold">Derivatives and Chain Rule:</span> Prove the chain rule for differentiation. Then, apply it to find the derivative of {renderMathContent('$f(x) = \\sin(e^{x^2})$')} and show all work. Finally, explain the geometric interpretation of your result.
                 </p>
                 
                 {/* Badges inside the same container */}
@@ -200,11 +298,11 @@ export default function Homepage({
                   </div>
                   <div className="flex items-center gap-1 text-white/90">
                     <Clock className="h-4 w-4" />
-                    <span>Medium difficulty</span>
+                    <span>Advanced difficulty</span>
                   </div>
                   <div className="flex items-center gap-1 text-white/90">
                     <Brain className="h-4 w-4" />
-                    <span>Understand level</span>
+                    <span>Analyze level</span>
                   </div>
                 </div>
               </div>
@@ -294,7 +392,7 @@ export default function Homepage({
                 <BarChart3 className="h-5 w-5 text-purple-600" />
                 This Week's Insights
               </CardTitle>
-              <p className="text-sm text-gray-500 mt-1">{formatCurrentWeekRange()}</p>
+              <p className="text-sm text-gray-500 mt-1">29 Sept - 5 Oct 2025</p>
             </div>
             <div className="flex items-center gap-2">
               <Button 
@@ -318,7 +416,7 @@ export default function Homepage({
                 Strong This Week
               </h5>
               <p className="text-green-700 text-sm leading-relaxed mb-3">
-                Great work on <strong>{strongestTopic || '...'}</strong>
+                Great work on <strong>Vectors and Matrices.</strong> Keep it up!
               </p>
             </div>
             
@@ -328,20 +426,10 @@ export default function Homepage({
                 Focus Area
               </h5>
               <p className="text-amber-700 text-sm leading-relaxed mb-2">
-                <strong>{weakestTopic || '...'}</strong> needs more practice. Try fundamental techniques first.
+                <strong>Integration</strong> needs more practice. Try fundamental techniques first.
               </p>
-              {learningPreference && (
-                <p className="text-amber-600 text-sm flex items-start gap-2 bg-amber-100 p-2 rounded border border-amber-200">
-                  <span>💡</span>
-                  <span>
-                    {learningPreference === 'The Interactor' ? 'Form study groups to discuss integration concepts together!' :
-                     learningPreference === 'The Architect' ? 'Create structured notes and frameworks for integration methods!' :
-                     learningPreference === 'The Problem Solver' ? 'Work through more integration practice problems!' :
-                     learningPreference === 'The Adventurer' ? 'Try creative visualization techniques for integration concepts!' :
-                     'Consider taking the learning preference quiz for personalized study insights.'}
-                  </span>
-                </p>
-              )}
+              
+            
             </div>
           </div>
 
@@ -444,7 +532,7 @@ export default function Homepage({
                   Insight:
                 </h5>
                 <p className="text-sm text-purple-700 leading-relaxed">
-                  {bloomMessage || "No Bloom's taxonomy insight available."}
+                  Currently, your Bloom's taxonomy distribution is heavily weighted towards understanding (25%) and applying (28%) for derivatives and integration, while higher-order thinking is at a lower level.
                 </p>
                 <div className="mt-3 p-2 bg-purple-100 rounded border border-purple-300">
                   <p className="text-xs text-purple-600">

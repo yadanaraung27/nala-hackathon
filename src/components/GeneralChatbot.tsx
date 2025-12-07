@@ -6,6 +6,8 @@ import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { InlineMath, BlockMath } from 'react-katex';
+import 'katex/dist/katex.min.css';
 import { 
   Send, 
   Bot, 
@@ -21,6 +23,15 @@ import {
   ThumbsDown,
   MessageCircle
 } from 'lucide-react';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
 
 interface GeneralChatbotProps {
   learningStyle: string | null;
@@ -39,58 +50,213 @@ interface Message {
   category: 'general' | 'homework' | 'concept' | 'motivation';
 }
 
-// Helper function for LLM API call
+// Helper function for OpenAI API call
 async function fetchLLMReply(query: string, system?: string): Promise<string> {
   try {
-    const response = await fetch("https://nala.ntu.edu.sg/api/llm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-API-Key": "pk_LearnUS_176q45" },
-      body: JSON.stringify(system ? { text: query, system } : { text: query }),
-    });
-    if (!response.ok) throw new Error("Backend error");
-    const data = await response.json();
-    return data.text || "Sorry, I couldn't find an answer.";
-  } catch (err) {
-    return "Error contacting the learning assistant backend.";
-  }
-}
-
-async function postChatHistory(records: any[]) {
-  const res = await fetch("https://nala.ntu.edu.sg/api/chathistory", {
-    method: "POST",
-    headers: {
-      "X-API-Key": "pk_LearnUS_176q45",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(records),
-  });
-  if (!res.ok) {
-    let body;
-    try {
-      body = await res.json();
-    } catch {
-      body = await res.text();
+    const apiKey = (import.meta.env as any).VITE_OPENAI_API_KEY;
+    if (!apiKey) {
+      console.error("OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in .env");
+      return "Error: API key not configured.";
     }
-    throw new Error(`HTTP ${res.status} ${res.statusText}: ${JSON.stringify(body)}`);
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          ...(system ? [{ role: "system", content: system }] : [
+            { role: "system", content: "You are a rigorous university-level tutor specializing in various different modules, specifically integration and differentiation. Provide clear, detailed explanations grounded in mathematical theory. Use precise mathematical notation and justify each step. Format all mathematical expressions using LaTeX: use $...$ for inline math (like $f(x) = x^2$) and $$...$$ for display math (equations on their own line). If a question is not related to integration, differentiation, or their applications, politely redirect the student to ask calculus questions." }
+          ]),
+          { role: "user", content: query }
+        ],
+        max_tokens: 1000,
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      console.error("OpenAI API error:", response.status, await response.text());
+      throw new Error("OpenAI API error");
+    }
+
+    const data = await response.json();
+    if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+      return data.choices[0].message.content;
+    } else {
+      console.warn("fetchLLMReply: Unexpected response format.", data);
+      return "Sorry, I couldn't generate a response at this time.";
+    }
+  } catch (err) {
+    console.error("fetchLLMReply: Network or unexpected error:", err);
+    return "Error contacting the learning assistant. Please try again.";
   }
-  const data = await res.json();
-  console.log("Inserted:", data.inserted);
-  console.log("Errors:", data.errors);
-  return data;
 }
 
-// Helper to get next available convo_id
-async function getNextAvailableConvoId(): Promise<number> {
-  const response = await fetch('http://127.0.0.1:5000/api/weekly_topics');
-  if (!response.ok) throw new Error('Failed to fetch conversation IDs');
-  const data = await response.json();
-  const ids: number[] = (data.conversation_ids || []).map(Number).filter(n => !isNaN(n));
-  let nextId = 1;
-  while (ids.includes(nextId)) {
-    nextId++;
+// Helper function to parse and render math content with better regex
+const renderMathContent = (content: string): React.ReactNode[] => {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+
+  // Match display math ($$...$$) first, then inline math ($...$), then bold (**....**)
+  const displayMathRegex = /\$\$([\s\S]*?)\$\$/g;
+  const inlineMathRegex = /\$([^\$\n]+?)\$/g;
+  const boldRegex = /\*\*([^\*]+?)\*\*/g;
+  
+  let displayMatches: any[] = [];
+  let inlineMatches: any[] = [];
+  let boldMatches: any[] = [];
+  
+  let displayMatch;
+  while ((displayMatch = displayMathRegex.exec(content)) !== null) {
+    displayMatches.push({ 
+      index: displayMatch.index, 
+      length: displayMatch[0].length, 
+      content: displayMatch[1],
+      type: 'display'
+    });
   }
-  return nextId;
-}
+  
+  let inlineMatch;
+  while ((inlineMatch = inlineMathRegex.exec(content)) !== null) {
+    // Check if this inline match is not part of a display match
+    const isPartOfDisplay = displayMatches.some(dm => 
+      inlineMatch.index >= dm.index && 
+      inlineMatch.index < dm.index + dm.length
+    );
+    if (!isPartOfDisplay) {
+      inlineMatches.push({
+        index: inlineMatch.index,
+        length: inlineMatch[0].length,
+        content: inlineMatch[1],
+        type: 'inline'
+      });
+    }
+  }
+
+  let boldMatch;
+  while ((boldMatch = boldRegex.exec(content)) !== null) {
+    // Check if this bold match is not part of a math match
+    const isPartOfMath = [...displayMatches, ...inlineMatches].some(m => 
+      boldMatch.index >= m.index && 
+      boldMatch.index < m.index + m.length
+    );
+    if (!isPartOfMath) {
+      boldMatches.push({
+        index: boldMatch.index,
+        length: boldMatch[0].length,
+        content: boldMatch[1],
+        type: 'bold'
+      });
+    }
+  }
+  
+  const allMatches = [...displayMatches, ...inlineMatches, ...boldMatches].sort((a, b) => a.index - b.index);
+
+  allMatches.forEach((match, idx) => {
+    // Add text before this match
+    if (match.index > lastIndex) {
+      const textBefore = content.substring(lastIndex, match.index);
+      if (textBefore.trim()) {
+        parts.push(
+          <span key={`text-${idx}`} className="whitespace-pre-wrap">
+            {textBefore}
+          </span>
+        );
+      }
+    }
+
+    // Add the appropriate element based on match type
+    try {
+      if (match.type === 'display') {
+        parts.push(
+          <div key={`math-${idx}`} className="my-3 flex justify-center overflow-x-auto">
+            <BlockMath math={match.content} />
+          </div>
+        );
+      } else if (match.type === 'inline') {
+        parts.push(
+          <InlineMath key={`math-${idx}`} math={match.content} />
+        );
+      } else if (match.type === 'bold') {
+        parts.push(
+          <strong key={`bold-${idx}`} className="font-semibold">
+            {match.content}
+          </strong>
+        );
+      }
+    } catch (e) {
+      // Fallback if rendering fails
+      parts.push(
+        <span key={`error-${idx}`} className="text-red-500 text-xs">
+          [Rendering error]
+        </span>
+      );
+    }
+
+    lastIndex = match.index + match.length;
+  });
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    const remaining = content.substring(lastIndex);
+    if (remaining.trim()) {
+      parts.push(
+        <span key="text-end" className="whitespace-pre-wrap">
+          {remaining}
+        </span>
+      );
+    }
+  }
+
+  return parts.length > 0 ? parts : [<span key="empty" className="whitespace-pre-wrap">{content}</span>];
+};
+
+// Helper function to parse and render bold markdown only
+const renderBoldMarkdown = (content: string): React.ReactNode[] => {
+  const boldRegex = /\*\*([^\*]+?)\*\*/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let boldMatch;
+
+  while ((boldMatch = boldRegex.exec(content)) !== null) {
+    // Add text before the match
+    if (boldMatch.index > lastIndex) {
+      const textBefore = content.substring(lastIndex, boldMatch.index);
+      if (textBefore) {
+        parts.push(
+          <span key={`text-${lastIndex}`}>
+            {textBefore}
+          </span>
+        );
+      }
+    }
+
+    // Add the bold text
+    parts.push(
+      <strong key={`bold-${boldMatch.index}`} className="font-semibold">
+        {boldMatch[1]}
+      </strong>
+    );
+
+    lastIndex = boldMatch.index + boldMatch[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    const remaining = content.substring(lastIndex);
+    parts.push(
+      <span key="text-end">
+        {remaining}
+      </span>
+    );
+  }
+
+  return parts.length > 0 ? parts : [<span key="empty">{content}</span>];
+};
 
 export default function GeneralChatbot({ 
   learningStyle, 
@@ -111,94 +277,132 @@ export default function GeneralChatbot({
   const [challengePhase, setChallengePhase] = useState<'welcome' | 'answering' | 'feedback' | 'conversation'>('welcome');
   const [challengeAnswer, setChallengeAnswer] = useState('');
   const [challengeSessionEnded, setChallengeSessionEnded] = useState(false);
+  const [showHintDialog, setShowHintDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+  const challengeScrollRef = useRef<HTMLDivElement>(null);
+
+  // Helper function to check if user is near bottom of chat
+  const userIsNearBottom = useCallback((element: HTMLDivElement | null, threshold: number = 80): boolean => {
+    if (!element) return true;
+    const distanceFromBottom = element.scrollHeight - element.scrollTop - element.clientHeight;
+    return distanceFromBottom < threshold;
+  }, []);
+
+  // Helper function to scroll chat to bottom
+  const scrollChatToBottom = useCallback((element: HTMLDivElement | null) => {
+    if (!element) return;
+    setTimeout(() => {
+      element.scrollTop = element.scrollHeight;
+    }, 0);
+  }, []);
+
   // Memoized static data to prevent re-renders
   const quickActions = useMemo(() => [
     {
       label: "Guide me",
       icon: GraduationCap,
-      prompt: "Can you guide me through this step by step?",
+      prompt: "Can you guide me through this integration/differentiation problem step by step?",
       color: "text-blue-700 border-blue-300 hover:bg-blue-50"
     },
     {
       label: "Test me",
       icon: Calculator,
-      prompt: "Give me a practice question to test my understanding",
+      prompt: "Give me a challenging integration or differentiation practice problem",
       color: "text-green-700 border-green-300 hover:bg-green-50"
     },
     {
       label: "Check my answer",
       icon: CheckCircle,
-      prompt: "I've solved a problem. Can you check my answer?",
+      prompt: "I've solved a problem. Can you check my answer and verify my work?",
       color: "text-purple-700 border-purple-300 hover:bg-purple-50"
     },
     {
       label: "Explain concept",
       icon: BookOpen,
-      prompt: "Can you explain this concept in detail?",
+      prompt: "I will ask you to explain a concept. Do so with rigorous mathematical detail.",
       color: "text-orange-700 border-orange-300 hover:bg-orange-50"
     },
     {
       label: "Study tips",
       icon: Lightbulb,
-      prompt: "What are some effective study strategies for this topic?",
+      prompt: "What are the most effective strategies for mastering integration and differentiation techniques for me?",
       color: "text-yellow-700 border-yellow-300 hover:bg-yellow-50"
     }
   ], []);
 
   const suggestedQuestions = useMemo(() => [
     {
-      question: "What are the fundamental rules of differentiation?",
-      category: "Calculus",
+      question: "What are the fundamental rules of differentiation (power rule, product rule, quotient rule, chain rule)?",
+      category: "Differentiation",
       difficulty: "Beginner"
     },
     {
-      question: "How do I solve related rates problems?",
-      category: "Applications",
+      question: "How do I apply the chain rule to composite functions with multiple layers?",
+      category: "Differentiation",
       difficulty: "Intermediate"
     },
     {
-      question: "Can you explain the relationship between derivatives and integrals?",
+      question: "Can you explain the relationship between derivatives and integrals (Fundamental Theorem of Calculus)?",
       category: "Theory",
       difficulty: "Advanced"
     },
     {
-      question: "What's the best way to approach optimization problems?",
-      category: "Problem Solving",
+      question: "What are the main integration techniques and when should I use each one?",
+      category: "Integration",
       difficulty: "Intermediate"
     },
     {
-      question: "How do limits work in calculus?",
+      question: "How do I solve optimization and related rates problems using differentiation?",
+      category: "Applications",
+      difficulty: "Advanced"
+    },
+    {
+      question: "What are the key techniques for integration by parts and substitution?",
+      category: "Integration",
+      difficulty: "Intermediate"
+    },
+    {
+      question: "How do limits and continuity relate to derivatives and differentiation?",
       category: "Foundations",
       difficulty: "Beginner"
+    },
+    {
+      question: "Can you explain improper integrals and convergence criteria?",
+      category: "Integration",
+      difficulty: "Advanced"
     }
   ], []);
 
   const sampleConversations = useMemo(() => [
     {
-      title: "Chain Rule Applications",
-      preview: "Discussing how to apply the chain rule to complex composite functions...",
+      title: "Chain Rule for Composite Functions",
+      preview: "Detailed analysis of applying the chain rule to complex nested functions and practical examples...",
       time: "2h ago",
-      category: "Homework Help"
+      category: "Differentiation"
     },
     {
-      title: "Optimization Problem Strategy",
-      preview: "Breaking down the steps for solving max/min problems in calculus...",
+      title: "Integration by Parts Mastery",
+      preview: "Step-by-step guide on when and how to use integration by parts with multiple practice problems...",
       time: "1d ago",
-      category: "Problem Solving"
+      category: "Integration"
     },
     {
-      title: "Integration by Parts",
-      preview: "Learning when and how to use integration by parts technique...",
+      title: "Fundamental Theorem of Calculus",
+      preview: "In-depth explanation of the relationship between derivatives and integrals with proofs...",
       time: "3d ago",
-      category: "Concept Review"
+      category: "Theory"
     },
     {
-      title: "Related Rates Setup",
-      preview: "Understanding how to set up equations for related rates problems...",
+      title: "Optimization and Related Rates",
+      preview: "Comprehensive walkthrough of applying calculus to real-world optimization and related rates problems...",
       time: "5d ago",
       category: "Applications"
+    },
+    {
+      title: "U-Substitution Techniques",
+      preview: "Mastering substitution methods for complex integrals with detailed examples...",
+      time: "1w ago",
+      category: "Integration"
     }
   ], []);
 
@@ -250,10 +454,9 @@ export default function GeneralChatbot({
       setIsLoading(true);
       setShowSuggestions(false);
 
-      // Fetch reply from LLM
+      // Fetch reply from OpenAI
       const botReply = await fetchLLMReply(message, system);
 
-      // Replace "generating..." with actual reply
       if (activeTab === 'challenge') {
         setChallengeMessages(prev => [
           ...prev.filter(msg => msg.content !== "Generating response..."),
@@ -278,26 +481,6 @@ export default function GeneralChatbot({
         ]);
       }
       setIsLoading(false);
-
-      // Post chat history for general tab (not quick actions)
-      if (!isQuickAction && activeTab === 'general') {
-        try {
-          const convo_id = await getNextAvailableConvoId();
-          await postChatHistory([
-            {
-              text: message,
-              reply: botReply,
-              timestamp: new Date().toISOString(),
-              sender: 'user',
-              type: 'general',
-              convo_id: convo_id
-            }
-          ]);
-          console.log('Chat history posted successfully.');
-        } catch (err) {
-          console.error('Failed to post chat history:', err);
-        }
-      }
     },
     [activeTab]
   );
@@ -306,15 +489,15 @@ export default function GeneralChatbot({
   const handleQuickAction = useCallback((prompt: string, type?: string) => {
     let system = "";
     if (type === "Guide me") {
-      system = "You are a step-by-step guide. Structure your response as a clear, numbered walkthrough.";
+      system = "You are a university-level calculus tutor. Provide a rigorous, step-by-step walkthrough of the problem. Justify each step mathematically and explain the underlying concepts. Use LaTeX math notation with $...$ for inline math and $$...$$ for display equations.";
     } else if (type === "Test me") {
-      system = "You are a quizmaster. Provide a practice question and wait for the user's answer.";
+      system = "You are a rigorous examiner. Provide a challenging university-level calculus problem on integration or differentiation. Use LaTeX notation: $...$ for inline math and $$...$$ for display math on separate lines. Example: $$\\int \\frac{x^3}{(x^2+1)^2} dx$$ Make expressions clear and readable with line breaks. After the student attempts it, provide detailed feedback.";
     } else if (type === "Check my answer") {
-      system = "You are an answer checker. Review the user's answer and provide feedback.";
+      system = "You are an expert mathematics grader. Review the student's calculus work meticulously, check for correctness, identify any errors, and provide constructive feedback with correct solutions using proper LaTeX notation.";
     } else if (type === "Explain concept") {
-      system = "You are a concept explainer. Give a detailed explanation with examples.";
+      system = "You are a mathematics professor. Provide a rigorous, in-depth explanation using LaTeX notation ($...$ for inline, $$...$$ for display math). Include proofs where relevant and provide illustrative examples.";
     } else if (type === "Study tips") {
-      system = "You are a study coach. Share effective study strategies for this topic.";
+      system = "You are an experienced calculus instructor. Share advanced, evidence-based strategies for mastering integration and differentiation. Focus on conceptual understanding, not just procedural steps.";
     }
     handleSendMessage(prompt, system, true);
   }, [handleSendMessage]);
@@ -339,9 +522,9 @@ export default function GeneralChatbot({
   const welcomeMessage: Message = {
     id: '1',
     type: 'bot',
-    content: `🎯 **Welcome to Today's Challenge!**
+    content: `🎯 **Welcome to Today's Calculus Challenge!**
 
-Ready to test your knowledge and deepen your understanding? Let's dive into today's Mathematics I challenge.
+Ready to deepen your understanding of university-level mathematics? Today's challenge focuses on rigorous problem-solving in integration and differentiation.
 
 ⚠️ **Important:** This challenge session will reset at midnight. Any unfinished conversations will be lost, so make sure to complete your challenge today!`,
     timestamp: now,
@@ -354,18 +537,19 @@ Ready to test your knowledge and deepen your understanding? Let's dive into toda
     content: `📋 **Today's Challenge Question**
 
 **Topic:** Derivatives and Chain Rule  
-**Difficulty:** ⭐⭐⭐ Intermediate  
-**Question Type:** Conceptual Explanation  
+**Difficulty:** ⭐⭐⭐ Advanced  
+**Question Type:** Conceptual Explanation & Application  
 
-**Question:**  
-Explain how the chain rule works when finding the derivative of composite functions. Use the example f(g(x)) where f(u) = u² and g(x) = 3x + 1 to illustrate your explanation.`,
+**Question:**
+
+Prove the chain rule for differentiation. Then, apply it to find the derivative of $f(x) = \\sin(e^{x^2})$ and show all work. Finally, explain the geometric interpretation of your result.`,
     timestamp: now,
     category: 'homework'
   };
 
   setChallengeMessages([welcomeMessage, questionMessage]);
   setCurrentChallengeQuestion(
-    `Explain how the chain rule works when finding the derivative of composite functions. Use the example f(g(x)) where f(u) = u² and g(x) = 3x + 1 to illustrate your explanation.`
+    `Prove the chain rule for differentiation. Then, apply it to find the derivative of $f(x) = \\sin(e^{x^2})$ and show all work. Finally, explain the geometric interpretation of your result.`
   );
   setChallengePhase('answering');
   setShowChallengeButtons(false);
@@ -373,31 +557,16 @@ Explain how the chain rule works when finding the derivative of composite functi
 }, []);
   
   const handleShowHint = useCallback(() => {
-    const hintMessage: Message = {
-      id: Date.now().toString(),
-      type: 'bot',
-      content: `💡 **Hint for Today's Challenge**
-
-Remember that for composite functions like f(g(x)), you need to apply the chain rule. Start by identifying the outer function f(u) and inner function g(x), then find their derivatives separately.
-
-**Steps to consider:**
-1. Identify the outer function: f(u) = u²
-2. Identify the inner function: g(x) = 3x + 1  
-3. Find f'(u) and g'(x)
-4. Apply the chain rule: (f ∘ g)'(x) = f'(g(x)) × g'(x)
-
-Now try working through the example step by step!`,
-      timestamp: new Date(),
-      category: 'concept'
-    };
-
-    setChallengeMessages(prev => [...prev, hintMessage]);
+    setShowHintDialog(true);
   }, []);
 
   // PATCH: Post challenge response to API
   const handleSubmitChallenge = useCallback(async () => {
   if (!challengeAnswer.trim()) return;
 
+  // Check if user was near bottom before changes
+  const wasNearBottom = userIsNearBottom(challengeScrollRef.current);
+  
   setIsLoading(true);
 
   const userAnswerMessage: Message = {
@@ -408,19 +577,27 @@ Now try working through the example step by step!`,
     category: 'homework'
   };
 
-  // Compose the prompt for the LLM
   const llmPrompt = `
-You are a mathematics instructor. Here is a student's answer to a challenge question. 
-Provide detailed, constructive feedback, including what was done well and what could be improved, in a friendly and encouraging tone.
+You are a rigorous university-level mathematics professor. Evaluate this student's answer to a calculus challenge question.
 
 Challenge Question:
 ${currentChallengeQuestion}
 
 Student's Answer:
 ${challengeAnswer}
+
+Provide:
+1. Assessment of mathematical correctness
+2. Identification of any errors or gaps in reasoning
+3. Evaluation of proof rigor (if applicable)
+4. Suggestions for improvement
+5. Key insights the student should understand
+
+Be thorough, precise, and constructive. Use proper mathematical notation.
+
+Present your feedback without using the bullet point format above, and instead generate it in a detailed paragraph form instead.
 `;
 
-  // Call the LLM API
   let feedbackText = '';
   try {
     feedbackText = await fetchLLMReply(llmPrompt);
@@ -439,50 +616,44 @@ ${challengeAnswer}
   setChallengeMessages(prev => [...prev, userAnswerMessage, feedbackMessage]);
   setChallengePhase('conversation');
   setChallengeAnswer('');
-
-  // --- Post challenge response to API ---
-  try {
-    const convo_id = await getNextAvailableConvoId();
-    await postChatHistory([
-      {
-        text: challengeAnswer,
-        reply: feedbackMessage.content,
-        timestamp: new Date().toISOString(),
-        sender: 'user',
-        type: 'challenge',
-        convo_id: convo_id
-      }
-    ]);
-    console.log('Challenge response posted successfully.');
-  } catch (err) {
-    console.error('Failed to post challenge response:', err);
-  }
-
   setIsLoading(false);
-}, [challengeAnswer, currentChallengeQuestion]);
+  
+  // Only auto-scroll if user was already near bottom
+  if (wasNearBottom) {
+    scrollChatToBottom(challengeScrollRef.current);
+  }
+}, [challengeAnswer, currentChallengeQuestion, userIsNearBottom, scrollChatToBottom]);
 
   const renderMessages = useCallback((messageList: Message[]) => (
     <div className="max-w-4xl mx-auto space-y-6">
       {messageList.map((message) => (
         <div key={message.id} className={`flex gap-4 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
           {message.type === 'bot' && (
-            <Avatar className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600">
-              <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                <Bot className="h-4 w-4" />
+            <Avatar className="w-8 h-8 bg-white border border-gray-300 flex-shrink-0">
+              <AvatarFallback className="bg-white">
+                <img 
+                  src="../media/learnus_logo.png"
+                  alt="LearnUs Bot" 
+                  className="w-full h-full object-contain p-1"
+                />
               </AvatarFallback>
             </Avatar>
           )}
           
-          <div className={`max-w-3xl ${message.type === 'user' ? 'order-1' : ''}`}>
+          <div className={`max-w-3xl`}>
             <div className={`rounded-2xl px-4 py-3 ${
               message.type === 'user' 
-                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white ml-12' 
+                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
                 : 'bg-white border border-gray-200 shadow-sm'
             }`}>
-              <div className="prose prose-sm max-w-none">
-                <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                  {message.content}
-                </div>
+              <div className="text-sm leading-relaxed">
+                {message.type === 'bot' ? (
+                  renderMathContent(message.content)
+                ) : (
+                  <div className="whitespace-pre-wrap">
+                    {message.content}
+                  </div>
+                )}
               </div>
             </div>
             
@@ -515,10 +686,8 @@ ${challengeAnswer}
           </div>
           
           {message.type === 'user' && (
-            <Avatar className="w-8 h-8">
-              <AvatarFallback className="bg-gray-200">
-                <User className="h-4 w-4 text-gray-600" />
-              </AvatarFallback>
+            <Avatar className="w-8 h-8 flex-shrink-0">
+              <AvatarFallback className="bg-purple-600 text-white text-xs font-semibold">U</AvatarFallback>
             </Avatar>
           )}
         </div>
@@ -526,9 +695,13 @@ ${challengeAnswer}
       
       {isLoading && (
         <div className="flex gap-4 justify-start">
-          <Avatar className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600">
-            <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-              <Bot className="h-4 w-4" />
+          <Avatar className="w-8 h-8 bg-white border border-gray-300 flex-shrink-0">
+            <AvatarFallback className="bg-white">
+              <img 
+                src="../media/learnus_logo.png"
+                alt="LearnUs Bot" 
+                className="w-full h-full object-contain p-1"
+              />
             </AvatarFallback>
           </Avatar>
           <div className="max-w-3xl">
@@ -545,8 +718,6 @@ ${challengeAnswer}
           </div>
         </div>
       )}
-      
-      <div ref={messagesEndRef} />
     </div>
   ), [isLoading, messageFeedback, handleFeedback]);
 
@@ -558,6 +729,43 @@ ${challengeAnswer}
   }, [inputValue, handleSendMessage]);
   return (
     <div className="h-screen bg-gray-50 flex overflow-hidden pt-6">
+      {/* Hint Dialog Modal */}
+      <AlertDialog open={showHintDialog} onOpenChange={setShowHintDialog}>
+        <AlertDialogContent className="max-w-2xl max-h-96 overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-yellow-600" />
+              Hint for Today's Challenge
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="text-base text-gray-700 space-y-3 py-4">
+            <div className="text-sm leading-relaxed">
+              {renderMathContent('For the chain rule, recall that if $y = f(g(x))$, then $\\frac{dy}{dx} = f\'(g(x)) \\cdot g\'(x)$.')}
+            </div>
+            <div className="text-sm leading-relaxed">
+              <div>{renderMathContent('For your specific function $f(x) = \\sin(e^{x^2})$:')}</div>
+              <ol className="list-decimal list-inside space-y-1 mt-2 text-sm">
+                <li>{renderMathContent('Identify the outermost function: $\\sin(u)$')}</li>
+                <li>{renderMathContent('Identify the middle function: $e^v$')}</li>
+                <li>{renderMathContent('Identify the innermost function: $x^2$')}</li>
+              </ol>
+            </div>
+            <div className="text-sm leading-relaxed">
+              Work from the outside in, applying the chain rule systematically. Remember to multiply the derivatives at each layer.
+            </div>
+            <div className="font-semibold text-sm">
+              Geometric interpretation: Think about how the rate of change compounds through each transformation.
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 mt-6">
+            <AlertDialogCancel>Close</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setShowHintDialog(false)}>
+              Got it, thanks!
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Left Sidebar - Conversation History */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-full">
         {/* Recent Conversations Section */}
@@ -566,16 +774,15 @@ ${challengeAnswer}
             <h2 className="font-semibold text-gray-900">Recent Conversations</h2>
           </div>
           <div className="flex-1 overflow-hidden">
-            <ScrollArea className="h-full p-4">
-              <div className="space-y-3">
+            <ScrollArea className="h-full p-2">
+              <div className="space-y-2">
                 {sampleConversations.map((conv, index) => (
-                  <div key={index} className="p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
-                    <div className="flex items-start justify-between mb-1">
-                      <h4 className="font-medium text-gray-900 text-sm truncate">{conv.title}</h4>
-                      <span className="text-xs text-gray-500 ml-2">{conv.time}</span>
+                  <div key={index} className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="font-medium text-gray-900 text-xs truncate flex-1">{conv.title}</h4>
+                      <span className="text-xs text-gray-400 flex-shrink-0">{conv.time}</span>
                     </div>
-                    <p className="text-sm text-gray-600 truncate">{conv.preview}</p>
-                    <Badge variant="secondary" className="mt-2 text-xs">
+                    <Badge variant="secondary" className="mt-1 text-xs">
                       {conv.category}
                     </Badge>
                   </div>
@@ -624,11 +831,9 @@ ${challengeAnswer}
         <div className="p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <Bot className="h-5 w-5 text-white" />
-              </div>
+              <img src="/media/learnus_logo.png" alt="NALA" className="w-10 h-10 rounded-full object-cover" />
               <div>
-                <h1 className="font-semibold text-gray-900">Mathematics I Learning Assistant</h1>
+                <h1 className="font-semibold text-gray-900">NALA Chatbot</h1>
                 <p className="text-sm text-gray-600">
                   {learningStyle ? `Personalized for ${learningStyle}` : 'Ready to help you learn'}
                 </p>
@@ -661,35 +866,8 @@ ${challengeAnswer}
           <TabsContent value="general" className="flex-1 min-h-0 m-0">
             <ScrollArea className="h-full p-6">
               {messages.length === 0 ? (
-                <div className="max-w-4xl mx-auto text-center py-12">
-                  <MessageCircle className="h-12 w-12 text-blue-400 mx-auto mb-4" />
-                  <h3 className="font-medium text-gray-900 mb-2">General Chat Session</h3>
-                  <p className="text-gray-600 mb-6">Welcome! I'm your Mathematics I learning assistant, designed to help you master calculus concepts. {learningStyle ? `Since you're ${learningStyle}, I'll adapt my explanations to match your learning preferences.` : ''}</p>
-                  
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left mb-6">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Sparkles className="h-4 w-4 text-blue-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-blue-900 mb-2">How I Can Help You</h4>
-                        <ul className="text-sm text-blue-700 space-y-1 mb-3">
-                          <li>• **Guide you** through complex problems step-by-step</li>
-                          <li>• **Test your understanding** with practice questions</li>
-                          <li>• **Check your answers** and provide detailed feedback</li>
-                          <li>• **Explain concepts** using examples and analogies</li>
-                          <li>• **Share study tips** tailored to your learning style</li>
-                        </ul>
-                        
-                        <h5 className="font-medium text-blue-900 mb-1 mt-4">Getting Started</h5>
-                        <ul className="text-sm text-blue-700 space-y-1">
-                          <li>• Use the action buttons below for quick help</li>
-                          <li>• Type any question about Mathematics I</li>
-                          <li>• Switch to Daily Challenge for focused practice</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
+                <div className="max-w-4xl mx-auto">
+                  {/* Welcome message removed */}
                 </div>
               ) : (
                 renderMessages(messages)
@@ -697,9 +875,9 @@ ${challengeAnswer}
             </ScrollArea>
           </TabsContent>
           
-          <TabsContent value="challenge" className="flex-1 min-h-0 m-0">
+          <TabsContent value="challenge" className="flex-1 min-h-0 m-0 flex flex-col">
             {challengeMessages.length > 0 && (
-              <div className={`border-b border-gray-200 px-6 py-3 ${challengeSessionEnded ? 'bg-gray-100' : 'bg-purple-50'}`}>
+              <div className={`border-b border-gray-200 px-6 py-3 flex-shrink-0 ${challengeSessionEnded ? 'bg-gray-100' : 'bg-purple-50'}`}>
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${challengeSessionEnded ? 'bg-gray-400' : 'bg-purple-500'}`}></div>
                   <span className={`text-sm font-medium ${challengeSessionEnded ? 'text-gray-600' : 'text-purple-900'}`}>
@@ -708,7 +886,13 @@ ${challengeAnswer}
                 </div>
               </div>
             )}
-            <ScrollArea className="h-full p-6">
+            
+            {/* Dedicated scrollable chat container */}
+            <div 
+              ref={challengeScrollRef}
+              className="flex-1 overflow-y-auto p-6"
+              style={{ overscrollBehavior: 'contain' }}
+            >
               {challengeMessages.length === 0 ? (
                 <div className="max-w-4xl mx-auto text-center py-12">
                   <Target className="h-12 w-12 text-purple-400 mx-auto mb-4" />
@@ -731,9 +915,9 @@ ${challengeAnswer}
                         
                         <h5 className="font-medium text-purple-900 mb-1 mt-4">Challenge Details Explained</h5>
                         <ul className="text-sm text-purple-700 space-y-1">
-                          <li>• **Topic** - The mathematical concept being tested</li>
-                          <li>• **Difficulty** - ⭐ Basic, ⭐⭐ Intermediate, ⭐⭐⭐ Advanced</li>
-                          <li>• **Acceptance Rate** - Percentage of students who answered correctly</li>
+                          <li>• {renderBoldMarkdown('**Topic** - The mathematical concept being tested')}</li>
+                          <li>• {renderBoldMarkdown('**Difficulty** - ⭐ Basic, ⭐⭐ Intermediate, ⭐⭐⭐ Advanced')}</li>
+                          <li>• {renderBoldMarkdown('**Acceptance Rate** - Percentage of students who answered correctly')}</li>
                         </ul>
                       </div>
                     </div>
@@ -791,7 +975,7 @@ ${challengeAnswer}
                   )}
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </TabsContent>
         </Tabs>
 

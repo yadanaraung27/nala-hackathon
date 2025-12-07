@@ -133,7 +133,7 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-semibold text-gray-900">Learning Analytics</h1>
-        <p className="text-sm text-gray-500 mt-1">Deep insights into your learning patterns • {formatCurrentWeekRange()}</p>
+        <p className="text-sm text-gray-500 mt-1">Deep insights into your learning patterns • {formatCurrentWeekRange(new Date('2025-10-01'))}</p>
         
         {/* Subtle Learning Science Banner */}
         <div className="mt-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
@@ -535,7 +535,7 @@ export default function AnalyticsPage() {
           </ResponsiveContainer>
           
           <div className="mt-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
-            <h5 className="font-semibold text-orange-800 mb-2 flex items-center gap-2">
+            <h5 className="text-sm font-semibold text-orange-800 mb-2 flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
               Activity Pattern Insights
             </h5>
@@ -549,7 +549,7 @@ export default function AnalyticsPage() {
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
               <div className="p-2 bg-orange-100 rounded border border-orange-300">
-                <p className="text-orange-800">
+                <p className="text-sm text-orange-800">
                   <strong>Peak Performance:</strong> {
                     activityTimeframe === 'past7days' ? 'Wednesday (15 conversations)' :
                     activityTimeframe === 'past14days' ? 'Mid-week consistency' :
@@ -559,7 +559,7 @@ export default function AnalyticsPage() {
                 </p>
               </div>
               <div className="p-2 bg-orange-100 rounded border border-orange-300">
-                <p className="text-orange-800">
+                <p className="text-sm text-orange-800">
                   <strong>Goal:</strong> {
                     activityTimeframe === 'past7days' ? 'Maintain weekend engagement' :
                     activityTimeframe === 'past14days' ? 'Continue upward trend' :
@@ -572,7 +572,7 @@ export default function AnalyticsPage() {
                 <Tooltip>
                   <TooltipTrigger>
                     <div className="p-2 bg-orange-100 rounded border border-orange-300 cursor-help">
-                      <p className="text-orange-800">
+                      <p className="text-sm text-orange-800">
                         <strong>Optimal Spacing:</strong> 2-3 day gaps for retention
                       </p>
                     </div>

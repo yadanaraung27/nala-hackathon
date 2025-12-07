@@ -23,73 +23,98 @@ function formatBotReply(raw: string): string {
   return text;
 }
 
-// Fetch reply from RAG backend
+// Helper function to parse and render bold markdown
+const renderBoldMarkdown = (content: string): React.ReactNode[] => {
+  const boldRegex = /\*\*([^\*]+?)\*\*/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let boldMatch;
+
+  while ((boldMatch = boldRegex.exec(content)) !== null) {
+    // Add text before the match
+    if (boldMatch.index > lastIndex) {
+      const textBefore = content.substring(lastIndex, boldMatch.index);
+      if (textBefore) {
+        parts.push(
+          <span key={`text-${lastIndex}`} className="whitespace-pre-line">
+            {textBefore}
+          </span>
+        );
+      }
+    }
+
+    // Add the bold text
+    parts.push(
+      <strong key={`bold-${boldMatch.index}`} className="font-semibold">
+        {boldMatch[1]}
+      </strong>
+    );
+
+    lastIndex = boldMatch.index + boldMatch[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    const remaining = content.substring(lastIndex);
+    parts.push(
+      <span key="text-end" className="whitespace-pre-line">
+        {remaining}
+      </span>
+    );
+  }
+
+  return parts.length > 0 ? parts : [<span key="empty">{content}</span>];
+};
+
+// Fetch reply from OpenAI API
 async function fetchRagReply(query: string): Promise<string> {
   try {
-    const response = await fetch("http://127.0.0.1:5000/api/ask", {
+    const apiKey = (import.meta.env as any).VITE_OPENAI_API_KEY;
+    if (!apiKey) {
+      console.error("OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in .env");
+      return "Error: API key not configured.";
+    }
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
+      },
       body: JSON.stringify({
-        query,
-        mode: "chatbot"
-      }),
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: "You are a helpful Learning Theory Assistant that helps students understand learning theories like Kolb's model, learning styles, and provides personalized study tips. Be concise and encouraging. Use **text** for bold emphasis where needed."
+          },
+          {
+            role: "user",
+            content: query
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.7
+      })
     });
+
     if (!response.ok) {
-      console.error("Backend error:", response.status, await response.text());
-      throw new Error("Backend error");
+      console.error("OpenAI API error:", response.status, await response.text());
+      throw new Error("OpenAI API error");
     }
 
-    let data: any;
-    try {
-      data = await response.json();
-      console.log("fetchRagReply: parsed JSON response:", data);
-    } catch (jsonErr) {
-      const raw = await response.text();
-      console.warn("fetchRagReply: response.json() failed, raw text:", raw);
-      try {
-        data = JSON.parse(raw);
-        console.log("fetchRagReply: parsed stringified JSON:", data);
-      } catch (parseErr) {
-        console.error("fetchRagReply: Could not parse backend response as JSON.", parseErr);
-        return "Sorry, I couldn't parse the backend response.";
-      }
-    }
+    const data = await response.json();
+    console.log("fetchRagReply: OpenAI response:", data);
 
-    // If data.answer exists and is a stringified JSON, parse it
-    if (typeof data === "object" && typeof data.answer === "string") {
-      try {
-        const answerObj = JSON.parse(data.answer);
-        if (typeof answerObj.text === "string") {
-          return answerObj.text;
-        } else {
-          console.warn("fetchRagReply: answerObj has no text field.", answerObj);
-          return "Sorry, I couldn't find an answer in the backend response.";
-        }
-      } catch (err) {
-        console.error("fetchRagReply: Could not parse answer field as JSON.", err);
-        return "Sorry, I couldn't parse the backend answer field.";
-      }
-    }
-
-    // If data is an array, get first item's text
-    if (Array.isArray(data)) {
-      if (data.length > 0 && typeof data[0].text === "string") {
-        return data[0].text;
-      } else {
-        console.warn("fetchRagReply: Array response but no text field in first item.", data[0]);
-        return "Sorry, I couldn't find an answer in the backend response.";
-      }
-    }
-    // If data is an object, get text
-    if (typeof data === "object" && typeof data.text === "string") {
-      return data.text;
+    if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+      return data.choices[0].message.content;
     } else {
-      console.warn("fetchRagReply: Object response but no text field.", data);
-      return "Sorry, I couldn't find an answer in the backend response.";
+      console.warn("fetchRagReply: Unexpected OpenAI response format.", data);
+      return "Sorry, I couldn't parse the response from the AI assistant.";
     }
   } catch (err) {
     console.error("fetchRagReply: Network or unexpected error:", err);
-    return "Error contacting the learning assistant backend.";
+    return "Error contacting the learning assistant. Please try again.";
   }
 }
 
@@ -279,13 +304,13 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
               <ScrollArea className="flex-1 p-4 h-full overflow-y-auto">
                 <div className="space-y-4">
                   {messages.map((message) => (
-                    <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} mb-4`}>
+                    <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end items-end gap-2' : 'justify-start'} mb-4`}>
                       <div className={`max-w-[85%] w-auto rounded-lg px-3 py-2 ${
                         message.sender === 'user' 
                           ? 'bg-purple-600 text-white' 
                           : 'bg-gray-100 text-gray-900'
                       } break-words overflow-hidden`}>
-                        <p className="text-sm whitespace-pre-line break-words word-wrap leading-relaxed">{message.content}</p>
+                        <p className="text-sm whitespace-pre-line break-words word-wrap leading-relaxed">{renderBoldMarkdown(message.content)}</p>
                         {/* Suggestions (not used with RAG backend, but kept for future) */}
                         {message.suggestions && message.sender === 'bot' && (
                           <div className="mt-3 space-y-2 max-w-full overflow-hidden">
@@ -304,6 +329,11 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
                           </div>
                         )}
                       </div>
+                      {message.sender === 'user' && (
+                        <Avatar className="w-8 h-8 flex-shrink-0">
+                          <AvatarFallback className="bg-purple-600 text-white text-xs font-semibold">U</AvatarFallback>
+                        </Avatar>
+                      )}
                     </div>
                   ))}
                   
