@@ -21,7 +21,9 @@ import {
   Sparkles,
   ThumbsUp,
   ThumbsDown,
-  MessageCircle
+  MessageCircle,
+  ImagePlus,
+  X
 } from 'lucide-react';
 import { 
   AlertDialog,
@@ -48,53 +50,259 @@ interface Message {
   content: string;
   timestamp: Date;
   category: 'general' | 'homework' | 'concept' | 'motivation';
+  images?: string[]; // Base64 encoded images
 }
 
-// Helper function for Ollama API call
-async function fetchLLMReply(query: string, system?: string): Promise<string> {
+// Helper function for Ollama API call with image support
+async function fetchLLMReply(query: string, system?: string, images?: string[]): Promise<string> {
   try {
     const ollamaUrl = (import.meta.env as any).VITE_OLLAMA_URL || "http://localhost:11434";
-    const ollamaModel = (import.meta.env as any).VITE_OLLAMA_MODEL || "llama3.2-vision";
+    const defaultTextModel = (import.meta.env as any).VITE_OLLAMA_TEXT_MODEL || "llama3.2-vision";
+    const defaultVisionModel = (import.meta.env as any).VITE_OLLAMA_MODEL || "minicpm-v";
 
-    const messages = [
-      ...(system ? [{ role: "system", content: system }] : [
-        { role: "system", content: "You are a rigorous university-level tutor specializing in various different modules, specifically integration and differentiation. Provide clear, detailed explanations grounded in mathematical theory. Use precise mathematical notation and justify each step. Format all mathematical expressions using LaTeX: use $...$ for inline math (like $f(x) = x^2$) and $$...$$ for display math (equations on their own line). If a question is not related to integration, differentiation, or their applications, politely redirect the student to ask calculus questions." }
-      ]),
-      { role: "user", content: query }
-    ];
+    // Hybrid approach: Use minicpm-v for image OCR, then llama3.2-vision for reasoning
+    if (images && images.length > 0) {
+      console.log('[Ollama] Hybrid approach: minicpm-v (OCR) -> llama3.2-vision (reasoning)');
+      
+      // Step 1: Use minicpm-v to extract/transcribe the image content
+      const ocrPrompt = `Carefully examine this image and transcribe ALL mathematical content you see. Include:
+- All mathematical expressions, equations, and notation
+- All handwritten or typed text
+- All steps shown in any work
+- All numbers, variables, and symbols
 
-    const response = await fetch(`${ollamaUrl}/api/chat`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: ollamaModel,
-        messages: messages,
-        stream: false,
-        options: {
-          temperature: 0.7,
-          num_predict: 1000
-        }
-      })
-    });
+Format mathematical expressions using LaTeX with $ delimiters (e.g., $x^2$, $\\frac{d}{dx}$).
+Be extremely precise and transcribe everything exactly as shown.`;
 
-    if (!response.ok) {
-      console.error("Ollama API error:", response.status, await response.text());
-      throw new Error("Ollama API error");
-    }
+      const ocrResponse = await fetch(`${ollamaUrl}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: defaultVisionModel,
+          messages: [
+            { role: "system", content: "You are an expert at reading and transcribing mathematical notation from images. Transcribe exactly what you see using LaTeX format with $ delimiters." },
+            { role: "user", content: ocrPrompt, images: images }
+          ],
+          stream: false,
+          options: { temperature: 0.1, num_predict: 1000 }
+        })
+      });
 
-    const data = await response.json();
-    if (data.message && data.message.content) {
-      return data.message.content;
+      if (!ocrResponse.ok) {
+        throw new Error("OCR step failed");
+      }
+
+      const ocrData = await ocrResponse.json();
+      const imageTranscription = ocrData.message?.content || "";
+      console.log('[OCR Result]:', imageTranscription.substring(0, 150) + '...');
+
+      // Step 2: Use llama3.2-vision for reasoning and response (without sending the image again)
+      const enhancedQuery = `${query}
+
+[Image Content Transcription]:
+${imageTranscription}
+
+Based on the transcribed mathematical work shown above, provide your analysis.`;
+
+      const ollamaModel = defaultTextModel;
+      console.log(`[Ollama] Using model: ${ollamaModel} (reasoning)`);
+
+      const baseSystemMessage = "You are a rigorous university-level tutor specializing in integration and differentiation. Provide clear, detailed explanations grounded in mathematical theory. Use precise mathematical notation and justify each step.";
+      const latexInstructions = " IMPORTANT: Format ALL mathematical expressions using LaTeX notation: use $...$ for inline math (like $f(x) = x^2$) and $$...$$ for display math (equations on their own line, like $$\\int x^2 dx = \\frac{x^3}{3} + C$$). Never write math without LaTeX delimiters.";
+      const redirectionNote = " If a question is not related to integration, differentiation, or their applications, politely redirect the student to ask calculus questions.";
+      const systemMessage = system || (baseSystemMessage + latexInstructions + redirectionNote);
+
+      const response = await fetch(`${ollamaUrl}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: ollamaModel,
+          messages: [
+            { role: "system", content: systemMessage },
+            { role: "user", content: enhancedQuery }
+          ],
+          stream: false,
+          options: {
+            temperature: 0.3,
+            num_predict: 1500,
+            top_p: 0.9,
+            top_k: 40,
+            num_ctx: 2048
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Reasoning step failed");
+      }
+
+      const data = await response.json();
+      if (data.message && data.message.content) {
+        let content = data.message.content;
+        console.log('[Final Response Preview]:', content.substring(0, 200));
+        
+        // Post-process to fix common LaTeX delimiter issues
+        // Fix unclosed inline math delimiters (odd number of $ signs on a line)
+        const lines = content.split('\n');
+        const fixedLines = lines.map(line => {
+          const dollarCount = (line.match(/\$/g) || []).length;
+          // If odd number of $, likely missing a closing $
+          if (dollarCount % 2 === 1) {
+            // Find the last $ and add a closing $ before the next space or punctuation
+            const lastDollarIndex = line.lastIndexOf('$');
+            if (lastDollarIndex !== -1) {
+              // Look for the next word boundary after the last $
+              const afterDollar = line.substring(lastDollarIndex + 1);
+              const match = afterDollar.match(/^[^\s.,;:!?)]*/);
+              if (match) {
+                const insertIndex = lastDollarIndex + 1 + match[0].length;
+                line = line.substring(0, insertIndex) + '$' + line.substring(insertIndex);
+              }
+            }
+          }
+          return line;
+        });
+        content = fixedLines.join('\n');
+        
+        // Remove spaces between concatenated words (e.g., "w i t h" -> "with")
+        content = content.replace(/\b([a-z])\s+([a-z])\s+([a-z])/gi, '$1$2$3');
+        
+        return content;
+      }
     } else {
-      console.warn("fetchLLMReply: Unexpected response format.", data);
-      return "Sorry, I couldn't generate a response at this time.";
+      // No images - use llama3.2-vision for text-only queries
+      const ollamaModel = defaultTextModel;
+      console.log(`[Ollama] Using model: ${ollamaModel} (text-only)`);
+
+      const baseSystemMessage = "You are a rigorous university-level tutor specializing in integration and differentiation. Provide clear, detailed explanations grounded in mathematical theory. Use precise mathematical notation and justify each step.";
+      const latexInstructions = " IMPORTANT: Format ALL mathematical expressions using LaTeX notation: use $...$ for inline math (like $f(x) = x^2$) and $$...$$ for display math (equations on their own line, like $$\\int x^2 dx = \\frac{x^3}{3} + C$$). Never write math without LaTeX delimiters.";
+      const redirectionNote = " If a question is not related to integration, differentiation, or their applications, politely redirect the student to ask calculus questions.";
+      const systemMessage = system || (baseSystemMessage + latexInstructions + redirectionNote);
+
+      const messages: any[] = [
+        { role: "system", content: systemMessage },
+        { role: "user", content: query }
+      ];
+
+      const response = await fetch(`${ollamaUrl}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: ollamaModel,
+          messages: messages,
+          stream: false,
+          options: {
+            temperature: 0.3,
+            num_predict: 1500,
+            top_p: 0.9,
+            top_k: 40,
+            num_ctx: 2048
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Ollama API error");
+      }
+
+      const data = await response.json();
+      if (data.message && data.message.content) {
+        let content = data.message.content;
+        console.log('[Response Preview]:', content.substring(0, 200));
+        
+        // Post-process to fix common LaTeX delimiter issues
+        const lines = content.split('\n');
+        const fixedLines = lines.map(line => {
+          const dollarCount = (line.match(/\$/g) || []).length;
+          if (dollarCount % 2 === 1) {
+            const lastDollarIndex = line.lastIndexOf('$');
+            if (lastDollarIndex !== -1) {
+              const afterDollar = line.substring(lastDollarIndex + 1);
+              const match = afterDollar.match(/^[^\s.,;:!?)]*/);
+              if (match) {
+                const insertIndex = lastDollarIndex + 1 + match[0].length;
+                line = line.substring(0, insertIndex) + '$' + line.substring(insertIndex);
+              }
+            }
+          }
+          return line;
+        });
+        content = fixedLines.join('\n');
+        content = content.replace(/\b([a-z])\s+([a-z])\s+([a-z])/gi, '$1$2$3');
+        
+        return content;
+      }
     }
+
+    return "Sorry, I couldn't generate a response at this time.";
   } catch (err) {
-    console.error("fetchLLMReply: Network or unexpected error:", err);
+    console.error("fetchLLMReply error:", err);
     return "Error contacting the learning assistant. Please try again.";
   }
+}
+
+// Helper function to convert file to base64
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    // Create a canvas to resize the image if it's too large
+    const img = new Image();
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      img.src = e.target?.result as string;
+      
+      img.onload = () => {
+        // Resize if image is too large (for faster processing)
+        const MAX_WIDTH = 1024;
+        const MAX_HEIGHT = 1024;
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+          const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+          width = width * ratio;
+          height = height * ratio;
+        }
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        
+        if (ctx) {
+          // Draw with slight contrast enhancement for better OCR
+          ctx.filter = 'contrast(1.2) brightness(1.1)';
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convert to base64 (JPEG for smaller size, quality 85 for balance)
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const newReader = new FileReader();
+                newReader.onload = () => {
+                  const base64 = (newReader.result as string).split(',')[1];
+                  resolve(base64);
+                };
+                newReader.onerror = reject;
+                newReader.readAsDataURL(blob);
+              } else {
+                reject(new Error('Canvas blob conversion failed'));
+              }
+            },
+            'image/jpeg',
+            0.85
+          );
+        } else {
+          reject(new Error('Canvas context not available'));
+        }
+      };
+      
+      img.onerror = reject;
+    };
+    
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 // Helper function to parse and render math content with better regex
@@ -102,17 +310,28 @@ const renderMathContent = (content: string): React.ReactNode[] => {
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
 
-  // Match display math ($$...$$) first, then inline math ($...$), then bold (**....**)
-  const displayMathRegex = /\$\$([\s\S]*?)\$\$/g;
-  const inlineMathRegex = /\$([^\$\n]+?)\$/g;
+  // Match display math ($$...$$ or \[...\]) first, then inline math ($...$ or \(...\)), then bold (**....**)
+  const displayMathRegex1 = /\$\$([\s\S]*?)\$\$/g;  // $$...$$
+  const displayMathRegex2 = /\\\[([\s\S]*?)\\\]/g;  // \[...\]
+  const inlineMathRegex1 = /\$([^\$\n]+?)\$/g;      // $...$
+  const inlineMathRegex2 = /\\\(([^\)]+?)\\\)/g;    // \(...\)
   const boldRegex = /\*\*([^\*]+?)\*\*/g;
   
   let displayMatches: any[] = [];
   let inlineMatches: any[] = [];
   let boldMatches: any[] = [];
   
+  // Collect display math matches (both formats)
   let displayMatch;
-  while ((displayMatch = displayMathRegex.exec(content)) !== null) {
+  while ((displayMatch = displayMathRegex1.exec(content)) !== null) {
+    displayMatches.push({ 
+      index: displayMatch.index, 
+      length: displayMatch[0].length, 
+      content: displayMatch[1],
+      type: 'display'
+    });
+  }
+  while ((displayMatch = displayMathRegex2.exec(content)) !== null) {
     displayMatches.push({ 
       index: displayMatch.index, 
       length: displayMatch[0].length, 
@@ -121,9 +340,24 @@ const renderMathContent = (content: string): React.ReactNode[] => {
     });
   }
   
+  // Collect inline math matches (both formats)
   let inlineMatch;
-  while ((inlineMatch = inlineMathRegex.exec(content)) !== null) {
+  while ((inlineMatch = inlineMathRegex1.exec(content)) !== null) {
     // Check if this inline match is not part of a display match
+    const isPartOfDisplay = displayMatches.some(dm => 
+      inlineMatch.index >= dm.index && 
+      inlineMatch.index < dm.index + dm.length
+    );
+    if (!isPartOfDisplay) {
+      inlineMatches.push({
+        index: inlineMatch.index,
+        length: inlineMatch[0].length,
+        content: inlineMatch[1],
+        type: 'inline'
+      });
+    }
+  }
+  while ((inlineMatch = inlineMathRegex2.exec(content)) !== null) {
     const isPartOfDisplay = displayMatches.some(dm => 
       inlineMatch.index >= dm.index && 
       inlineMatch.index < dm.index + dm.length
@@ -279,8 +513,12 @@ export default function GeneralChatbot({
   const [challengeAnswer, setChallengeAnswer] = useState('');
   const [challengeSessionEnded, setChallengeSessionEnded] = useState(false);
   const [showHintDialog, setShowHintDialog] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<string[]>([]); // Base64 images for general chat
+  const [challengeImages, setChallengeImages] = useState<string[]>([]); // Base64 images for challenge
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const challengeScrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const challengeFileInputRef = useRef<HTMLInputElement>(null);
 
   // Helper function to check if user is near bottom of chat
   const userIsNearBottom = useCallback((element: HTMLDivElement | null, threshold: number = 80): boolean => {
@@ -295,6 +533,57 @@ export default function GeneralChatbot({
     setTimeout(() => {
       element.scrollTop = element.scrollHeight;
     }, 0);
+  }, []);
+
+  // Handle image upload for general chat
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const base64Images: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const base64 = await fileToBase64(files[i]);
+        base64Images.push(base64);
+      } catch (err) {
+        console.error("Error converting image to base64:", err);
+      }
+    }
+    setSelectedImages(prev => [...prev, ...base64Images]);
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, []);
+
+  // Handle image upload for challenge
+  const handleChallengeImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const base64Images: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const base64 = await fileToBase64(files[i]);
+        base64Images.push(base64);
+      } catch (err) {
+        console.error("Error converting image to base64:", err);
+      }
+    }
+    setChallengeImages(prev => [...prev, ...base64Images]);
+    // Reset input so same file can be selected again
+    if (challengeFileInputRef.current) {
+      challengeFileInputRef.current.value = '';
+    }
+  }, []);
+
+  // Remove an image from selection
+  const removeImage = useCallback((index: number, isChallenge: boolean = false) => {
+    if (isChallenge) {
+      setChallengeImages(prev => prev.filter((_, i) => i !== index));
+    } else {
+      setSelectedImages(prev => prev.filter((_, i) => i !== index));
+    }
   }, []);
 
   // Memoized static data to prevent re-renders
@@ -435,14 +724,18 @@ export default function GeneralChatbot({
   // Main LLM-powered send message function
   const handleSendMessage = useCallback(
     async (message: string, system?: string, isQuickAction: boolean = false) => {
-      if (!message.trim()) return;
+      if (!message.trim() && selectedImages.length === 0) return;
+
+      // Capture current images before clearing
+      const imagesToSend = [...selectedImages];
 
       const newUserMessage: Message = {
         id: Date.now().toString(),
         type: 'user',
-        content: message,
+        content: message || (imagesToSend.length > 0 ? "[Image attached - please analyze my math work]" : ""),
         timestamp: new Date(),
-        category: 'general'
+        category: 'general',
+        images: imagesToSend.length > 0 ? imagesToSend : undefined
       };
 
       if (activeTab === 'challenge') {
@@ -452,11 +745,40 @@ export default function GeneralChatbot({
       }
 
       setInputValue('');
+      setSelectedImages([]); // Clear images after sending
       setIsLoading(true);
       setShowSuggestions(false);
 
-      // Fetch reply from Ollama
-      const botReply = await fetchLLMReply(message, system);
+      // Build context-aware prompt for image analysis
+      let enhancedMessage = message;
+      if (imagesToSend.length > 0) {
+        const imageAnalysisInstructions = `
+
+IMPORTANT: I have attached image(s) of mathematical work. Please analyze them carefully:
+
+1. CAREFULLY READ all mathematical notation, symbols, and expressions in the image
+2. Examine EACH step of the work shown, from top to bottom
+3. Check algebraic manipulations, derivatives, integrals, and substitutions
+4. Verify that each step logically follows from the previous one
+5. Identify any errors in:
+   - Mathematical notation or symbols
+   - Calculation mistakes
+   - Sign errors
+   - Missing steps or logical gaps
+   - Incorrect application of rules/theorems
+6. Provide specific feedback referencing what you see in the image
+7. If the work is correct, acknowledge what was done well
+8. If there are errors, explain exactly where and why they occurred
+
+Please transcribe the key mathematical expressions you see before analyzing them.`;
+        
+        enhancedMessage = message 
+          ? `${message}${imageAnalysisInstructions}`
+          : `Please analyze my mathematical work shown in the attached image(s).${imageAnalysisInstructions}`;
+      }
+
+      // Fetch reply from Ollama with images
+      const botReply = await fetchLLMReply(enhancedMessage, system, imagesToSend.length > 0 ? imagesToSend : undefined);
 
       if (activeTab === 'challenge') {
         setChallengeMessages(prev => [
@@ -483,20 +805,20 @@ export default function GeneralChatbot({
       }
       setIsLoading(false);
     },
-    [activeTab]
+    [activeTab, selectedImages]
   );
 
   // For quick actions, add system instructions
   const handleQuickAction = useCallback((prompt: string, type?: string) => {
     let system = "";
     if (type === "Guide me") {
-      system = "You are a university-level calculus tutor. Provide a rigorous, step-by-step walkthrough of the problem. Justify each step mathematically and explain the underlying concepts. Use LaTeX math notation with $...$ for inline math and $$...$$ for display equations.";
+      system = "You are a university-level calculus tutor with vision capabilities. You can analyze images of student work. Provide a rigorous, step-by-step walkthrough of the problem. Justify each step mathematically and explain the underlying concepts. Use LaTeX math notation with $...$ for inline math and $$...$$ for display equations. If students upload images, carefully analyze their work.";
     } else if (type === "Test me") {
       system = "You are a rigorous examiner. Provide a challenging university-level calculus problem on integration or differentiation. Use LaTeX notation: $...$ for inline math and $$...$$ for display math on separate lines. Example: $$\\int \\frac{x^3}{(x^2+1)^2} dx$$ Make expressions clear and readable with line breaks. After the student attempts it, provide detailed feedback.";
     } else if (type === "Check my answer") {
-      system = "You are an expert mathematics grader. Review the student's calculus work meticulously, check for correctness, identify any errors, and provide constructive feedback with correct solutions using proper LaTeX notation.";
+      system = "You are an expert mathematics grader with vision capabilities. You can analyze images of handwritten or typed mathematical work. Review the student's calculus work meticulously (whether typed or in an uploaded image), check for correctness, identify any errors, and provide constructive feedback with correct solutions using proper LaTeX notation. When analyzing images, examine all steps, notation, and calculations carefully.";
     } else if (type === "Explain concept") {
-      system = "You are a mathematics professor. Provide a rigorous, in-depth explanation using LaTeX notation ($...$ for inline, $$...$$ for display math). Include proofs where relevant and provide illustrative examples.";
+      system = "You are a mathematics professor with vision capabilities. You can analyze diagrams and mathematical notation in images. Provide a rigorous, in-depth explanation using LaTeX notation ($...$ for inline, $$...$$ for display math). Include proofs where relevant and provide illustrative examples.";
     } else if (type === "Study tips") {
       system = "You are an experienced calculus instructor. Share advanced, evidence-based strategies for mastering integration and differentiation. Focus on conceptual understanding, not just procedural steps.";
     }
@@ -563,29 +885,52 @@ Prove the chain rule for differentiation. Then, apply it to find the derivative 
 
   // PATCH: Post challenge response to API
   const handleSubmitChallenge = useCallback(async () => {
-  if (!challengeAnswer.trim()) return;
+  if (!challengeAnswer.trim() && challengeImages.length === 0) return;
 
   // Check if user was near bottom before changes
   const wasNearBottom = userIsNearBottom(challengeScrollRef.current);
+  
+  // Capture current images before clearing
+  const imagesToSubmit = [...challengeImages];
   
   setIsLoading(true);
 
   const userAnswerMessage: Message = {
     id: Date.now().toString(),
     type: 'user',
-    content: challengeAnswer,
+    content: challengeAnswer || (imagesToSubmit.length > 0 ? "[Image of my work attached]" : ""),
     timestamp: new Date(),
-    category: 'homework'
+    category: 'homework',
+    images: imagesToSubmit.length > 0 ? imagesToSubmit : undefined
   };
+
+  // Build prompt that includes image context if images are attached
+  const hasImages = imagesToSubmit.length > 0;
+  const imageContext = hasImages 
+    ? `\n\nThe student has attached an image of their mathematical work. Please analyze it with extreme care:
+
+- FIRST, transcribe or describe the mathematical expressions and steps you see in the image
+- Carefully read ALL notation, symbols, numbers, and text
+- Check EACH calculation step by step
+- Verify integration/differentiation rules are applied correctly
+- Look for sign errors, algebraic mistakes, or computational errors
+- Check that the final answer matches what's shown in the image
+- Be specific about what you observe in the image when providing feedback`
+    : "";
 
   const llmPrompt = `
 You are a rigorous university-level mathematics professor. Evaluate this student's answer to a calculus challenge question.
 
+IMPORTANT: Format ALL mathematical expressions using LaTeX notation:
+- Use $expression$ for inline math (e.g., $f(x) = x^2$)
+- Use $$expression$$ for display math (e.g., $$\\int_0^1 x^2 dx$$)
+- Never write mathematical notation without LaTeX delimiters
+
 Challenge Question:
 ${currentChallengeQuestion}
 
-Student's Answer:
-${challengeAnswer}
+Student's Written Answer:
+${challengeAnswer || "(See attached image for the student's work)"}${imageContext}
 
 Provide:
 1. Assessment of mathematical correctness
@@ -594,17 +939,20 @@ Provide:
 4. Suggestions for improvement
 5. Key insights the student should understand
 
-Be thorough, precise, and constructive. Use proper mathematical notation.
+Be thorough, precise, and constructive. Use proper mathematical notation with LaTeX formatting.
 
 Present your feedback without using the bullet point format above, and instead generate it in a detailed paragraph form instead.
 `;
 
   let feedbackText = '';
   try {
-    feedbackText = await fetchLLMReply(llmPrompt);
+    feedbackText = await fetchLLMReply(llmPrompt, undefined, hasImages ? imagesToSubmit : undefined);
   } catch (err) {
     feedbackText = "Sorry, I couldn't generate feedback at this time.";
   }
+  
+  // Clear challenge images after submission
+  setChallengeImages([]);
 
   const feedbackMessage: Message = {
     id: (Date.now() + 1).toString(),
@@ -623,7 +971,7 @@ Present your feedback without using the bullet point format above, and instead g
   if (wasNearBottom) {
     scrollChatToBottom(challengeScrollRef.current);
   }
-}, [challengeAnswer, currentChallengeQuestion, userIsNearBottom, scrollChatToBottom]);
+}, [challengeAnswer, challengeImages, currentChallengeQuestion, userIsNearBottom, scrollChatToBottom]);
 
   const renderMessages = useCallback((messageList: Message[]) => (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -642,6 +990,21 @@ Present your feedback without using the bullet point format above, and instead g
           )}
           
           <div className={`max-w-3xl`}>
+            {/* Display attached images */}
+            {message.images && message.images.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {message.images.map((img, idx) => (
+                  <div key={idx} className="relative">
+                    <img
+                      src={`data:image/png;base64,${img}`}
+                      alt={`Attached image ${idx + 1}`}
+                      className="max-w-xs max-h-48 rounded-lg border border-gray-200 shadow-sm object-contain"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+            
             <div className={`rounded-2xl px-4 py-3 ${
               message.type === 'user' 
                 ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
@@ -956,22 +1319,72 @@ Present your feedback without using the bullet point format above, and instead g
                   {challengePhase === 'answering' && (
                     <div className="mt-6 bg-gray-50 rounded-lg p-4 border border-gray-200 max-w-4xl mx-auto">
                       <h4 className="font-medium text-gray-900 mb-3">Your Answer</h4>
+                      
+                      {/* Hidden file input for challenge */}
+                      <input
+                        type="file"
+                        ref={challengeFileInputRef}
+                        onChange={handleChallengeImageUpload}
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                      />
+                      
+                      {/* Challenge Image Preview */}
+                      {challengeImages.length > 0 && (
+                        <div className="flex flex-wrap gap-2 p-2 bg-white rounded-lg border border-gray-200 mb-3">
+                          {challengeImages.map((img, idx) => (
+                            <div key={idx} className="relative group">
+                              <img
+                                src={`data:image/png;base64,${img}`}
+                                alt={`Challenge image ${idx + 1}`}
+                                className="h-20 w-20 object-cover rounded-md border border-gray-300"
+                              />
+                              <button
+                                onClick={() => removeImage(idx, true)}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                          <span className="text-xs text-gray-500 self-center ml-2">
+                            {challengeImages.length} image(s) of your work attached
+                          </span>
+                        </div>
+                      )}
+                      
                       <textarea
                         value={challengeAnswer}
                         onChange={(e) => setChallengeAnswer(e.target.value)}
-                        placeholder="Type your answer here..."
+                        placeholder="Type your answer here, or upload an image of your work..."
                         className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       />
                       
-                      <div className="flex justify-end mt-4">
+                      <div className="flex justify-between items-center mt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => challengeFileInputRef.current?.click()}
+                          className="border-purple-300 text-purple-600 hover:bg-purple-50"
+                          disabled={isLoading}
+                        >
+                          <ImagePlus className="h-4 w-4 mr-2" />
+                          Upload Work Image
+                        </Button>
+                        
                         <Button
                           onClick={handleSubmitChallenge}
-                          disabled={!challengeAnswer.trim() || isLoading}
+                          disabled={(!challengeAnswer.trim() && challengeImages.length === 0) || isLoading}
                           className="bg-purple-600 hover:bg-purple-700 text-white"
                         >
                           {isLoading ? 'Submitting...' : 'Submit Answer'}
                         </Button>
                       </div>
+                      
+                      <p className="text-xs text-gray-500 mt-2">
+                        📷 <strong>Tips for best results:</strong> Use clear, well-lit photos • Write neatly • Ensure all work is visible • Avoid shadows • Take photos straight-on (not at an angle)
+                      </p>
                     </div>
                   )}
                 </div>
@@ -1008,26 +1421,76 @@ Present your feedback without using the bullet point format above, and instead g
 
             {/* Input Field - Hide during challenge answering phase but show in general tab */}
             {!(activeTab === 'challenge' && challengePhase === 'answering') && !(activeTab === 'challenge' && challengeSessionEnded) && (
-              <div className="flex gap-3">
-                <Input
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder={
-                    activeTab === 'challenge' 
-                      ? "Ask follow-up questions about today's challenge..." 
-                      : "Ask me anything about Mathematics I..."
-                  }
-                  className="flex-1 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-200"
-                  disabled={isLoading}
-                />
-                <Button
-                  onClick={() => handleSendMessage(inputValue)}
-                  disabled={!inputValue.trim() || isLoading}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
+              <div className="space-y-2">
+                {/* Image Preview Area */}
+                {selectedImages.length > 0 && (
+                  <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                    {selectedImages.map((img, idx) => (
+                      <div key={idx} className="relative group">
+                        <img
+                          src={`data:image/png;base64,${img}`}
+                          alt={`Selected image ${idx + 1}`}
+                          className="h-16 w-16 object-cover rounded-md border border-gray-300"
+                        />
+                        <button
+                          onClick={() => removeImage(idx, false)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                    <span className="text-xs text-gray-500 self-center ml-2">
+                      {selectedImages.length} image(s) attached
+                    </span>
+                  </div>
+                )}
+                
+                <div className="flex gap-3">
+                  {/* Hidden file input */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImageUpload}
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                  />
+                  
+                  {/* Image upload button */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex-shrink-0 border-gray-300 hover:bg-gray-50"
+                    disabled={isLoading}
+                    title="Attach image of your math work"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                  </Button>
+                  
+                  <Input
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder={
+                      selectedImages.length > 0
+                        ? "Add a message about your image (optional)..."
+                        : activeTab === 'challenge' 
+                          ? "Ask follow-up questions about today's challenge..." 
+                          : "Ask me anything about Mathematics I..."
+                    }
+                    className="flex-1 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-200"
+                    disabled={isLoading}
+                  />
+                  <Button
+                    onClick={() => handleSendMessage(inputValue)}
+                    disabled={(!inputValue.trim() && selectedImages.length === 0) || isLoading}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             )}
             
