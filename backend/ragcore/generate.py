@@ -1,6 +1,5 @@
 # ragcore/generate.py
 import os,json,requests
-from openai import OpenAI
 
 SYSTEM = """You are a precise assistant. 
 - Use ONLY provided context to answer.
@@ -9,6 +8,8 @@ SYSTEM = """You are a precise assistant.
 
 BASE_URL = os.getenv("BASE_URL", "https://nala.ntu.edu.sg") 
 API_KEY = os.getenv("API_KEY", "pk_LearnUS_176q45") 
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2-vision") 
 
 def build_prompt(query: str, context_chunks: list[dict]):
     ctx = []
@@ -19,12 +20,31 @@ def build_prompt(query: str, context_chunks: list[dict]):
     user = f"Question: {query}\n\nContext:\n{ctx_txt}\n\nAnswer with citations like [1], [2]."
     return SYSTEM, user
 
-def call_llm(query: str, context_chunks: list[dict], model="gpt-4o-mini"):
+def call_llm(query: str, context_chunks: list[dict], model=None):
+    """
+    Call Ollama API for LLM generation
+    """
     system, user = build_prompt(query, context_chunks)
-    url = f"{BASE_URL}/api/llm"
-    headers = {"X-API-Key": API_KEY, "Content-Type": "application/json"}
-    payload = {"text": user, "system": system}
-    r = requests.post(url, headers=headers, data=json.dumps(payload), timeout=30)
+    
+    # Use Ollama's chat API endpoint
+    url = f"{OLLAMA_BASE_URL}/api/chat"
+    
+    messages = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user}
+    ]
+    
+    payload = {
+        "model": model or OLLAMA_MODEL,
+        "messages": messages,
+        "stream": False,
+        "options": {
+            "temperature": 0.7
+        }
+    }
+    
+    r = requests.post(url, json=payload, timeout=60)
     r.raise_for_status()
-    # Adjust this if your API returns a different field for the answer
-    return r.json().get("answer", r.text)
+    
+    response_data = r.json()
+    return response_data.get("message", {}).get("content", "")

@@ -50,42 +50,43 @@ interface Message {
   category: 'general' | 'homework' | 'concept' | 'motivation';
 }
 
-// Helper function for OpenAI API call
+// Helper function for Ollama API call
 async function fetchLLMReply(query: string, system?: string): Promise<string> {
   try {
-    const apiKey = (import.meta.env as any).VITE_OPENAI_API_KEY;
-    if (!apiKey) {
-      console.error("OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in .env");
-      return "Error: API key not configured.";
-    }
+    const ollamaUrl = (import.meta.env as any).VITE_OLLAMA_URL || "http://localhost:11434";
+    const ollamaModel = (import.meta.env as any).VITE_OLLAMA_MODEL || "llama3.2-vision";
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const messages = [
+      ...(system ? [{ role: "system", content: system }] : [
+        { role: "system", content: "You are a rigorous university-level tutor specializing in various different modules, specifically integration and differentiation. Provide clear, detailed explanations grounded in mathematical theory. Use precise mathematical notation and justify each step. Format all mathematical expressions using LaTeX: use $...$ for inline math (like $f(x) = x^2$) and $$...$$ for display math (equations on their own line). If a question is not related to integration, differentiation, or their applications, politely redirect the student to ask calculus questions." }
+      ]),
+      { role: "user", content: query }
+    ];
+
+    const response = await fetch(`${ollamaUrl}/api/chat`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [
-          ...(system ? [{ role: "system", content: system }] : [
-            { role: "system", content: "You are a rigorous university-level tutor specializing in various different modules, specifically integration and differentiation. Provide clear, detailed explanations grounded in mathematical theory. Use precise mathematical notation and justify each step. Format all mathematical expressions using LaTeX: use $...$ for inline math (like $f(x) = x^2$) and $$...$$ for display math (equations on their own line). If a question is not related to integration, differentiation, or their applications, politely redirect the student to ask calculus questions." }
-          ]),
-          { role: "user", content: query }
-        ],
-        max_tokens: 1000,
-        temperature: 0.7
+        model: ollamaModel,
+        messages: messages,
+        stream: false,
+        options: {
+          temperature: 0.7,
+          num_predict: 1000
+        }
       })
     });
 
     if (!response.ok) {
-      console.error("OpenAI API error:", response.status, await response.text());
-      throw new Error("OpenAI API error");
+      console.error("Ollama API error:", response.status, await response.text());
+      throw new Error("Ollama API error");
     }
 
     const data = await response.json();
-    if (data.choices && data.choices.length > 0 && data.choices[0].message) {
-      return data.choices[0].message.content;
+    if (data.message && data.message.content) {
+      return data.message.content;
     } else {
       console.warn("fetchLLMReply: Unexpected response format.", data);
       return "Sorry, I couldn't generate a response at this time.";
@@ -454,7 +455,7 @@ export default function GeneralChatbot({
       setIsLoading(true);
       setShowSuggestions(false);
 
-      // Fetch reply from OpenAI
+      // Fetch reply from Ollama
       const botReply = await fetchLLMReply(message, system);
 
       if (activeTab === 'challenge') {

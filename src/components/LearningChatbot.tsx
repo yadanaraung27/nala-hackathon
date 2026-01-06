@@ -66,23 +66,19 @@ const renderBoldMarkdown = (content: string): React.ReactNode[] => {
   return parts.length > 0 ? parts : [<span key="empty">{content}</span>];
 };
 
-// Fetch reply from OpenAI API
+// Fetch reply from Ollama API
 async function fetchRagReply(query: string): Promise<string> {
   try {
-    const apiKey = (import.meta.env as any).VITE_OPENAI_API_KEY;
-    if (!apiKey) {
-      console.error("OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in .env");
-      return "Error: API key not configured.";
-    }
+    const ollamaUrl = (import.meta.env as any).VITE_OLLAMA_URL || "http://localhost:11434";
+    const ollamaModel = (import.meta.env as any).VITE_OLLAMA_MODEL || "llama3.2-vision";
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch(`${ollamaUrl}/api/chat`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
+        model: ollamaModel,
         messages: [
           {
             role: "system",
@@ -93,23 +89,26 @@ async function fetchRagReply(query: string): Promise<string> {
             content: query
           }
         ],
-        max_tokens: 500,
-        temperature: 0.7
+        stream: false,
+        options: {
+          temperature: 0.7,
+          num_predict: 500
+        }
       })
     });
 
     if (!response.ok) {
-      console.error("OpenAI API error:", response.status, await response.text());
-      throw new Error("OpenAI API error");
+      console.error("Ollama API error:", response.status, await response.text());
+      throw new Error("Ollama API error");
     }
 
     const data = await response.json();
-    console.log("fetchRagReply: OpenAI response:", data);
+    console.log("fetchRagReply: Ollama response:", data);
 
-    if (data.choices && data.choices.length > 0 && data.choices[0].message) {
-      return data.choices[0].message.content;
+    if (data.message && data.message.content) {
+      return data.message.content;
     } else {
-      console.warn("fetchRagReply: Unexpected OpenAI response format.", data);
+      console.warn("fetchRagReply: Unexpected Ollama response format.", data);
       return "Sorry, I couldn't parse the response from the AI assistant.";
     }
   } catch (err) {

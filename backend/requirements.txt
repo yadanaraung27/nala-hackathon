@@ -7,7 +7,7 @@ faiss-cpu
 unstructured[local-inference]   # or pypdf, markdown-it-py, bs4, etc.
 rapidfuzz
 nltk
-openai                          # or litellm, ollama, vllm client
+requests                        # for Ollama API calls
 
 # Added for backend API and utilities
 flask
