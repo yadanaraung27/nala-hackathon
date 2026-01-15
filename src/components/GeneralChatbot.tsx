@@ -60,19 +60,25 @@ async function fetchLLMReply(query: string, system?: string, images?: string[]):
     const defaultTextModel = (import.meta.env as any).VITE_OLLAMA_TEXT_MODEL || "llama3.2-vision";
     const defaultVisionModel = (import.meta.env as any).VITE_OLLAMA_MODEL || "minicpm-v";
 
+    // Define system message templates
+    const baseSystemMessage = "You are a rigorous university-level tutor specializing in integration and differentiation. Provide clear, detailed explanations grounded in mathematical theory. Use precise mathematical notation and justify each step.";
+    const latexInstructions = " IMPORTANT: Format ALL mathematical expressions using LaTeX notation: use $...$ for inline math (like $f(x) = x^2$) and $$...$$ for display math (equations on their own line, like $$\\int x^2 dx = \\frac{x^3}{3} + C$$). Never write math without LaTeX delimiters.";
+    const redirectionNote = " If a question is not related to integration, differentiation, or their applications, politely redirect the student to ask calculus questions.";
+    const systemMessage = system || (baseSystemMessage + latexInstructions + redirectionNote);
+
     // Hybrid approach: Use minicpm-v for image OCR, then llama3.2-vision for reasoning
     if (images && images.length > 0) {
       console.log('[Ollama] Hybrid approach: minicpm-v (OCR) -> llama3.2-vision (reasoning)');
       
       // Step 1: Use minicpm-v to extract/transcribe the image content
       const ocrPrompt = `Carefully examine this image and transcribe ALL mathematical content you see. Include:
-- All mathematical expressions, equations, and notation
-- All handwritten or typed text
-- All steps shown in any work
-- All numbers, variables, and symbols
+      - All mathematical expressions, equations, and notation
+      - All handwritten or typed text
+      - All steps shown in any work
+      - All numbers, variables, and symbols
 
-Format mathematical expressions using LaTeX with $ delimiters (e.g., $x^2$, $\\frac{d}{dx}$).
-Be extremely precise and transcribe everything exactly as shown.`;
+      Format mathematical expressions using LaTeX with $ delimiters (e.g., $x^2$, $\\frac{d}{dx}$).
+      Be extremely precise and transcribe everything exactly as shown.`;
 
       const ocrResponse = await fetch(`${ollamaUrl}/api/chat`, {
         method: "POST",
@@ -99,18 +105,13 @@ Be extremely precise and transcribe everything exactly as shown.`;
       // Step 2: Use llama3.2-vision for reasoning and response (without sending the image again)
       const enhancedQuery = `${query}
 
-[Image Content Transcription]:
-${imageTranscription}
+      [Image Content Transcription]:
+      ${imageTranscription}
 
-Based on the transcribed mathematical work shown above, provide your analysis.`;
+      Based on the transcribed mathematical work shown above, provide your analysis.`;
 
       const ollamaModel = defaultTextModel;
       console.log(`[Ollama] Using model: ${ollamaModel} (reasoning)`);
-
-      const baseSystemMessage = "You are a rigorous university-level tutor specializing in integration and differentiation. Provide clear, detailed explanations grounded in mathematical theory. Use precise mathematical notation and justify each step.";
-      const latexInstructions = " IMPORTANT: Format ALL mathematical expressions using LaTeX notation: use $...$ for inline math (like $f(x) = x^2$) and $$...$$ for display math (equations on their own line, like $$\\int x^2 dx = \\frac{x^3}{3} + C$$). Never write math without LaTeX delimiters.";
-      const redirectionNote = " If a question is not related to integration, differentiation, or their applications, politely redirect the student to ask calculus questions.";
-      const systemMessage = system || (baseSystemMessage + latexInstructions + redirectionNote);
 
       const response = await fetch(`${ollamaUrl}/api/chat`, {
         method: "POST",
@@ -173,11 +174,6 @@ Based on the transcribed mathematical work shown above, provide your analysis.`;
       // No images - use llama3.2-vision for text-only queries
       const ollamaModel = defaultTextModel;
       console.log(`[Ollama] Using model: ${ollamaModel} (text-only)`);
-
-      const baseSystemMessage = "You are a rigorous university-level tutor specializing in integration and differentiation. Provide clear, detailed explanations grounded in mathematical theory. Use precise mathematical notation and justify each step.";
-      const latexInstructions = " IMPORTANT: Format ALL mathematical expressions using LaTeX notation: use $...$ for inline math (like $f(x) = x^2$) and $$...$$ for display math (equations on their own line, like $$\\int x^2 dx = \\frac{x^3}{3} + C$$). Never write math without LaTeX delimiters.";
-      const redirectionNote = " If a question is not related to integration, differentiation, or their applications, politely redirect the student to ask calculus questions.";
-      const systemMessage = system || (baseSystemMessage + latexInstructions + redirectionNote);
 
       const messages: any[] = [
         { role: "system", content: systemMessage },
