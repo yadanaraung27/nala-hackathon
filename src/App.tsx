@@ -114,7 +114,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showLearningStyleDetails, setShowLearningStyleDetails] = useState(false);
   const [activeSection, setActiveSection] = useState('Homepage');
-  const [currentDate, setCurrentDate] = useState('Tuesday, October 1, 2025');
+  const [currentDate, setCurrentDate] = useState('Tuesday, October 1, 2025'); // Pending: update current date
   const [currentWeek, setCurrentWeek] = useState<any>(null);
   const [showQuestionChatbot, setShowQuestionChatbot] = useState(false);
   const [showGeneralChatbot, setShowGeneralChatbot] = useState(false);
@@ -195,6 +195,7 @@ export default function App() {
         console.error('Error setting date and week:', error);
         setInitializationError('Failed to initialize date and week');
         // Set fallback values
+        // Pending: Update fallback date
         setCurrentDate('Tuesday, October 1, 2025');
         setCurrentWeek({
           name: 'Teaching Week 8',
@@ -544,7 +545,7 @@ export default function App() {
             }`}
             onClick={() => {
               setShowGeneralChatbot(true);
-              setActiveSection('');
+              setActiveSection('');  // Clear active section to remove other highlights
             }}
             data-tutorial="chatbot"
             title={sidebarCollapsed ? 'Go to Chatbot' : undefined}
@@ -557,7 +558,7 @@ export default function App() {
         {/* Personalization Section */}
         {!sidebarCollapsed && (
           <div className="px-4 py-3 border-t border-purple-500/20 flex-shrink-0">
-            <h3 className="text-xs uppercase tracking-wider text-purple-200 mb-3">Preferences</h3>
+            <h3 className="text-xs uppercase tracking-wider text-purple-200 mb-3">Customization</h3>
             <div className="space-y-2">
               {learningPreference && (
                 <div className="flex items-center justify-between p-2 bg-purple-500/20 rounded" data-tutorial="learning-prefs">
@@ -571,7 +572,7 @@ export default function App() {
                     className="text-purple-200 hover:text-white hover:bg-purple-500/20 p-0 h-auto w-5 flex-shrink-0"
                     onClick={() => setShowLearningStyleDetails(true)}
                   >
-                    <Info className="h-3 w-3" />
+                    <Info className="h-4 w-4" />
                   </Button>
                 </div>
               )}
@@ -580,7 +581,7 @@ export default function App() {
               <Button
                 variant="ghost"
                 size="sm"
-                className={`w-full justify-start text-xs py-2 ${
+                className={`w-full justify-start py-2 ${
                   activeSection === 'Profile' 
                     ? 'bg-white text-purple-700 hover:bg-white hover:text-purple-700' 
                     : 'text-purple-100 hover:bg-purple-500/20 hover:text-white'
@@ -592,31 +593,34 @@ export default function App() {
                   setShowQuestionChatbot(false);
                 }}
               >
-                <Users className="h-3 w-3 mr-2" />
+                <Users className="h-4 w-4 mr-3" />
                 Profile
               </Button>
             </div>
           </div>
         )}
 
-        {/* Quick Links Section - Moved below Preferences */}
+        {/* Support Section */}
         {!sidebarCollapsed && (
           <div className="px-4 py-3 border-t border-purple-500/20 flex-shrink-0">
-            <div className="space-y-0.5">
+            <h3 className="text-xs uppercase tracking-wider text-purple-200 mb-3">Support</h3>
+            <div className="space-y-2">
+              {/* Show Tutorial */}
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-start text-xs py-1 h-8 text-purple-100 hover:bg-purple-500/20 hover:text-white"
+                className="w-full justify-start py-1 h-8 text-purple-100 hover:bg-purple-500/20 hover:text-white"
                 onClick={handleShowTutorial}
               >
-                <HelpCircle className="h-3 w-3 mr-2" />
+                <HelpCircle className="h-4 w-4 mr-3" />
                 Tutorial
               </Button>
 
+              {/* Feedback Button */}
               <Button
                 variant="ghost"
                 size="sm"
-                className={`w-full justify-start text-xs py-1 h-8 ${
+                className={`w-full justify-start py-1 h-8 ${
                   activeSection === 'Feedback' 
                     ? 'bg-white text-purple-700 hover:bg-white hover:text-purple-700' 
                     : 'text-purple-100 hover:bg-purple-500/20 hover:text-white'
@@ -628,40 +632,47 @@ export default function App() {
                 }}
                 data-tutorial="feedback-section"
               >
-                <MessageSquare className="h-3 w-3 mr-2" />
+                <MessageSquare className="h-4 w-4 mr-3" />
                 Feedback
               </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start text-xs py-1 h-8 text-purple-100 hover:bg-purple-500/20 hover:text-white"
-                title="Log out"
-              >
-                <svg className="h-3 w-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Log out
-              </Button>
-            </div>
-
-            {/* Footer - Minimal */}
-            <div className="pt-1.5 border-t border-purple-500/20 mt-2">
-              <div className="flex items-center justify-center gap-1">
-                <img 
-                  src="../media/learnus_logo.png"
-                  alt="LearnUs Logo" 
-                  className="w-4 h-4"
-                />
-                <span className="text-xs font-semibold text-purple-200">LearnUs</span>
-              </div>
-              <p className="text-xs text-purple-300 text-center mt-0.5">© 2025 Dev Team</p>
             </div>
           </div>
         )}
 
-        {/* Spacer to push remaining content down */}
-        <div className="flex-1"></div>
+        {/* Log Out Action */}
+        <div className="px-4 py-3 border-t border-purple-500/20 flex-shrink-0">
+          <div className="space-y-2">
+            <Button
+              variant="ghost"
+              className={`w-full ${sidebarCollapsed ? 'justify-center px-0' : 'justify-start'} text-white hover:bg-purple-500/20 hover:text-white py-3 max-w-none`}
+              title={sidebarCollapsed ? 'Log out' : undefined}
+            >
+              <svg className={`h-4 w-4 ${sidebarCollapsed ? '' : 'mr-3'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              {!sidebarCollapsed && 'Log out'}
+            </Button>
+          </div>
+        </div>
+          
+        {/* Footer */}
+        {!sidebarCollapsed && (
+          <div className="pt-4 border-t border-purple-500/30 max-w-full">
+            <div className="flex items-center justify-center mb-2">
+              <div className="flex items-center gap-2">
+                <img 
+                  src="../media/learnus_logo.png" 
+                  alt="LearnUs Logo" 
+                  className="w-6 h-6"
+                />
+                <span className="text-sm font-semibold text-purple-100">LearnUs</span>
+              </div>
+            </div>
+            <p className="text-xs text-purple-200 text-center break-words px-2 leading-tight">
+              © 2025 LearnUs Dev Team.<br />All rights reserved.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Main Content */}
