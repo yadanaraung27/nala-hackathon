@@ -1,48 +1,79 @@
-// NTU Academic Calendar 2025 - Teaching Week Calculator
+// NTU Academic Calendar (Semester): AY2025-26 - Teaching Week Calculator
 
 interface WeekPeriod {
   start: Date;
   end: Date;
   name: string;
-  type: 'teaching' | 'recess' | 'revision' | 'examination';
+  type: 'teaching' | 'recess' | 'revision and examination';
   weekNumber?: number;
 }
 
-const academicCalendar2025: WeekPeriod[] = [
-  // Teaching Weeks
-  { start: new Date('2025-08-11'), end: new Date('2025-08-17'), name: 'Teaching Week 1', type: 'teaching', weekNumber: 1 },
-  { start: new Date('2025-08-18'), end: new Date('2025-08-24'), name: 'Teaching Week 2', type: 'teaching', weekNumber: 2 },
-  { start: new Date('2025-08-25'), end: new Date('2025-08-31'), name: 'Teaching Week 3', type: 'teaching', weekNumber: 3 },
-  { start: new Date('2025-09-01'), end: new Date('2025-09-07'), name: 'Teaching Week 4', type: 'teaching', weekNumber: 4 },
-  { start: new Date('2025-09-08'), end: new Date('2025-09-14'), name: 'Teaching Week 5', type: 'teaching', weekNumber: 5 },
-  { start: new Date('2025-09-15'), end: new Date('2025-09-21'), name: 'Teaching Week 6', type: 'teaching', weekNumber: 6 },
-  { start: new Date('2025-09-22'), end: new Date('2025-09-28'), name: 'Teaching Week 7', type: 'teaching', weekNumber: 7 },
-  
-  // Recess Week
-  { start: new Date('2025-09-29'), end: new Date('2025-10-05'), name: 'Recess Week', type: 'recess' },
-  
-  // Teaching Weeks (continued)
-  { start: new Date('2025-10-06'), end: new Date('2025-10-12'), name: 'Teaching Week 8', type: 'teaching', weekNumber: 8 },
-  { start: new Date('2025-10-13'), end: new Date('2025-10-19'), name: 'Teaching Week 9', type: 'teaching', weekNumber: 9 },
-  { start: new Date('2025-10-20'), end: new Date('2025-10-26'), name: 'Teaching Week 10', type: 'teaching', weekNumber: 10 },
-  { start: new Date('2025-10-27'), end: new Date('2025-11-02'), name: 'Teaching Week 11', type: 'teaching', weekNumber: 11 },
-  { start: new Date('2025-11-03'), end: new Date('2025-11-09'), name: 'Teaching Week 12', type: 'teaching', weekNumber: 12 },
-  { start: new Date('2025-11-10'), end: new Date('2025-11-16'), name: 'Teaching Week 13', type: 'teaching', weekNumber: 13 },
-  
-  // Revision Week
-  { start: new Date('2025-11-17'), end: new Date('2025-11-23'), name: 'Revision Week', type: 'revision' },
-  
-  // Examination Weeks
-  { start: new Date('2025-11-24'), end: new Date('2025-11-30'), name: 'Examination Week 1', type: 'examination' },
-  { start: new Date('2025-12-01'), end: new Date('2025-12-07'), name: 'Examination Week 2', type: 'examination' },
-  { start: new Date('2025-12-08'), end: new Date('2025-12-14'), name: 'Examination Week 3', type: 'examination' },
+const academicYear2025_2026 = {
+  semester1: [
+    // Term 1
+    { start: new Date('2025-08-11'), end: new Date('2025-08-17'), name: 'Teaching Week 1', type: 'teaching' as const, weekNumber: 1 },
+    { start: new Date('2025-08-18'), end: new Date('2025-08-24'), name: 'Teaching Week 2', type: 'teaching' as const, weekNumber: 2 },
+    { start: new Date('2025-08-25'), end: new Date('2025-08-31'), name: 'Teaching Week 3', type: 'teaching' as const, weekNumber: 3 },
+    { start: new Date('2025-09-01'), end: new Date('2025-09-07'), name: 'Teaching Week 4', type: 'teaching' as const, weekNumber: 4 },
+    { start: new Date('2025-09-08'), end: new Date('2025-09-14'), name: 'Teaching Week 5', type: 'teaching' as const, weekNumber: 5 },
+    { start: new Date('2025-09-15'), end: new Date('2025-09-21'), name: 'Teaching Week 6', type: 'teaching' as const, weekNumber: 6 },
+    { start: new Date('2025-09-22'), end: new Date('2025-09-28'), name: 'Teaching Week 7', type: 'teaching' as const, weekNumber: 7 },
+    
+    // Recess
+    { start: new Date('2025-09-29'), end: new Date('2025-10-05'), name: 'Recess Week', type: 'recess' as const },
+    
+    // Term 2
+    { start: new Date('2025-10-06'), end: new Date('2025-10-12'), name: 'Teaching Week 8', type: 'teaching' as const, weekNumber: 8 },
+    { start: new Date('2025-10-13'), end: new Date('2025-10-19'), name: 'Teaching Week 9', type: 'teaching' as const, weekNumber: 9 },
+    { start: new Date('2025-10-20'), end: new Date('2025-10-26'), name: 'Teaching Week 10', type: 'teaching' as const, weekNumber: 10 },
+    { start: new Date('2025-10-27'), end: new Date('2025-11-02'), name: 'Teaching Week 11', type: 'teaching' as const, weekNumber: 11 },
+    { start: new Date('2025-11-03'), end: new Date('2025-11-09'), name: 'Teaching Week 12', type: 'teaching' as const, weekNumber: 12 },
+    { start: new Date('2025-11-10'), end: new Date('2025-11-16'), name: 'Teaching Week 13', type: 'teaching' as const, weekNumber: 13 },
+    
+    // Revision and Examination
+    { start: new Date('2025-11-17'), end: new Date('2025-11-23'), name: 'Revision and Examination Week 1', type: 'revision and examination' as const },
+    { start: new Date('2025-11-24'), end: new Date('2025-11-30'), name: 'Revision and Examination Week 2', type: 'revision and examination' as const },
+    { start: new Date('2025-12-01'), end: new Date('2025-12-07'), name: 'Revision and Examination Week 3', type: 'revision and examination' as const },
+  ],
+  semester2: [
+    // Term 1
+    { start: new Date('2026-01-12'), end: new Date('2026-01-18'), name: 'Teaching Week 1', type: 'teaching' as const, weekNumber: 1 },
+    { start: new Date('2026-01-19'), end: new Date('2026-01-25'), name: 'Teaching Week 2', type: 'teaching' as const, weekNumber: 2 },
+    { start: new Date('2026-01-26'), end: new Date('2026-02-01'), name: 'Teaching Week 3', type: 'teaching' as const, weekNumber: 3 },
+    { start: new Date('2026-02-02'), end: new Date('2026-02-08'), name: 'Teaching Week 4', type: 'teaching' as const, weekNumber: 4 },
+    { start: new Date('2026-02-09'), end: new Date('2026-02-15'), name: 'Teaching Week 5', type: 'teaching' as const, weekNumber: 5 },
+    { start: new Date('2026-02-16'), end: new Date('2026-02-22'), name: 'Teaching Week 6', type: 'teaching' as const, weekNumber: 6 },
+    { start: new Date('2026-02-23'), end: new Date('2026-03-01'), name: 'Teaching Week 7', type: 'teaching' as const, weekNumber: 7 },
+
+    // Recess
+    { start: new Date('2026-03-02'), end: new Date('2026-03-08'), name: 'Recess Week', type: 'recess' as const },
+
+    // Term 2
+    { start: new Date('2026-03-09'), end: new Date('2026-03-15'), name: 'Teaching Week 8', type: 'teaching' as const, weekNumber: 8 },
+    { start: new Date('2026-03-16'), end: new Date('2026-03-22'), name: 'Teaching Week 9', type: 'teaching' as const, weekNumber: 9 },
+    { start: new Date('2026-03-23'), end: new Date('2026-03-29'), name: 'Teaching Week 10', type: 'teaching' as const, weekNumber: 10 },
+    { start: new Date('2026-03-30'), end: new Date('2026-04-05'), name: 'Teaching Week 11', type: 'teaching' as const, weekNumber: 11 },
+    { start: new Date('2026-04-06'), end: new Date('2026-04-12'), name: 'Teaching Week 12', type: 'teaching' as const, weekNumber: 12 },
+    { start: new Date('2026-04-13'), end: new Date('2026-04-19'), name: 'Teaching Week 13', type: 'teaching' as const, weekNumber: 13 },
+
+    // Revision and Examination
+    { start: new Date('2026-04-20'), end: new Date('2026-04-26'), name: 'Revision and Examination Week 1', type: 'revision and examination' as const },
+    { start: new Date('2026-04-27'), end: new Date('2026-05-03'), name: 'Revision and Examination Week 2', type: 'revision and examination' as const },
+    { start: new Date('2026-05-04'), end: new Date('2026-05-10'), name: 'Revision and Examination Week 3', type: 'revision and examination' as const },
+  ]
+};
+
+// Flatten all academic weeks for searching
+const allAcademicWeeks: WeekPeriod[] = [
+  ...academicYear2025_2026.semester1,
+  ...academicYear2025_2026.semester2
 ];
 
 export function getCurrentAcademicWeek(currentDate: Date = new Date()): WeekPeriod | null {
   // Normalize the date to avoid timezone issues
   const normalizedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
   
-  for (const period of academicCalendar2025) {
+  for (const period of allAcademicWeeks) {
     const normalizedStart = new Date(period.start.getFullYear(), period.start.getMonth(), period.start.getDate());
     const normalizedEnd = new Date(period.end.getFullYear(), period.end.getMonth(), period.end.getDate());
     
