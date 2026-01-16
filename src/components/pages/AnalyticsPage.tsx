@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
@@ -35,79 +33,76 @@ const bloomsTaxonomyData = {
     { topic: 'Vectors & Matrices', Remembering: 10, Understanding: 18, Applying: 20, Analyzing: 12, Evaluating: 4, Creating: 2 },
     { topic: 'Limits & Continuity', Remembering: 6, Understanding: 14, Applying: 16, Analyzing: 10, Evaluating: 3, Creating: 1 },
     { topic: 'Derivatives', Remembering: 15, Understanding: 25, Applying: 35, Analyzing: 20, Evaluating: 8, Creating: 4 },
-    { topic: 'Integration', Remembering: 0, Understanding: 0, Applying: 0, Analyzing: 0, Evaluating: 0, Creating: 0 }
+    // { topic: 'Integration', Remembering: 0, Understanding: 0, Applying: 0, Analyzing: 0, Evaluating: 0, Creating: 0 }
   ],
   'past14days': [
     { topic: 'Complex Numbers', Remembering: 15, Understanding: 22, Applying: 28, Analyzing: 15, Evaluating: 5, Creating: 2 },
     { topic: 'Vectors & Matrices', Remembering: 18, Understanding: 32, Applying: 38, Analyzing: 22, Evaluating: 8, Creating: 4 },
     { topic: 'Limits & Continuity', Remembering: 12, Understanding: 26, Applying: 30, Analyzing: 18, Evaluating: 6, Creating: 2 },
     { topic: 'Derivatives', Remembering: 28, Understanding: 45, Applying: 65, Analyzing: 35, Evaluating: 15, Creating: 7 },
-    { topic: 'Integration', Remembering: 0, Understanding: 0, Applying: 0, Analyzing: 0, Evaluating: 0, Creating: 0 }
+    // { topic: 'Integration', Remembering: 0, Understanding: 0, Applying: 0, Analyzing: 0, Evaluating: 0, Creating: 0 }
   ],
   'past30days': [
     { topic: 'Complex Numbers', Remembering: 25, Understanding: 35, Applying: 45, Analyzing: 25, Evaluating: 8, Creating: 4 },
     { topic: 'Vectors & Matrices', Remembering: 32, Understanding: 52, Applying: 62, Analyzing: 35, Evaluating: 15, Creating: 8 },
     { topic: 'Limits & Continuity', Remembering: 20, Understanding: 38, Applying: 48, Analyzing: 28, Evaluating: 10, Creating: 4 },
     { topic: 'Derivatives', Remembering: 45, Understanding: 75, Applying: 95, Analyzing: 55, Evaluating: 25, Creating: 12 },
-    { topic: 'Integration', Remembering: 5, Understanding: 8, Applying: 3, Analyzing: 1, Evaluating: 0, Creating: 0 }
+    // { topic: 'Integration', Remembering: 5, Understanding: 8, Applying: 3, Analyzing: 1, Evaluating: 0, Creating: 0 }
   ],
   'alltime': [
     { topic: 'Complex Numbers', Remembering: 35, Understanding: 48, Applying: 65, Analyzing: 38, Evaluating: 12, Creating: 6 },
     { topic: 'Vectors & Matrices', Remembering: 42, Understanding: 68, Applying: 85, Analyzing: 48, Evaluating: 22, Creating: 12 },
     { topic: 'Limits & Continuity', Remembering: 28, Understanding: 52, Applying: 68, Analyzing: 38, Evaluating: 15, Creating: 6 },
     { topic: 'Derivatives', Remembering: 58, Understanding: 95, Applying: 125, Analyzing: 75, Evaluating: 35, Creating: 18 },
-    { topic: 'Integration', Remembering: 8, Understanding: 15, Applying: 8, Analyzing: 3, Evaluating: 1, Creating: 0 }
+    // { topic: 'Integration', Remembering: 8, Understanding: 15, Applying: 8, Analyzing: 3, Evaluating: 1, Creating: 0 }
   ]
 };
 
 // Conversation trend data for different time periods
 const conversationTrendData = {
   'past7days': [
-    { date: 'Mon 22', conversations: 12 },
-    { date: 'Tue 23', conversations: 8 },
-    { date: 'Wed 24', conversations: 15 },
-    { date: 'Thu 25', conversations: 11 },
-    { date: 'Fri 26', conversations: 9 },
-    { date: 'Sat 27', conversations: 6 },
-    { date: 'Sun 28', conversations: 4 }
+    { date: 'Tue 27', conversations: 14 },
+    { date: 'Wed 28', conversations: 18 },
+    { date: 'Thu 29', conversations: 15 },
+    { date: 'Fri 30', conversations: 12 },
+    { date: 'Sat 31', conversations: 7 },
+    { date: 'Sun 1', conversations: 5 },
+    { date: 'Mon 2', conversations: 22 }
   ],
   'past14days': [
-    { date: 'Mon 15', conversations: 10 },
-    { date: 'Tue 16', conversations: 14 },
-    { date: 'Wed 17', conversations: 18 },
-    { date: 'Thu 18', conversations: 16 },
-    { date: 'Fri 19', conversations: 12 },
-    { date: 'Sat 20', conversations: 8 },
-    { date: 'Sun 21', conversations: 5 },
-    { date: 'Mon 22', conversations: 12 },
-    { date: 'Tue 23', conversations: 8 },
-    { date: 'Wed 24', conversations: 15 },
-    { date: 'Thu 25', conversations: 11 },
-    { date: 'Fri 26', conversations: 9 },
-    { date: 'Sat 27', conversations: 6 },
-    { date: 'Sun 28', conversations: 4 }
+    { date: 'Tue 20', conversations: 11 },
+    { date: 'Wed 21', conversations: 14 },
+    { date: 'Thu 22', conversations: 13 },
+    { date: 'Fri 23', conversations: 10 },
+    { date: 'Sat 24', conversations: 6 },
+    { date: 'Sun 25', conversations: 4 },
+    { date: 'Mon 26', conversations: 16 },
+    { date: 'Tue 27', conversations: 14 },
+    { date: 'Wed 28', conversations: 18 },
+    { date: 'Thu 29', conversations: 15 },
+    { date: 'Fri 30', conversations: 12 },
+    { date: 'Sat 31', conversations: 7 },
+    { date: 'Sun 1', conversations: 5 },
+    { date: 'Mon 2', conversations: 22 }
   ],
   'past30days': [
-    { date: 'Sep 1', conversations: 8 },
-    { date: 'Sep 3', conversations: 12 },
-    { date: 'Sep 5', conversations: 16 },
-    { date: 'Sep 7', conversations: 14 },
-    { date: 'Sep 9', conversations: 18 },
-    { date: 'Sep 11', conversations: 15 },
-    { date: 'Sep 13', conversations: 20 },
-    { date: 'Sep 15', conversations: 10 },
-    { date: 'Sep 17', conversations: 18 },
-    { date: 'Sep 19', conversations: 12 },
-    { date: 'Sep 21', conversations: 5 },
-    { date: 'Sep 23', conversations: 8 },
-    { date: 'Sep 25', conversations: 15 },
-    { date: 'Sep 27', conversations: 6 },
-    { date: 'Sep 28', conversations: 4 }
+    { date: 'Jan 5', conversations: 2 },  
+    { date: 'Jan 8', conversations: 5 },
+    { date: 'Jan 12', conversations: 12 }, // Teaching Week 1 Start
+    { date: 'Jan 14', conversations: 15 },
+    { date: 'Jan 17', conversations: 8 },
+    { date: 'Jan 19', conversations: 18 }, // Teaching Week 2 Start
+    { date: 'Jan 21', conversations: 20 },
+    { date: 'Jan 24', conversations: 9 },
+    { date: 'Jan 26', conversations: 22 }, // Teaching Week 3 Start
+    { date: 'Jan 28', conversations: 19 },
+    { date: 'Jan 30', conversations: 14 },
+    { date: 'Feb 1', conversations: 6 },
+    { date: 'Feb 2', conversations: 25 }  
   ],
   'alltime': [
-    { date: 'Jul', conversations: 45 },
-    { date: 'Aug', conversations: 78 },
-    { date: 'Sep', conversations: 95 }
+    { date: 'Jan', conversations: 245 },
+    { date: 'Feb', conversations: 31 }
   ]
 };
 
@@ -133,7 +128,7 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-semibold text-gray-900">Learning Analytics</h1>
-        <p className="text-sm text-gray-500 mt-1">Deep insights into your learning patterns • {formatCurrentWeekRange(new Date('2025-10-01'))}</p>
+        <p className="text-sm text-gray-500 mt-1">Deep insights into your learning patterns • {formatCurrentWeekRange()}</p>
         
         {/* Subtle Learning Science Banner */}
         <div className="mt-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
@@ -419,11 +414,11 @@ export default function AnalyticsPage() {
               </h4>
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={[
-                  { week: 'Week 3', accuracy: 72, difficulty: 'Basic' },
-                  { week: 'Week 4', accuracy: 78, difficulty: 'Basic' },
-                  { week: 'Week 5', accuracy: 81, difficulty: 'Medium' },
-                  { week: 'Week 6', accuracy: 79, difficulty: 'Medium' },
-                  { week: 'Week 7', accuracy: 84, difficulty: 'Medium' }
+                  { week: 'Week 1', accuracy: 72, difficulty: 'Basic' },
+                  { week: 'Week 2', accuracy: 78, difficulty: 'Basic' },
+                  { week: 'Week 3', accuracy: 81, difficulty: 'Medium' },
+                  { week: 'Week 4', accuracy: 79, difficulty: 'Medium' },
+                  // { week: 'Week 7', accuracy: 84, difficulty: 'Medium' }
                 ]}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="week" />
@@ -445,9 +440,9 @@ export default function AnalyticsPage() {
                   Active Learning Feedback Loop
                 </h5>
                 <div className="space-y-2 text-sm text-green-700">
-                  <p>• <strong>Week 5:</strong> 81% accuracy triggered difficulty increase to Medium level</p>
-                  <p>• <strong>Week 6:</strong> Slight dip (79%) as system adapted to your improved skills</p>
-                  <p>• <strong>Week 7:</strong> Strong recovery (84%) shows successful adaptation</p>
+                  <p>• <strong>Week 3:</strong> 81% accuracy triggered difficulty increase to Medium level</p>
+                  <p>• <strong>Week 4:</strong> Slight dip (79%) as system adapted to your improved skills</p>
+                  {/* <p>• <strong>Week 7:</strong> Strong recovery (84%) shows successful adaptation</p> */}
                 </div>
               </div>
 
@@ -472,7 +467,7 @@ export default function AnalyticsPage() {
                           Forgetting Curve Optimization
                         </h6>
                         <p className="text-sm text-amber-700">
-                          Next review of Derivatives concepts in 2 days for optimal retention
+                          Next review of Limits & Continuity concepts in 2 days for optimal retention
                         </p>
                       </div>
                     </TooltipTrigger>
@@ -535,7 +530,7 @@ export default function AnalyticsPage() {
           </ResponsiveContainer>
           
           <div className="mt-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
-            <h5 className="text-sm font-semibold text-orange-800 mb-2 flex items-center gap-2">
+            <h5 className="font-semibold text-orange-800 mb-2 flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
               Activity Pattern Insights
             </h5>
@@ -544,7 +539,7 @@ export default function AnalyticsPage() {
                 activityTimeframe === 'past7days' ? 'Your learning activity peaks on Wednesday-Thursday with the highest conversation counts. This aligns with optimal mid-week concentration levels when cognitive performance is typically strongest.' :
                 activityTimeframe === 'past14days' ? 'Two-week pattern shows consistent mid-week peaks, with notable improvement in overall engagement frequency during the recent week.' :
                 activityTimeframe === 'past30days' ? 'Monthly analysis reveals steady learning progression with strategic increases around key topic transitions, following natural cognitive performance cycles.' :
-                'Long-term trend shows excellent development from 45 to 95 conversations per month, with consistent mid-week performance peaks throughout the period.'
+                'Your engagement has surged significantly since the start of Semester 2 on 12 January 2026, averaging over 55 conversations per week during the first three teaching weeks.'
               }
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
