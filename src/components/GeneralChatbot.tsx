@@ -1191,7 +1191,7 @@ Present your feedback without using the bullet point format above, and instead g
         <div className="p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img src="/media/learnus_logo.png" alt="NALA" className="w-10 h-10 rounded-full object-cover" />
+              <img src="/images/learnus_logo.png" alt="NALA" className="w-10 h-10 rounded-full object-cover" />
               <div>
                 <h1 className="font-semibold text-gray-900">NALA Chatbot</h1>
                 <p className="text-sm text-gray-600">

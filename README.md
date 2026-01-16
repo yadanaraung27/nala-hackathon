@@ -86,7 +86,7 @@ This application uses Ollama with a **hybrid dual-model approach** for optimal A
 5. **Expected Output:**
    - On successful execution, you should see output similar to the screenshot below:
 
-     ![Executed npm run dev](media/successful_npm_run_dev.png)
+     ![Executed npm run dev](public/images/successful_npm_run_dev.png)
    - The dashboard UI will appear as shown:
    
-     ![Figma Make UI](media/homepage_ui.png)
+     ![Figma Make UI](public/images/homepage_ui.png)
