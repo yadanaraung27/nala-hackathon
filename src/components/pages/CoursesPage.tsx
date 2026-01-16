@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Progress } from '../ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { Calendar, Clock, BookOpen, Target, CheckCircle2, AlertCircle, ChevronDown, ChevronRight, Video, FileText, Users, Play } from 'lucide-react';
@@ -11,20 +10,40 @@ interface CoursesPageProps {
   onNavigateToChatbot?: () => void;
 }
 
+// Calculate days until deadline from date string (DD/MM/YYYY format)
+const calculateDaysUntil = (dateString: string): number => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset to start of day
+  
+  // Parse DD/MM/YYYY format
+  const [day, month, year] = dateString.split('/').map(Number);
+  const deadline = new Date(year, month - 1, day); // month is 0-indexed in JavaScript
+  deadline.setHours(0, 0, 0, 0); // Reset to start of day
+  
+  const timeDiff = deadline.getTime() - today.getTime();
+  const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+  
+  return daysDiff;
+};
+
+// Determine assessment status based on due date
+const getAssessmentStatus = (dateString: string): 'completed' | 'upcoming' => {
+  return calculateDaysUntil(dateString) <= 0 ? 'completed' : 'upcoming';
+};
+
 export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = {}) {
   const [expandedTopics, setExpandedTopics] = useState<Set<number>>(new Set([3])); // Current topic expanded by default
   const [assessmentFilter, setAssessmentFilter] = useState<'upcoming' | 'completed' | 'all'>('upcoming');
   const [completedAssessments, setCompletedAssessments] = useState<Set<number>>(new Set()); // Track completed assessments
 
+  // MH1810 Assessment data provided by Faculty Staff
   const courseworkAssessments = [
     {
       id: 1,
       type: 'assignment',
       title: 'Online Assignment 1',
       description: 'Complex numbers and vector problems',
-      dueDate: '15/09/2025',
-      daysLeft: -16,
-      status: 'completed',
+      dueDate: '08/02/2026', // Sunday of Week 4
       weightage: 'Part of 16%'
     },
     {
@@ -32,9 +51,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       type: 'assignment',
       title: 'Online Assignment 2',
       description: 'Matrices and limits problems',
-      dueDate: '29/09/2025',
-      daysLeft: -2,
-      status: 'completed',
+      dueDate: '22/02/2026', // Sunday of Week 6
       weightage: 'Part of 16%'
     },
     {
@@ -42,9 +59,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       type: 'assignment',
       title: 'Online Assignment 3',
       description: 'Derivatives and applications problems',
-      dueDate: '13/10/2025',
-      daysLeft: 12,
-      status: 'upcoming',
+      dueDate: '15/03/2026', // Sunday of Week 8
       weightage: 'Part of 16%'
     },
     {
@@ -52,9 +67,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       type: 'exam',
       title: 'Midterm Exam',
       description: 'Complex numbers, vectors, matrices, limits, derivatives',
-      dueDate: '11/10/2025',
-      daysLeft: 10,
-      status: 'upcoming',
+      dueDate: '14/03/2026', // Saturday of Week 8
       weightage: '15% weightage'
     },
     {
@@ -62,9 +75,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       type: 'assignment',
       title: 'Take-home Test',
       description: 'Differentiation and Integration',
-      dueDate: '11/11/2025',
-      daysLeft: 41,
-      status: 'upcoming',
+      dueDate: '14/04/2026', // Tuesday of Week 13
       weightage: '9% weightage'
     },
     {
@@ -72,9 +83,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       type: 'exam',
       title: 'Final Exam',
       description: 'Comprehensive exam',
-      dueDate: '24/11/2025',
-      daysLeft: 54,
-      status: 'upcoming',
+      dueDate: '27/04/2026', // Monday of Exam Week 1
       weightage: '60% weightage'
     }
   ];
@@ -94,7 +103,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
 
   // Auto-complete overdue assessments
   useEffect(() => {
-    const overdueAssessments = courseworkAssessments.filter(assessment => assessment.daysLeft <= 0);
+    const overdueAssessments = courseworkAssessments.filter(assessment => calculateDaysUntil(assessment.dueDate) <= 0);
     const newCompleted = new Set(completedAssessments);
     let hasChanges = false;
     
@@ -142,6 +151,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
     }
   };
 
+  // MH1810 Course Topic data provided by Faculty Staff
   const courseTopics = [
     {
       topic: 'Topic 1',
@@ -149,8 +159,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       subtopics: ['Complex Plane', 'Polar Coordinates', 'Powers & Roots', 'Fundamental Theorem'],
       progress: 100,
       status: 'completed',
-      deadline: 'Completed Sept 15',
-      grade: 'A-',
+      deadline: 'Completed Jan 16',
       resources: { videos: 4, tutorials: 3, exercises: 12 }
     },
     {
@@ -159,28 +168,25 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       subtopics: ['Vector Algebra', 'Dot & Cross Product', 'Lines & Planes', 'Matrix Operations'],
       progress: 100,
       status: 'completed',
-      deadline: 'Completed Sept 22',
-      grade: 'B+',
+      deadline: 'Completed Jan 23',
       resources: { videos: 5, tutorials: 4, exercises: 15 }
     },
     {
       topic: 'Topic 3',
       title: 'Limits and Continuity',
       subtopics: ['Types of Limits', 'Sandwich Theorem', 'Evaluation of Limits', 'Continuity Properties'],
-      progress: 85,
+      progress: 100,
       status: 'completed',
-      deadline: 'Completed Sept 29',
-      grade: 'A',
+      deadline: 'Completed Jan 30',
       resources: { videos: 6, tutorials: 3, exercises: 18 }
     },
     {
       topic: 'Topic 4',
       title: 'Derivatives',
       subtopics: ['Differentiability', 'Rules & Properties', 'Transcendental Functions', 'Implicit Differentiation'],
-      progress: 45,
+      progress: 10,
       status: 'in-progress',
-      deadline: 'Assignment due Oct 11',
-      grade: null,
+      deadline: 'Started Feb 2',
       resources: { videos: 7, tutorials: 5, exercises: 20 }
     },
     {
@@ -189,8 +195,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       subtopics: ['Extreme Values', 'Curve Sketching', 'Optimization', 'L\'Hopital\'s Rule'],
       progress: 0,
       status: 'upcoming',
-      deadline: 'Starts Oct 14',
-      grade: null,
+      deadline: 'Starts Feb 9',
       resources: { videos: 6, tutorials: 4, exercises: 16 }
     },
     {
@@ -199,8 +204,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       subtopics: ['Anti-derivatives', 'Riemann Sum', 'Definite Integration', 'Fundamental Theorem'],
       progress: 0,
       status: 'upcoming',
-      deadline: 'Starts Oct 21',
-      grade: null,
+      deadline: 'Starts Feb 16',
       resources: { videos: 8, tutorials: 6, exercises: 22 }
     },
     {
@@ -209,8 +213,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       subtopics: ['Integration by Parts', 'Trigonometric Substitution', 'Partial Fractions', 'Improper Integrals'],
       progress: 0,
       status: 'upcoming',
-      deadline: 'Starts Oct 28',
-      grade: null,
+      deadline: 'Starts Feb 23',
       resources: { videos: 9, tutorials: 7, exercises: 25 }
     },
     {
@@ -219,8 +222,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
       subtopics: ['Area Between Curves', 'Volume of Solids', 'Length of Curves', 'Surface Area'],
       progress: 0,
       status: 'upcoming',
-      deadline: 'Starts Nov 4',
-      grade: null,
+      deadline: 'Starts Mar 9',
       resources: { videos: 7, tutorials: 5, exercises: 19 }
     }
   ];
@@ -265,7 +267,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
                         }
                       }}
                     />
-                    <span className="text-sm text-white transition-all duration-200">Lecture 7a: Applications of Derivatives</span>
+                    <span className="text-sm text-white transition-all duration-200">Lecture 4: Derivatives</span>
                   </div>
                 </div>
               </div>
@@ -290,7 +292,7 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
                         }
                       }}
                     />
-                    <span className="text-sm text-white transition-all duration-200">Tutorial 6b: L'Hopital's Rule</span>
+                    <span className="text-sm text-white transition-all duration-200">Tutorial 3: Limits and Continuity</span>
                   </div>
                 </div>
               </div>
@@ -309,10 +311,10 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
             </div>
             <div className="space-y-2">
               <div className="text-xl font-bold">Derivatives</div>
-              <div className="text-green-100 text-sm">Topic 4 • 45% complete</div>
+              <div className="text-green-100 text-sm">Topic 4 • 10% complete</div>
               <div className="flex items-center gap-2 mt-3">
                 <div className="w-full bg-white/20 rounded-full h-1.5">
-                  <div className="bg-white h-1.5 rounded-full" style={{ width: '45%' }}></div>
+                  <div className="bg-white h-1.5 rounded-full" style={{ width: '10%' }}></div>
                 </div>
               </div>
             </div>
@@ -336,16 +338,20 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
               </div>
             </div>
             <div className="space-y-3">
-              <div>
-                <div className="text-lg font-bold">Midterm Exam</div>
-                <div className="text-orange-100 text-sm">Oct 11, 2025 • 15% weightage</div>
-                <div className="text-orange-200 text-xs">10 days remaining</div>
-              </div>
-              <hr className="border-white/20" />
-              <div>
-                <div className="text-sm font-medium">Online Assignment 3</div>
-                <div className="text-orange-200 text-xs">Oct 13 • 12 days</div>
-              </div>
+              {courseworkAssessments
+                .filter(assessment => !completedAssessments.has(assessment.id) && calculateDaysUntil(assessment.dueDate) > 0)
+                .sort((a, b) => calculateDaysUntil(a.dueDate) - calculateDaysUntil(b.dueDate))
+                .slice(0, 2)
+                .map((assessment, index) => (
+                  <div key={assessment.id}>
+                    {index > 0 && <hr className="border-white/20" />}
+                    <div>
+                      <div className="text-lg font-bold">{assessment.title}</div>
+                      <div className="text-orange-100 text-sm">{assessment.dueDate} • {assessment.weightage}</div>
+                      <div className="text-orange-200 text-xs">{calculateDaysUntil(assessment.dueDate)} days remaining</div>
+                    </div>
+                  </div>
+                ))}
             </div>
           </CardContent>
         </Card>
@@ -567,16 +573,19 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
                     .sort((a, b) => {
                       // Sort by daysLeft (ascending) - closest deadlines first
                       // For completed items or when viewing all, maintain original order by using id as secondary sort
+                      const aDaysLeft = calculateDaysUntil(a.dueDate);
+                      const bDaysLeft = calculateDaysUntil(b.dueDate);
+                      
                       if (assessmentFilter === 'upcoming') {
-                        return a.daysLeft - b.daysLeft;
+                        return aDaysLeft - bDaysLeft;
                       }
                       // For 'all' and 'completed' views, sort by daysLeft but keep negative values at the end
-                      if (a.daysLeft <= 0 && b.daysLeft <= 0) {
+                      if (aDaysLeft <= 0 && bDaysLeft <= 0) {
                         return a.id - b.id; // Original order for completed/overdue items
                       }
-                      if (a.daysLeft <= 0) return 1; // Move completed to end
-                      if (b.daysLeft <= 0) return -1; // Move completed to end
-                      return a.daysLeft - b.daysLeft; // Sort upcoming by days left
+                      if (aDaysLeft <= 0) return 1; // Move completed to end
+                      if (bDaysLeft <= 0) return -1; // Move completed to end
+                      return aDaysLeft - bDaysLeft; // Sort upcoming by days left
                     })
                     .map((assessment) => (
                     <Card 
@@ -626,10 +635,10 @@ export default function CoursesPage({ onNavigateToChatbot }: CoursesPageProps = 
                                   <Calendar className="h-4 w-4" />
                                   <span>{assessment.dueDate}</span>
                                 </div>
-                                {assessment.daysLeft > 0 && (
+                                {calculateDaysUntil(assessment.dueDate) > 0 && (
                                   <div className="flex items-center gap-1 text-gray-500">
                                     <Clock className="h-4 w-4" />
-                                    <span>{assessment.daysLeft} days left</span>
+                                    <span>{calculateDaysUntil(assessment.dueDate)} days left</span>
                                   </div>
                                 )}
                               </div>
