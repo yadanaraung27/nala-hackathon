@@ -977,7 +977,7 @@ Present your feedback without using the bullet point format above, and instead g
             <Avatar className="w-8 h-8 bg-white border border-gray-300 flex-shrink-0">
               <AvatarFallback className="bg-white">
                 <img 
-                  src="../media/learnus_logo.png"
+                  src="/images/learnus_logo.png"
                   alt="LearnUs Bot" 
                   className="w-full h-full object-contain p-1"
                 />
@@ -1058,7 +1058,7 @@ Present your feedback without using the bullet point format above, and instead g
           <Avatar className="w-8 h-8 bg-white border border-gray-300 flex-shrink-0">
             <AvatarFallback className="bg-white">
               <img 
-                src="../media/learnus_logo.png"
+                src="/images/learnus_logo.png"
                 alt="LearnUs Bot" 
                 className="w-full h-full object-contain p-1"
               />

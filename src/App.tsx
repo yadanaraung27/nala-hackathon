@@ -477,7 +477,7 @@ export default function App() {
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center p-1">
                 <img 
-                  src="../media/learnus_logo.png"
+                  src="/images/learnus_logo.png"
                   alt="NALA Logo" 
                   className="w-full h-full object-contain"
                 />
@@ -661,7 +661,7 @@ export default function App() {
             <div className="flex items-center justify-center mb-2">
               <div className="flex items-center gap-2">
                 <img 
-                  src="../media/learnus_logo.png" 
+                  src="/images/learnus_logo.png" 
                   alt="LearnUs Logo" 
                   className="w-6 h-6"
                 />

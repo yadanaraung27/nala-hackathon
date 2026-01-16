@@ -164,7 +164,7 @@ export default function LearningStyleQuiz({ onComplete, onSkip, allowSkip = fals
                 {/* Kolb's Learning Cycle Image */}
                 <div className="flex justify-center mb-6">
                   <img 
-                    src="../../media/kolb_learning_cycle.png"
+                    src="/images/kolb_learning_cycle.png"
                     alt="Kolb's Learning Cycle showing the four stages: Concrete Experience, Reflective Observation, Abstract Conceptualization, and Active Experimentation" 
                     className="max-w-full h-auto rounded-lg shadow-sm"
                   />
