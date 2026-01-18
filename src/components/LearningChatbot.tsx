@@ -82,7 +82,7 @@ async function fetchRagReply(query: string): Promise<string> {
         messages: [
           {
             role: "system",
-            content: "You are a helpful Learning Theory Assistant that helps students understand learning theories like Kolb's model, learning styles, and provides personalized study tips. Be concise and encouraging. Use **text** for bold emphasis where needed."
+            content: "You are a helpful Learning Theory Assistant that helps students understand learning theories like Kolb's model, learning preferences, and provides personalized study tips. Be concise and encouraging. Use **text** for bold emphasis where needed."
           },
           {
             role: "user",
@@ -127,17 +127,17 @@ interface Message {
 }
 
 interface LearningChatbotProps {
-  learningStyle?: string | null;
+  learningPreference?: string | null;
 }
 
 const learningTheorySuggestions = [
-  "What does my learning style mean?",
+  "What does my learning preference mean?",
   "Give me study tips for my learning type",
   "Tell me about Kolb's Learning Theory",
   "How can I improve my learning?"
 ];
 
-export default function LearningChatbot({ learningStyle }: LearningChatbotProps) {
+export default function LearningChatbot({ learningPreference }: LearningChatbotProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -151,7 +151,7 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
       const initialMessage = getInitialGreeting();
       setMessages([initialMessage]);
     }
-  }, [isOpen, learningStyle]);
+  }, [isOpen, learningPreference]);
 
   useEffect(() => {
     scrollToBottom();
@@ -165,10 +165,10 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
     let greeting = "Hello! I'm your Learning Theory Assistant 🧠\n\nI'm here to help you understand learning theories like Kolb's model, discover insights about your learning preferences, and provide personalized study tips to enhance your learning journey. What would you like to explore?";
     let suggestions = learningTheorySuggestions.slice(0, 4);
 
-    if (learningStyle) {
-      greeting = `Hello! I'm your Learning Theory Assistant 🧠\n\nI can see you're identified as **${learningStyle}** - that's fantastic! I'm here to help you understand what this means, how you learn best, and provide personalized strategies to maximize your learning potential.\n\nWhat would you like to know about your learning style or learning theories in general?`;
+    if (learningPreference) {
+      greeting = `Hello! I'm your Learning Theory Assistant 🧠\n\nI can see you're identified as **${learningPreference}** - that's fantastic! I'm here to help you understand what this means, how you learn best, and provide personalized strategies to maximize your learning potential.\n\nWhat would you like to know about your learning preference or learning theories in general?`;
       suggestions = [
-        "What does being " + learningStyle + " mean?",
+        "What does being " + learningPreference + " mean?",
         "Give me study tips for my learning type",
         "What are my strengths and challenges?",
         "Tell me about Kolb's Learning Theory"
@@ -259,9 +259,9 @@ export default function LearningChatbot({ learningStyle }: LearningChatbotProps)
               </Avatar>
               <div>
                 <CardTitle className="text-sm">Learning Theory Assistant</CardTitle>
-                {learningStyle && (
+                {learningPreference && (
                   <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30 mt-1">
-                    {learningStyle}
+                    {learningPreference}
                   </Badge>
                 )}
               </div>
