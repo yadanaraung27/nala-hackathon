@@ -1226,8 +1226,35 @@ Present your feedback without using the bullet point format above, and instead g
           <TabsContent value="general" className="flex-1 min-h-0 m-0">
             <ScrollArea className="h-full p-6">
               {messages.length === 0 ? (
-                <div className="max-w-4xl mx-auto">
-                  {/* Welcome message removed */}
+                <div className="max-w-4xl mx-auto text-center py-12">
+                  <MessageCircle className="h-12 w-12 text-blue-400 mx-auto mb-4"/>
+                  <h3 className="font-medium text-gray-900 mb-2">General Chat Session</h3>
+                  <p className="text-gray-600 mb-6">Welcome! I'm your Mathematics I learning assistant, designed to help you master calculus concepts. {learningStyle ? `Since you're ${learningStyle}, I'll adapt my explanations to match your learning preferences.` : ''}</p>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left mb-6">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="h-4 w-4 text-blue-600"/>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-blue-900 mb-2">How I Can Help You</h4>
+                        <ul className="text-sm text-blue-700 space-y-1 mb-3">
+                          <li>• <b>Guide you</b> through complex problems step-by-step</li>
+                          <li>• <b>Test your understanding</b> with practice questions</li>
+                          <li>• <b>Check your answers</b> and provide detailed feedback</li>
+                          <li>• <b>Explain concepts</b> using examples and analogies</li>
+                          <li>• <b>Share study tips</b> tailored to your learning preference</li>
+                        </ul>
+                        
+                        <h5 className="font-medium text-blue-900 mb-1 mt-4">Getting Started</h5>
+                        <ul className="text-sm text-blue-700 space-y-1">
+                          <li>• Use the action buttons below for quick help</li>
+                          <li>• Type any question about Mathematics I</li>
+                          <li>• Switch to Daily Challenge for focused practice</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 renderMessages(messages)
