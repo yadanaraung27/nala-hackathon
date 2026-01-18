@@ -3,28 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { Calendar, Brain, Info, Target, TrendingUp, MessageSquare, Users, Clock, AlertCircle, BarChart3, BookOpen, ChevronRight } from 'lucide-react';
-import { InlineMath, BlockMath } from 'react-katex';
-import 'katex/dist/katex.min.css';
-import { getCurrentAcademicWeek, getWeeklyContent, getProgressiveQuestionLevel } from '../../utils/academicWeek';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import { Brain, Info, Target, TrendingUp, Clock, AlertCircle, BarChart3, BookOpen, ChevronRight } from 'lucide-react';
+import { getCurrentAcademicWeek, getWeeklyContent, getProgressiveQuestionLevel, formatCurrentWeekRange } from '../../utils/academicWeek';
 
 const learningCycleData = [
   { phase: 'Experience', engagement: 85, description: 'Hands-on practice' },
   { phase: 'Reflection', engagement: 72, description: 'Thinking about learning' },
   { phase: 'Conceptualization', engagement: 68, description: 'Understanding theory' },
   { phase: 'Experimentation', engagement: 91, description: 'Applying knowledge' }
-];
-
-const weeklyProgressData = [
-  { day: 'Mon', interactions: 12, accuracy: 85, reflection: 4, studyHours: 2.5 },
-  { day: 'Tue', interactions: 8, accuracy: 78, reflection: 3, studyHours: 1.8 },
-  { day: 'Wed', interactions: 15, accuracy: 92, reflection: 5, studyHours: 3.2 },
-  { day: 'Thu', interactions: 11, accuracy: 88, reflection: 4, studyHours: 2.1 },
-  { day: 'Fri', interactions: 9, accuracy: 81, reflection: 3, studyHours: 1.5 },
-  { day: 'Sat', interactions: 6, accuracy: 89, reflection: 2, studyHours: 2.8 },
-  { day: 'Sun', interactions: 4, accuracy: 91, reflection: 1, studyHours: 1.2 }
 ];
 
 interface HomepageProps {
@@ -36,96 +24,20 @@ interface HomepageProps {
   onNavigateToAnalytics: () => void;
   onNavigateToCourse: () => void;
   onNavigateToChatbot: () => void;
-  averageAccuracy: number; // <-- add this line
 }
 
-// Helper function to parse and render math content with better regex
-const renderMathContent = (content: string): React.ReactNode[] => {
-  const parts: React.ReactNode[] = [];
-  let lastIndex = 0;
-
-  // Match display math ($$...$$) first, then inline math ($...$)
-  const displayMathRegex = /\$\$([\s\S]*?)\$\$/g;
-  const inlineMathRegex = /\$([^\$\n]+?)\$/g;
+// Helper function to convert Bloom's taxonomy to Kolb's learning stages
+const getKolbStage = (bloomLevel: string): string => {
+  const bloomToKolbMapping = {
+    'Remember': 'Experience',
+    'Understand': 'Reflect', 
+    'Apply': 'Experience',
+    'Analyze': 'Reflect',
+    'Evaluate': 'Conceptualize',
+    'Create': 'Experience'
+  };
   
-  let displayMatches = [];
-  let inlineMatches = [];
-  
-  let displayMatch;
-  while ((displayMatch = displayMathRegex.exec(content)) !== null) {
-    displayMatches.push({ 
-      index: displayMatch.index, 
-      length: displayMatch[0].length, 
-      content: displayMatch[1],
-      type: 'display'
-    });
-  }
-  
-  let inlineMatch;
-  while ((inlineMatch = inlineMathRegex.exec(content)) !== null) {
-    const isPartOfDisplay = displayMatches.some(dm => 
-      inlineMatch.index >= dm.index && 
-      inlineMatch.index < dm.index + dm.length
-    );
-    if (!isPartOfDisplay) {
-      inlineMatches.push({
-        index: inlineMatch.index,
-        length: inlineMatch[0].length,
-        content: inlineMatch[1],
-        type: 'inline'
-      });
-    }
-  }
-  
-  const allMatches = [...displayMatches, ...inlineMatches].sort((a, b) => a.index - b.index);
-
-  allMatches.forEach((match, idx) => {
-    if (match.index > lastIndex) {
-      const textBefore = content.substring(lastIndex, match.index);
-      if (textBefore.trim()) {
-        parts.push(
-          <span key={`text-${idx}`} className="whitespace-pre-wrap">
-            {textBefore}
-          </span>
-        );
-      }
-    }
-
-    try {
-      if (match.type === 'display') {
-        parts.push(
-          <div key={`math-${idx}`} className="my-3 flex justify-center overflow-x-auto">
-            <BlockMath math={match.content} />
-          </div>
-        );
-      } else {
-        parts.push(
-          <InlineMath key={`math-${idx}`} math={match.content} />
-        );
-      }
-    } catch (e) {
-      parts.push(
-        <span key={`error-${idx}`} className="text-red-500 text-xs">
-          [Math rendering error]
-        </span>
-      );
-    }
-
-    lastIndex = match.index + match.length;
-  });
-
-  if (lastIndex < content.length) {
-    const remaining = content.substring(lastIndex);
-    if (remaining.trim()) {
-      parts.push(
-        <span key="text-end" className="whitespace-pre-wrap">
-          {remaining}
-        </span>
-      );
-    }
-  }
-
-  return parts.length > 0 ? parts : [<span key="empty" className="whitespace-pre-wrap">{content}</span>];
+  return bloomToKolbMapping[bloomLevel as keyof typeof bloomToKolbMapping] || 'Experience';
 };
 
 export default function Homepage({ 
@@ -144,29 +56,6 @@ export default function Homepage({
   const [questionLevel, setQuestionLevel] = useState<any>(null);
   const [showBloomsTaxonomy, setShowBloomsTaxonomy] = useState(false);
 
-  // --- Added for Bloom's taxonomy and topic analytics ---
-  const [strongestTopic, setStrongestTopic] = useState<string | null>(null);
-  const [weakestTopic, setWeakestTopic] = useState<string | null>(null);
-  const [bloomMessage, setBloomMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchWeeklyTopics() {
-      try {
-        const response = await fetch('http://127.0.0.1:5000/api/weekly_topics?chatbot_id=3&user_id=20&convo_id=84');
-        if (response.ok) {
-          const data = await response.json();
-          setStrongestTopic(data.strongest);
-          setWeakestTopic(data.weakest);
-          setBloomMessage(data.bloom_message);
-        }
-      } catch (err) {
-        console.error('Error fetching weekly topics:', err);
-      }
-    }
-    fetchWeeklyTopics();
-  }, []);
-  // ------------------------------------------------------
-
   // Helper function to get learning preference emoji
   const getLearningPreferenceEmoji = (preference: string | null) => {
     switch (preference) {
@@ -180,20 +69,13 @@ export default function Homepage({
 
   useEffect(() => {
     try {
-      // October 1, 2025 is in Teaching Week 8 (Oct 6-12, but recess is Sept 29-Oct 5)
-      // Actually, October 1 is in Recess Week (Sept 29 - Oct 5)
-      const week = {
-        start: new Date('2025-09-29'),
-        end: new Date('2025-10-05'),
-        name: 'Recess Week',
-        type: 'recess' as const,
-        weekNumber: undefined
-      };
-      
+      const week = getCurrentAcademicWeek();
       setCurrentWeek(week);
       
-      // For recess week, we don't have specific weekly content, so set null
-      setWeeklyContent(null);
+      if (week && week.weekNumber) {
+        const content = getWeeklyContent(week.weekNumber);
+        setWeeklyContent(content);
+      }
       
       const level = getProgressiveQuestionLevel(masteryScore);
       setQuestionLevel(level);
@@ -214,7 +96,7 @@ export default function Homepage({
           <div>
             <h1 className="text-4xl font-semibold text-gray-900">Welcome back, Student 👋</h1>
             <div className="flex items-center gap-3 mt-1">
-              <p className="text-sm text-gray-500">Tuesday, October 1, 2025</p>
+              <p className="text-sm text-gray-500">{currentDate}</p>
               {currentWeek && (
                 <Badge 
                   variant={currentWeek.type === 'teaching' ? 'default' : 
@@ -232,14 +114,14 @@ export default function Homepage({
             </div>
           </div>
           
-          {/* Learning Style Button */}
+          {/* Learning Preference Button */}
           <div className="flex-shrink-0">
             {!learningPreference ? (
               <Button 
                 onClick={onShowQuiz}
                 className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium shadow-lg"
               >
-                Discover Your Learning Style
+                Discover Your Learning Preference
               </Button>
             ) : (
               <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg shadow-sm">
@@ -269,7 +151,7 @@ export default function Homepage({
         </div>
       </div>
 
-      {/* Today's Challenge - Banner */}
+      {/* Today's Challenge - Moved to Banner Position with Purple Gradient */}
       <Card className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 border-none text-white relative overflow-hidden shadow-lg mb-6" data-tutorial="daily-challenge">
         <CardContent className="p-6 relative z-10">
           <div className="relative z-10">
@@ -279,7 +161,7 @@ export default function Homepage({
               </div>
               <h2 className="text-2xl font-semibold text-white">Today's Challenge</h2>
               <span className="text-white font-medium">
-                🔥10
+                🔥 7
               </span>
             </div>
             
@@ -287,22 +169,26 @@ export default function Homepage({
               {/* Question container with transparent background */}
               <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-6 flex-1">
                 <p className="text-white leading-relaxed mb-3">
-                  <span className="font-semibold">Derivatives and Chain Rule:</span> Prove the chain rule for differentiation. Then, apply it to find the derivative of {renderMathContent('$f(x) = \\sin(e^{x^2})$')} and show all work. Finally, explain the geometric interpretation of your result.
+                  <span className="font-semibold">Optimization Problem:</span> A company wants to design a cylindrical container with a volume of 1000 cm³. The material for the top and bottom costs $0.05/cm², while the side material costs $0.03/cm². Find the dimensions that minimize the total cost and calculate the minimum cost.
                 </p>
                 
                 {/* Badges inside the same container */}
                 <div className="flex items-center gap-3 text-sm">
                   <div className="flex items-center gap-1 text-white/90">
                     <BookOpen className="h-4 w-4" />
-                    <span>Derivatives</span>
+                    <span>Applications of derivatives</span>
                   </div>
                   <div className="flex items-center gap-1 text-white/90">
                     <Clock className="h-4 w-4" />
-                    <span>Advanced difficulty</span>
+                    <span>Hard</span>
                   </div>
                   <div className="flex items-center gap-1 text-white/90">
                     <Brain className="h-4 w-4" />
-                    <span>Analyze level</span>
+                    <span>Analyze</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-white/90">
+                    <Target className="h-4 w-4" />
+                    <span>Reflect</span>
                   </div>
                 </div>
               </div>
@@ -313,14 +199,30 @@ export default function Homepage({
               </div>
             </div>
 
-            <Button 
-              onClick={onStartChallenge}
-              className="bg-white text-purple-700 hover:bg-gray-50 hover:text-purple-800 font-semibold px-6 py-2 shadow-md"
-              size="default"
-            >
-              Start Challenge
-              <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
+            <div className="flex items-center gap-4">
+              <Button 
+                onClick={onStartChallenge}
+                className="bg-white text-purple-700 hover:bg-gray-50 hover:text-purple-800 font-semibold px-6 py-2 shadow-md"
+                size="default"
+              >
+                Start Challenge
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div className="text-white/70 text-xs flex items-center gap-1 cursor-help">
+                      <Info className="h-3 w-3" />
+                      <span>Daily practice</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p><strong>Retrieval Practice:</strong> Daily challenges use spaced repetition to combat the forgetting curve - you'll retain 90% more after 7 days compared to passive review.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -347,7 +249,7 @@ export default function Homepage({
               <div className="space-y-3">
                 <div>
                   <h4 className="font-semibold text-lg text-gray-900">Derivatives</h4>
-                  <p className="text-sm text-gray-600">Topic 4 • 45% complete</p>
+                  <p className="text-sm text-gray-600">Topic 4 • 10% complete</p>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: '45%' }}></div>
@@ -375,12 +277,13 @@ export default function Homepage({
               </div>
               
               <div className="space-y-2">
-                <h4 className="font-semibold text-lg text-orange-900">Midterm Exam</h4>
-                <p className="text-sm text-orange-700">Due in 10 days • Oct 11, 2025</p>
+                <h4 className="font-semibold text-lg text-orange-900">Online Assignment 1</h4>
+                <p className="text-sm text-orange-700">Due in 5 days • 8 February 2026</p>
               </div>
             </CardContent>
           </Card>
         </div>
+
       </div>
 
       {/* This Week's Insights - Full Weekly Learning Analytics Summary */}
@@ -392,7 +295,7 @@ export default function Homepage({
                 <BarChart3 className="h-5 w-5 text-purple-600" />
                 This Week's Insights
               </CardTitle>
-              <p className="text-sm text-gray-500 mt-1">29 Sept - 5 Oct 2025</p>
+              <p className="text-sm text-gray-500 mt-1">{formatCurrentWeekRange()}</p>
             </div>
             <div className="flex items-center gap-2">
               <Button 
@@ -416,7 +319,7 @@ export default function Homepage({
                 Strong This Week
               </h5>
               <p className="text-green-700 text-sm leading-relaxed mb-3">
-                Great work on <strong>Vectors and Matrices.</strong> Keep it up!
+                Great work on <strong>limits</strong> and <strong>continuity</strong>! Your 84% daily challenge accuracy is above class average.
               </p>
             </div>
             
@@ -426,15 +329,38 @@ export default function Homepage({
                 Focus Area
               </h5>
               <p className="text-amber-700 text-sm leading-relaxed mb-2">
-                <strong>Integration</strong> needs more practice. Try fundamental techniques first.
+                <strong>Derivatives concepts</strong> need more practice. Your daily challenges will adapt to provide targeted retrieval practice.
               </p>
-              
-            
+              {learningPreference && (
+                <p className="text-amber-600 text-sm flex items-start gap-2 bg-amber-100 p-2 rounded border border-amber-200">
+                  <span>💡</span>
+                  <span>
+                    {learningPreference === 'The Interactor' ? 'Form study groups to discuss derivatives concepts together!' :
+                     learningPreference === 'The Architect' ? 'Create structured notes and frameworks for derivatives methods!' :
+                     learningPreference === 'The Problem Solver' ? 'Work through more derivatives practice problems!' :
+                     learningPreference === 'The Adventurer' ? 'Try creative visualization techniques for derivatives concepts!' :
+                     'Consider taking the learning preference quiz for personalized study insights.'}
+                  </span>
+                </p>
+              )}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div className="mt-2 text-xs text-amber-600 cursor-help flex items-center gap-1">
+                      <Info className="h-3 w-3" />
+                      <span>Why targeted practice works</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm">
+                    <p><strong>Deliberate Practice:</strong> Focusing on your weak areas (Derivatives) with immediate feedback creates stronger neural pathways than random practice. Expect 3x faster improvement in targeted topics.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
 
-          
-          <div>
+          {/* Key Metrics Row */}
+          <div className="grid grid-cols-1 gap-4 mb-6">
             <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <Brain className="h-8 w-8 text-blue-600" />
@@ -443,21 +369,25 @@ export default function Homepage({
                     <TooltipTrigger>
                       <Info className="h-4 w-4 text-blue-400" />
                     </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Average accuracy across all question types this week. Higher percentages indicate more consistent understanding of concepts.</p>
+                    <TooltipContent className="max-w-sm">
+                      <p className="mb-2"><strong>Active Learning Analytics:</strong> Your daily challenge accuracy creates a feedback loop that adapts future questions to your learning pace.</p>
+                      <p>This week's 84% shows consistent improvement over time, helping optimize retrieval practice for better retention.</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
               <p className="text-2xl font-bold text-gray-900">84%</p>
-              <p className="text-sm text-gray-600">Avg Accuracy</p>
-              <p className="text-xs text-green-600 mt-1">Above class avg (78%)</p>
+              <p className="text-sm text-gray-600">Challenge Accuracy</p>
+              <div className="flex items-center justify-center gap-2 mt-1">
+                <p className="text-xs text-green-600">Above class avg (78%)</p>
+                <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                <p className="text-xs text-blue-600">↗ Active Learning</p>
+              </div>
             </div>
-            
-            
           </div>
 
           {/* Charts Row - Reorganized for better layout */}
+          
           {/* Question Types by Topics - First Row */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
@@ -489,8 +419,8 @@ export default function Homepage({
               <div className="lg:col-span-2">
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={[
-                    { topic: 'Derivatives', Remembering: 15, Understanding: 25, Applying: 28, Analyzing: 18, Evaluating: 8, Creating: 4, Others: 2 },
-                    { topic: 'Integration', Remembering: 5, Understanding: 8, Applying: 3, Analyzing: 1, Evaluating: 0, Creating: 0, Others: 0 }
+                    { topic: 'Limits and Continuity', Remembering: 15, Understanding: 25, Applying: 28, Analyzing: 18, Evaluating: 8, Creating: 4, Others: 2 },
+                    { topic: 'Derivatives', Remembering: 5, Understanding: 8, Applying: 3, Analyzing: 1, Evaluating: 0, Creating: 0, Others: 0 }
                   ]}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="topic" />
@@ -532,16 +462,18 @@ export default function Homepage({
                   Insight:
                 </h5>
                 <p className="text-sm text-purple-700 leading-relaxed">
-                  Currently, your Bloom's taxonomy distribution is heavily weighted towards understanding (25%) and applying (28%) for derivatives and integration, while higher-order thinking is at a lower level.
+                  Your questions are evolving well in <strong>Limits and Continuity</strong>, showing strong progression through Bloom's taxonomy levels. 
+                  You're moving from basic remembering (15%) to higher-order thinking with applying (28%) and analyzing (18%).
                 </p>
                 <div className="mt-3 p-2 bg-purple-100 rounded border border-purple-300">
                   <p className="text-xs text-purple-600">
-                    <strong>Next Goal:</strong> Continue practicing derivatives to reach evaluating and creating levels, then advance to Integration fundamentals.
+                    <strong>Next Goal:</strong> Continue practicing limits and continuity to reach evaluating and creating levels, then advance to Derivatives fundamentals.
                   </p>
                 </div>
               </div>
             </div>
           </div>
+
 
 
           {/* Kolb's Learning Cycle Progress */}
@@ -597,6 +529,9 @@ export default function Homepage({
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Understanding Bloom's Taxonomy in Mathematics</DialogTitle>
+            <DialogDescription>
+              Learn about the six levels of cognitive thinking in mathematics education and how they help you progress from basic recall to advanced problem-solving.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 text-sm">
             <p>Bloom's Taxonomy provides an elegant framework for understanding different levels of mathematical thinking and problem-solving. In mathematics education, this taxonomy helps students progress from basic recall to advanced mathematical reasoning and creation.</p>
