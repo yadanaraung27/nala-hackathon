@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from './components/ui/button';
 import { Toaster } from './components/ui/sonner';
-import { MessageCircle, Brain, Target, Settings, BarChart3, BookOpen, Info, Home, Users, HelpCircle, MessageSquare } from 'lucide-react';
+import { MessageCircle, Brain, Target, BarChart3, BookOpen, Info, Home, Users, HelpCircle, MessageSquare } from 'lucide-react';
 import AppModals from './components/AppModals';
 import LearningChatbot from './components/LearningChatbot';
 import QuestionChatbot from './components/QuestionChatbot';
@@ -111,7 +111,6 @@ export default function App() {
   const [showQuiz, setShowQuiz] = useState(false);
   const [learningPreference, setLearningPreference] = useState<string | null>(null);
   const [quizCompleted, setQuizCompleted] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [showLearningStyleDetails, setShowLearningStyleDetails] = useState(false);
   const [activeSection, setActiveSection] = useState('Homepage');
   const [currentDate, setCurrentDate] = useState('Tuesday, October 1, 2025'); // Pending: update current date
@@ -126,16 +125,7 @@ export default function App() {
   const [startingChallenge, setStartingChallenge] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [initializationError, setInitializationError] = useState<string | null>(null);
-  
-  // Feature toggles
-  const [features, setFeatures] = useState({
-    learningPreferences: true,
-    courseOverview: true,
-    questionOfTheDay: true,
-    masteryLevel: true,
-    courseDifficulty: true,
-    chatbot: true
-  });
+  const [chatbotEnabled, setChatbotEnabled] = useState(true);
 
   // Set current date and academic week on component mount
   useEffect(() => {
@@ -224,7 +214,6 @@ export default function App() {
           return new Promise<{
             learningPreference: string | null;
             quizCompleted: boolean;
-            features: any;
             tutorialCompleted: boolean;
           }>((resolve, reject) => {
             const timeout = setTimeout(() => {
@@ -234,31 +223,12 @@ export default function App() {
             try {
               const savedLearningPreference = localStorage.getItem('learningPreference');
               const savedQuizCompleted = localStorage.getItem('quizCompleted');
-              const savedFeatures = localStorage.getItem('dashboardFeatures');
               const savedTutorialCompleted = localStorage.getItem('tutorialCompleted');
-              
-              let parsedFeatures = {
-                learningPreferences: true,
-                courseOverview: true,
-                questionOfTheDay: true,
-                masteryLevel: true,
-                courseDifficulty: true,
-                chatbot: true
-              };
-              
-              if (savedFeatures) {
-                try {
-                  parsedFeatures = JSON.parse(savedFeatures);
-                } catch (e) {
-                  console.error('Error parsing saved features:', e);
-                }
-              }
               
               clearTimeout(timeout);
               resolve({
                 learningPreference: savedLearningPreference,
                 quizCompleted: savedQuizCompleted === 'true',
-                features: parsedFeatures,
                 tutorialCompleted: savedTutorialCompleted === 'true'
               });
             } catch (error) {
@@ -269,9 +239,6 @@ export default function App() {
         };
         
         const preferences = await loadPreferences();
-        
-        // Load features first
-        setFeatures(preferences.features);
         
         // Set tutorial completion status
         setTutorialCompleted(preferences.tutorialCompleted);
@@ -296,14 +263,6 @@ export default function App() {
         // Set safe default values if localStorage fails
         setTutorialCompleted(true);
         setQuizCompleted(true);
-        setFeatures({
-          learningPreferences: true,
-          courseOverview: true,
-          questionOfTheDay: true,
-          masteryLevel: true,
-          courseDifficulty: true,
-          chatbot: true
-        });
       }
     };
     
@@ -393,29 +352,6 @@ export default function App() {
     }, 0);
   };
 
-  const handleFeatureToggle = (feature: keyof typeof features) => {
-    try {
-      const newFeatures = { ...features, [feature]: !features[feature] };
-      setFeatures(newFeatures);
-      
-      // If learning preferences is disabled, hide the quiz
-      if (feature === 'learningPreferences' && !newFeatures.learningPreferences) {
-        setShowQuiz(false);
-      }
-      
-      // Use setTimeout to prevent blocking
-      setTimeout(() => {
-        try {
-          localStorage.setItem('dashboardFeatures', JSON.stringify(newFeatures));
-        } catch (e) {
-          console.error('Error saving features to localStorage:', e);
-        }
-      }, 0);
-    } catch (error) {
-      console.error('Error toggling feature:', error);
-    }
-  };
-
   const handleQuestionSubmit = (question: string, answer: string) => {
     setQuestionSubmission({ question, answer });
     setShowQuestionChatbot(false);
@@ -450,9 +386,7 @@ export default function App() {
       <AppModals
         showQuiz={showQuiz}
         showTutorial={showTutorial}
-        showSettings={showSettings}
         showLearningStyleDetails={showLearningStyleDetails}
-        features={features}
         learningPreference={learningPreference}
         currentLearningPreferenceDetails={currentLearningPreferenceDetails}
         onQuizComplete={handleQuizComplete}
@@ -460,8 +394,6 @@ export default function App() {
         onTutorialComplete={handleTutorialComplete}
         onTutorialSkip={handleTutorialSkip}
         onShowQuiz={() => setShowQuiz(true)}
-        onFeatureToggle={handleFeatureToggle}
-        onCloseSettings={() => setShowSettings(false)}
         onCloseLearningStyleDetails={() => setShowLearningStyleDetails(false)}
       />
 
@@ -780,7 +712,7 @@ export default function App() {
       </div>
 
       {/* Learning Chatbot - Always available as floating button */}
-      {features.chatbot && (
+      {chatbotEnabled && (
         <LearningChatbot learningStyle={learningPreference} />
       )}
 

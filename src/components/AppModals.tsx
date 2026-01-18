@@ -1,16 +1,25 @@
+/* AppModals Component
+Centralizes all modal/dialog windows in the application
+
+Manages the rendering of:
+  - Learning Style Quiz Modal
+  - Tutorial Modal
+  - Learning Preference Details Modal
+
+This component keeps App.tsx clean by extracting all modal logic into one place
+Modals are conditionally rendered based on boolean flags passed from App.tsx
+*/
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Switch } from './ui/switch';
-import { Brain, Settings, X, Info } from 'lucide-react';
+import { Brain, X} from 'lucide-react';
 import LearningStyleQuiz from './LearningStyleQuiz';
 import Tutorial from './Tutorial';
 
 interface AppModalsProps {
   showQuiz: boolean;
   showTutorial: boolean;
-  showSettings: boolean;
   showLearningStyleDetails: boolean;
-  features: any;
   learningPreference: string | null;
   currentLearningPreferenceDetails: any;
   onQuizComplete: (preference: string) => void;
@@ -18,17 +27,13 @@ interface AppModalsProps {
   onTutorialComplete: () => void;
   onTutorialSkip: () => void;
   onShowQuiz: () => void;
-  onFeatureToggle: (feature: string) => void;
-  onCloseSettings: () => void;
   onCloseLearningStyleDetails: () => void;
 }
 
 export default function AppModals({
   showQuiz,
   showTutorial,
-  showSettings,
   showLearningStyleDetails,
-  features,
   learningPreference,
   currentLearningPreferenceDetails,
   onQuizComplete,
@@ -36,14 +41,12 @@ export default function AppModals({
   onTutorialComplete,
   onTutorialSkip,
   onShowQuiz,
-  onFeatureToggle,
-  onCloseSettings,
   onCloseLearningStyleDetails
 }: AppModalsProps) {
   return (
     <>
       {/* Learning Preference Quiz Modal */}
-      {showQuiz && features.learningPreferences && (
+      {showQuiz && (
         <LearningStyleQuiz 
           onComplete={onQuizComplete} 
           onSkip={onQuizSkip} 
@@ -123,96 +126,6 @@ export default function AppModals({
               <div className="flex justify-end pt-4">
                 <Button onClick={onCloseLearningStyleDetails}>
                   Got it!
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Settings Modal */}
-      {showSettings && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md bg-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Dashboard Settings
-              </CardTitle>
-              <CardDescription>Customize your learning experience by enabling or disabling features.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium">Learning Preferences</h4>
-                    <p className="text-xs text-gray-600">Personalized learning recommendations and character profiles</p>
-                  </div>
-                  <Switch
-                    checked={features.learningPreferences}
-                    onCheckedChange={() => onFeatureToggle('learningPreferences')}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium">Course Overview</h4>
-                    <p className="text-xs text-gray-600">Important dates, deadlines, and module information</p>
-                  </div>
-                  <Switch
-                    checked={features.courseOverview}
-                    onCheckedChange={() => onFeatureToggle('courseOverview')}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium">Question of the Day</h4>
-                    <p className="text-xs text-gray-600">Daily challenges and streak tracking</p>
-                  </div>
-                  <Switch
-                    checked={features.questionOfTheDay}
-                    onCheckedChange={() => onFeatureToggle('questionOfTheDay')}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium">Mastery Level</h4>
-                    <p className="text-xs text-gray-600">Course competency tracking and tier progression</p>
-                  </div>
-                  <Switch
-                    checked={features.masteryLevel}
-                    onCheckedChange={() => onFeatureToggle('masteryLevel')}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium">Course Difficulty</h4>
-                    <p className="text-xs text-gray-600">Personalized course difficulty based on learning preference</p>
-                  </div>
-                  <Switch
-                    checked={features.courseDifficulty}
-                    onCheckedChange={() => onFeatureToggle('courseDifficulty')}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium">Learning Assistant</h4>
-                    <p className="text-xs text-gray-600">AI chatbot to help navigate the platform</p>
-                  </div>
-                  <Switch
-                    checked={features.chatbot}
-                    onCheckedChange={() => onFeatureToggle('chatbot')}
-                  />
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={onCloseSettings}>
-                  Close
                 </Button>
               </div>
             </CardContent>
