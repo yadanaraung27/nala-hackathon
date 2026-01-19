@@ -65,7 +65,7 @@ This application uses Ollama with a **hybrid dual-model approach** for optimal A
    - llama3.2-vision then uses that transcription to generate a well-formatted response with proper LaTeX notation
    - For text-only queries (no images), llama3.2-vision is used directly
 
-3. **Run the development server:**
+3. **Run the development server in a terminal:**
    ```bash
    npm run dev
    ```
@@ -75,15 +75,21 @@ This application uses Ollama with a **hybrid dual-model approach** for optimal A
    npm install --save-dev @vitejs/plugin-react-swc
    ```
 
-4. **Ensure Ollama is running:**
-   Make sure the Ollama server is running in a separate terminal:
+4. **Run the Flask backend server in another terminal:**
+   ```bash
+   cd backend
+   python rag_api.pg
+   ```
+
+5. **Ensure Ollama server is running in a separate terminal:**
    ```bash
    ollama serve
    ```
    
    **Note:** You only need to run `ollama serve` once - it will automatically handle requests for both minicpm-v and llama3.2-vision models.
 
-5. **Expected Output:**
+6. **Expected Output:**
+   - All Ollama server, frontend server, and backend server should be running in separate terminals.
    - On successful execution, you should see output similar to the screenshot below:
 
      ![Executed npm run dev](public/images/successful_npm_run_dev.png)
