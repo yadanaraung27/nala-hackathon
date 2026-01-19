@@ -123,6 +123,7 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [questionSubmission, setQuestionSubmission] = useState<{question: string, answer: string} | null>(null);
   const [startingChallenge, setStartingChallenge] = useState(false);
+  const [currentChallengeData, setCurrentChallengeData] = useState<any>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [initializationError, setInitializationError] = useState<string | null>(null);
   const [chatbotEnabled, setChatbotEnabled] = useState(true);
@@ -617,9 +618,11 @@ export default function App() {
             initialAnswer={questionSubmission?.answer}
             mode={startingChallenge || questionSubmission ? 'challenge' : 'general'}
             isNewChallenge={startingChallenge}
+            challengeData={currentChallengeData || undefined}
             onChallengeComplete={() => {
               setStartingChallenge(false);
               setQuestionSubmission(null);
+              setCurrentChallengeData(null);
             }}
           />
         ) : showQuestionChatbot ? (
@@ -640,7 +643,8 @@ export default function App() {
                     currentDate={currentDate}
                     onShowLearningStyleDetails={() => setShowLearningStyleDetails(true)}
                     onShowQuiz={() => setShowQuiz(true)}
-                    onStartChallenge={() => {
+                    onStartChallenge={(challengeData) => {
+                      setCurrentChallengeData(challengeData || null);
                       setStartingChallenge(true);
                       setShowGeneralChatbot(true);
                       setActiveSection('');
@@ -671,7 +675,8 @@ export default function App() {
 
             {activeSection === 'Daily Challenges' && (
               <DailyChallengesPage 
-                onStartChallenge={() => {
+                onStartChallenge={(challengeData) => {
+                  setCurrentChallengeData(challengeData || null);
                   setStartingChallenge(true);
                   setShowGeneralChatbot(true);
                   setActiveSection('');
