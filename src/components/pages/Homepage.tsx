@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Brain, Info, Target, TrendingUp, Clock, AlertCircle, BarChart3, BookOpen, ChevronRight } from 'lucide-react';
 import { getCurrentAcademicWeek, getWeeklyContent, getProgressiveQuestionLevel, formatCurrentWeekRange } from '../../utils/academicWeek';
+import { fetchCurrentChallenge, fetchChallenges, type Challenge } from '../../utils/challengesApi';
+import { Flame } from 'lucide-react';
 
 const learningCycleData = [
   { phase: 'Experience', engagement: 85, description: 'Hands-on practice' },
@@ -20,7 +22,7 @@ interface HomepageProps {
   currentDate: string;
   onShowLearningStyleDetails: () => void;
   onShowQuiz: () => void;
-  onStartChallenge: () => void;
+  onStartChallenge: (challenge?: Challenge) => void;
   onNavigateToAnalytics: () => void;
   onNavigateToCourse: () => void;
   onNavigateToChatbot: () => void;
@@ -55,6 +57,56 @@ export default function Homepage({
   const [masteryScore, setMasteryScore] = useState(67);
   const [questionLevel, setQuestionLevel] = useState<any>(null);
   const [showBloomsTaxonomy, setShowBloomsTaxonomy] = useState(false);
+  const [todayChallenge, setTodayChallenge] = useState<Challenge | null>(null);
+  const [challengeLoading, setChallengeLoading] = useState(true);
+  const [challengeError, setChallengeError] = useState<string | null>(null);
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [isTodayChallengeCompleted, setIsTodayChallengeCompleted] = useState(false);
+  const [streakLoading, setStreakLoading] = useState(true);
+
+  // Helper function to get today's date string in YYYY-MM-DD format
+  const getTodayString = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+
+  // Helper function to calculate streak from challenges
+  // Returns { streak, isTodayCompleted }
+  const calculateStreakFromChallenges = (challenges: Challenge[]) => {
+    const todayStr = getTodayString();
+    
+    // Filter challenges up to today only
+    const filteredChallenges = challenges.filter(ch => ch.date <= todayStr);
+    const completedChallenges = filteredChallenges.filter(ch => ch.status === 'completed');
+    
+    // Get completed dates
+    const completedDates = new Set(completedChallenges.map(ch => ch.date));
+    
+    // Check if today's challenge is completed
+    const todayCompleted = completedDates.has(todayStr);
+    
+    // Calculate current streak
+    let streak = 0;
+    const today = new Date();
+    let checkDate = new Date(today);
+    
+    // Start checking from today and go backwards
+    while (true) {
+      const dateStr = checkDate.toISOString().split('T')[0];
+      if (completedDates.has(dateStr)) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else if (streak === 0 && checkDate.getTime() === today.getTime()) {
+        // If today's challenge isn't completed yet, start counting from yesterday
+        // but don't break the streak yet (it's still "pending")
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    
+    return { streak, isTodayCompleted: todayCompleted };
+  };
 
   // Helper function to get learning preference emoji
   const getLearningPreferenceEmoji = (preference: string | null) => {
@@ -66,6 +118,46 @@ export default function Homepage({
       default: return '👨‍💻';
     }
   };
+
+  // Fetch today's challenge and streak data
+  useEffect(() => {
+    const loadTodayChallenge = async () => {
+      setChallengeLoading(true);
+      setChallengeError(null);
+      try {
+        const challenge = await fetchCurrentChallenge();
+        setTodayChallenge(challenge);
+      } catch (err) {
+        console.error('Error fetching today\'s challenge:', err);
+        setChallengeError(err instanceof Error ? err.message : 'Failed to load challenge');
+        // Don't set challenge to null, allow fallback to default display
+      } finally {
+        setChallengeLoading(false);
+      }
+    };
+    
+    loadTodayChallenge();
+  }, []);
+
+  // Fetch all challenges to calculate streak
+  useEffect(() => {
+    const loadStreakData = async () => {
+      setStreakLoading(true);
+      try {
+        const challengesData = await fetchChallenges({ limit: 1000 });
+        const { streak, isTodayCompleted } = calculateStreakFromChallenges(challengesData.challenges);
+        setCurrentStreak(streak);
+        setIsTodayChallengeCompleted(isTodayCompleted);
+      } catch (err) {
+        console.error('Error fetching streak data:', err);
+        // Keep default values on error
+      } finally {
+        setStreakLoading(false);
+      }
+    };
+    
+    loadStreakData();
+  }, []);
 
   useEffect(() => {
     try {
@@ -160,69 +252,106 @@ export default function Homepage({
                 <Target className="h-4 w-4 text-white" />
               </div>
               <h2 className="text-2xl font-semibold text-white">Today's Challenge</h2>
-              <span className="text-white font-medium">
-                🔥 7
-              </span>
+              {!streakLoading && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className={`font-medium flex items-center gap-1 ${isTodayChallengeCompleted ? 'text-white' : 'text-white/60'}`}>
+                        <Flame className={`h-5 w-5 ${isTodayChallengeCompleted ? 'text-orange-400' : 'text-gray-400'}`} />
+                        {currentStreak}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {isTodayChallengeCompleted ? (
+                        <p>🔥 You're on a {currentStreak}-day streak! Keep it up!</p>
+                      ) : currentStreak > 0 ? (
+                        <p>Complete today's challenge to continue your {currentStreak}-day streak!</p>
+                      ) : (
+                        <p>Complete today's challenge to start a streak!</p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
             
-            <div className="flex items-end gap-6">
-              {/* Question container with transparent background */}
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-6 flex-1">
-                <p className="text-white leading-relaxed mb-3">
-                  <span className="font-semibold">Optimization Problem:</span> A company wants to design a cylindrical container with a volume of 1000 cm³. The material for the top and bottom costs $0.05/cm², while the side material costs $0.03/cm². Find the dimensions that minimize the total cost and calculate the minimum cost.
-                </p>
-                
-                {/* Badges inside the same container */}
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="flex items-center gap-1 text-white/90">
-                    <BookOpen className="h-4 w-4" />
-                    <span>Applications of derivatives</span>
+            {challengeLoading ? (
+              <div className="text-white/80 py-8 text-center">Loading today's challenge...</div>
+            ) : challengeError ? (
+              <div className="text-white/80 py-8 text-center">
+                <p>Unable to load today's challenge.</p>
+                <p className="text-sm text-white/60 mt-2">{challengeError}</p>
+              </div>
+            ) : todayChallenge ? (
+              <>
+                <div className="flex items-end gap-6">
+                  {/* Question container with transparent background */}
+                  <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-6 flex-1">
+                    <p className="text-white leading-relaxed mb-3">
+                      <span className="font-semibold">{todayChallenge.category}:</span> {todayChallenge.question}
+                    </p>
+                    
+                    {/* Badges inside the same container */}
+                    <div className="flex items-center gap-3 text-sm flex-wrap">
+                      <div className="flex items-center gap-1 text-white/90">
+                        <BookOpen className="h-4 w-4" />
+                        <span>{todayChallenge.category}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-white/90">
+                        <Clock className="h-4 w-4" />
+                        <span>{todayChallenge.difficulty}</span>
+                      </div>
+                      {todayChallenge.bloomLevel && (
+                        <div className="flex items-center gap-1 text-white/90">
+                          <Brain className="h-4 w-4" />
+                          <span>{todayChallenge.bloomLevel}</span>
+                        </div>
+                      )}
+                      {todayChallenge.bloomLevel && (
+                        <div className="flex items-center gap-1 text-white/90">
+                          <Target className="h-4 w-4" />
+                          <span>{getKolbStage(todayChallenge.bloomLevel)}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 text-white/90">
-                    <Clock className="h-4 w-4" />
-                    <span>Hard</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-white/90">
-                    <Brain className="h-4 w-4" />
-                    <span>Analyze</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-white/90">
-                    <Target className="h-4 w-4" />
-                    <span>Reflect</span>
+                  
+                  {/* Target emoji aligned beside the bottom of question box */}
+                  <div className="text-6xl opacity-20 flex-shrink-0 mb-6">
+                    🎯
                   </div>
                 </div>
-              </div>
-              
-              {/* Target emoji aligned beside the bottom of question box */}
-              <div className="text-6xl opacity-20 flex-shrink-0 mb-6">
-                🎯
-              </div>
-            </div>
 
-            <div className="flex items-center gap-4">
-              <Button 
-                onClick={onStartChallenge}
-                className="bg-white text-purple-700 hover:bg-gray-50 hover:text-purple-800 font-semibold px-6 py-2 shadow-md"
-                size="default"
-              >
-                Start Challenge
-                <ChevronRight className="h-4 w-4 ml-2" />
-              </Button>
-              
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <div className="text-white/70 text-xs flex items-center gap-1 cursor-help">
-                      <Info className="h-3 w-3" />
-                      <span>Daily practice</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p><strong>Retrieval Practice:</strong> Daily challenges use spaced repetition to combat the forgetting curve - you'll retain 90% more after 7 days compared to passive review.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
+                <div className="flex items-center gap-4">
+                  <Button 
+                    onClick={() => onStartChallenge(todayChallenge)}
+                    className="bg-white text-purple-700 hover:bg-gray-50 hover:text-purple-800 font-semibold px-6 py-2 shadow-md"
+                    size="default"
+                  >
+                    Start Challenge
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <div className="text-white/70 text-xs flex items-center gap-1 cursor-help">
+                          <Info className="h-3 w-3" />
+                          <span>Daily practice</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p><strong>Retrieval Practice:</strong> Daily challenges use spaced repetition to combat the forgetting curve - you'll retain 90% more after 7 days compared to passive review.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </>
+            ) : (
+              <div className="text-white/80 py-8 text-center">
+                <p>No challenge available for today.</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
