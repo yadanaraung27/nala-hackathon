@@ -1,8 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import os
 
-# Import your RAG pipeline functions
+# Import RAG pipeline functions
 from ragcore.ingest import ingest_dir
 from ragcore.embed import VectorIndex
 from ragcore.retrieve import HybridRetriever
@@ -17,12 +16,18 @@ import json
 from collections import defaultdict
 import time
 
+# Import challenges API
+from challenges_api import challenges_bp
+
 BASE_URL = os.getenv("BASE_URL", "https://nala.ntu.edu.sg") 
 API_KEY = os.getenv("API_KEY", "pk_LearnUS_176q45") 
 API_URL = "http://127.0.0.1:5000/api/ask"
 
 app = Flask(__name__)
 CORS(app)
+
+# Register challenges blueprint
+app.register_blueprint(challenges_bp)
 
 # Bootstrap index ONCE at startup
 retriever, reranker = None, None
@@ -323,8 +328,37 @@ def weekly_topics():
         # Fallback: process if not available
         weekly_topics_cache = process_weekly_topics()
     return jsonify(weekly_topics_cache)
+
+@app.route('/api/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'ok', 'message': 'Flask server is running'})
     
 if __name__ == '__main__':
-    bootstrap_index("data/raw")  # or your actual data dir
-    weekly_topics_cache = process_weekly_topics()
-    app.run(debug=False, port=5000)  
+    # Initialize database
+    from database import ensure_database
+    ensure_database()
+    
+    # Initialize RAG (optional - can be slow, server will start even if this fails)
+    try:
+        print("Initializing RAG index (this may take a moment)...")
+        bootstrap_index("data/raw")  # or your actual data dir
+        weekly_topics_cache = process_weekly_topics()
+        print("RAG index initialized successfully!")
+    except Exception as e:
+        print(f"Warning: RAG initialization failed (server will still start): {e}")
+        weekly_topics_cache = None
+    
+    # Use port 5001 to avoid conflict with macOS AirPlay Receiver on port 5000
+    port = int(os.getenv('FLASK_PORT', '5001'))
+    
+    print("\n" + "="*60)
+    print(f"Flask server starting on http://localhost:{port}")
+    print("Challenges API endpoints:")
+    print("  GET  /api/challenges")
+    print("  GET  /api/challenges/stats")
+    print("  GET  /api/challenges/:id")
+    print("  POST /api/challenges/:id/attempts")
+    print("  GET  /api/health")
+    print("="*60 + "\n")
+    
+    app.run(debug=True, port=port, host='0.0.0.0')  
