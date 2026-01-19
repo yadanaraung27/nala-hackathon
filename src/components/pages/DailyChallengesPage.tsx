@@ -11,9 +11,10 @@ import { Flame, Trophy, Target, Clock, CheckCircle2, X, Star, RotateCcw, BarChar
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { InlineMath, BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
+import { fetchChallenges, fetchStats, fetchChallenge, type Challenge, type ChallengeStats } from '../../utils/challengesApi';
 
 interface DailyChallengesPageProps {
-  onStartChallenge?: () => void;
+  onStartChallenge?: (challenge?: Challenge) => void;
 }
 
 // Helper function to render math content with KaTeX
@@ -168,331 +169,209 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
   const [performanceOverviewOpen, setPerformanceOverviewOpen] = useState(true);
   const [learningInsightsOpen, setLearningInsightsOpen] = useState(true);
 
-  // Progress stats inspired by LeetCode
-  const progressStats = {
-    totalSolved: 42,
-    totalAttempted: 50,
-    attempting: 3,
-    easy: { solved: 18, total: 20 },
-    medium: { solved: 16, total: 20 },
-    hard: { solved: 8, total: 12 }
+  // State for challenges and stats from API
+  const [challengeHistory, setChallengeHistory] = useState<Challenge[]>([]);
+  const [progressStats, setProgressStats] = useState<ChallengeStats>({
+    totalSolved: 0,
+    totalAttempted: 0,
+    attempting: 0,
+    easy: { solved: 0, total: 0 },
+    medium: { solved: 0, total: 0 },
+    hard: { solved: 0, total: 0 },
+    currentStreak: 0,
+    longestStreak: 0,
+    monthlyAttempts: 0
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Helper function to get today's date string in YYYY-MM-DD format
+  const getTodayString = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
   };
 
-  // Key streak stats
-  const currentStreak = 7;
-  const longestStreak = 23;
-  const monthlyAttempts = 35;
+  // Helper function to filter challenges up to today's date
+  const filterChallengesUpToToday = (challenges: Challenge[]) => {
+    const todayStr = getTodayString();
+    return challenges.filter(challenge => challenge.date <= todayStr);
+  };
 
-  // Comprehensive challenge history starting from AY2526 S2 (Jan 12 - Feb 03)
-  // Following Mathematics I curriculum progression with varied difficulty, Bloom's, and Kolb stages
-  const challengeHistory = [
-    {
-      date: '2026-02-03',
-      category: 'Linear Systems',
-      difficulty: 'Medium',
-      bloomLevel: 'Apply',
-      question: "Systems of Linear Equations: What are the main methods for solving systems?",
-      status: 'pending',
-      score: null,
-      acceptanceRate: 79,
-      timeSpent: null,
-      answer: null
-    },
-    {
-      date: '2026-02-02',
-      category: 'Trigonometry',
-      difficulty: 'Medium',
-      bloomLevel: 'Analyze',
-      question: "Solving Trigonometric Equations: How do you find all solutions to trigonometric equations?",
-      status: 'completed',
-      score: 80,
-      acceptanceRate: 72,
-      timeSpent: '5 minutes',
-      answer: "Process: 1) Isolate trig function, 2) Find reference angle, 3) Use unit circle and periodicity. General solutions: $\\sin(\\theta) = a$ gives $\\theta = \\arcsin(a) + 2\\pi k$ or $\\pi - \\arcsin(a) + 2\\pi k$. $\\cos(\\theta) = a$ gives $\\theta = \\pm \\arccos(a) + 2\\pi k$. $\\tan(\\theta) = a$ gives $\\theta = \\arctan(a) + \\pi k$ where $k \\in \\mathbb{Z}$."
-    },
-    {
-      date: '2026-02-01',
-      category: 'Algebra',
-      difficulty: 'Easy',
-      bloomLevel: 'Remember',
-      question: "Laws of Exponents: How do you apply exponent rules to simplify expressions?",
-      status: 'completed',
-      score: 93,
-      acceptanceRate: 92,
-      timeSpent: '3 minutes',
-      answer: "Product rule: $a^m \\cdot a^n = a^{m+n}$. Quotient rule: $\\frac{a^m}{a^n} = a^{m-n}$. Power rule: $(a^m)^n = a^{mn}$. Product to power: $(ab)^n = a^n b^n$. Special: $a^0 = 1$, $a^{-n} = \\frac{1}{a^n}$, $a^{1/n} = \\sqrt[n]{a}$. These rules apply to all real numbers and are foundational."
-    },
-    {
-      date: '2026-01-31',
-      category: 'Calculus',
-      difficulty: 'Medium',
-      bloomLevel: 'Understand',
-      question: "Continuity and Differentiability: What's the relationship between these concepts?",
-      status: 'completed',
-      score: 87,
-      acceptanceRate: 81,
-      timeSpent: '4 minutes',
-      answer: "Continuous at $x=c$: $\\lim_{x \\to c} f(x) = f(c)$. Differentiable at $c$: $f'(c)$ exists (function is smooth). Key: Differentiability implies continuity, but continuity doesn't guarantee differentiability (e.g., $|x|$ at $x=0$ is continuous but not differentiable). Check derivatives from left and right for sharp corners."
-    },
-    {
-      date: '2026-01-30',
-      category: 'Discrete Math',
-      difficulty: 'Medium',
-      bloomLevel: 'Apply',
-      question: "Combinations and Permutations: When do you use each and how do you calculate them?",
-      status: 'completed',
-      score: 84,
-      acceptanceRate: 78,
-      timeSpent: '4 minutes',
-      answer: "Permutations $P(n,r) = \\frac{n!}{(n-r)!}$ when order matters (arrangements). Combinations $C(n,r) = \\frac{n!}{r!(n-r)!}$ when order doesn't matter (selections). Example: President/VP from 5 people is $P(5,2) = 20$ (order matters). Selecting 2 committee members from 5 is $C(5,2) = 10$ (order irrelevant). Use in probability and counting problems."
-    },
-    {
-      date: '2026-01-29',
-      category: 'Analysis',
-      difficulty: 'Hard',
-      bloomLevel: 'Analyze',
-      question: "Mean Value Theorem: What does MVT state and what are its implications?",
-      status: 'completed',
-      score: 76,
-      acceptanceRate: 62,
-      timeSpent: '6 minutes',
-      answer: "MVT: If $f$ continuous on $[a,b]$ and differentiable on $(a,b)$, then $\\exists c \\in (a,b)$ where $f'(c) = \\frac{f(b)-f(a)}{b-a}$. Geometric meaning: instantaneous rate equals average rate at some point. Applications: prove constant functions have $f'=0$, increasing functions have $f'>0$, understand function behavior from derivatives."
-    },
-    {
-      date: '2026-01-28',
-      category: 'Sequences',
-      difficulty: 'Medium',
-      bloomLevel: 'Understand',
-      question: "Convergence of Sequences: When does a sequence converge and how do you find limits?",
-      status: 'completed',
-      score: 81,
-      acceptanceRate: 69,
-      timeSpent: '5 minutes',
-      answer: "Sequence $\\{a_n\\}$ converges to $L$ if: for every $\\epsilon > 0$, $\\exists N$ where $|a_n - L| < \\epsilon$ for all $n > N$. Examples: $a_n = \\frac{1}{n} \\to 0$, $a_n = c \\to c$, $a_n = r^n \\to 0$ if $|r| < 1$. Algebra limit theorem: limits of sums equal sums of limits (when both exist). Useful for series and analyzing function behavior."
-    },
-    {
-      date: '2026-01-27',
-      category: 'Calculus',
-      difficulty: 'Hard',
-      bloomLevel: 'Apply',
-      question: "Improper Integrals: How do you evaluate integrals with infinite limits or discontinuities?",
-      status: 'completed',
-      score: 73,
-      acceptanceRate: 57,
-      timeSpent: '7 minutes',
-      answer: "For $\\int_a^\\infty f(x)dx$, compute $\\lim_{t \\to \\infty} \\int_a^t f(x)dx$. For discontinuity at $c \\in (a,b)$, split integral and use limits. Converges if limit is finite. Example: $\\int_1^\\infty \\frac{1}{x^2}dx = \\lim_{t \\to \\infty}[-\\frac{1}{x}]_1^t = 1$ (converges). Use comparison test if direct evaluation difficult.",
-      attempts: [
-        { attemptNumber: 1, score: 58, date: '2026-01-27', timeSpent: '8 minutes' },
-        { attemptNumber: 2, score: 73, date: '2026-01-27', timeSpent: '7 minutes' }
-      ]
-    },
-    {
-      date: '2026-01-26',
-      category: 'Linear Algebra',
-      difficulty: 'Medium',
-      bloomLevel: 'Understand',
-      question: "Eigenvalues and Eigenvectors: What do they represent and how are they found?",
-      status: 'completed',
-      score: 78,
-      acceptanceRate: 65,
-      timeSpent: '6 minutes',
-      answer: "For matrix $A$, eigenvector $\\mathbf{v}$ with eigenvalue $\\lambda$ satisfies $A\\mathbf{v} = \\lambda\\mathbf{v}$. Find eigenvalues from $\\det(A - \\lambda I) = 0$ (characteristic equation). Eigenvectors found by solving $(A - \\lambda I)\\mathbf{v} = \\mathbf{0}$. Geometric meaning: eigenvectors not rotated by transformation, only scaled. Used in diagonalization and stability analysis."
-    },
-    {
-      date: '2026-01-25',
-      category: 'Statistics',
-      difficulty: 'Easy',
-      bloomLevel: 'Remember',
-      question: "Probability Distributions: Which distributions apply to which situations?",
-      status: 'completed',
-      score: 89,
-      acceptanceRate: 84,
-      timeSpent: '4 minutes',
-      answer: "Normal: continuous data, bell curve, mean=median=mode. Binomial: discrete, $n$ trials, probability $p$ each trial. Poisson: rare events, count data. Uniform: equal probability across range. Exponential: time between events, decay. Student's t: small sample means. Choose based on data type and context. Normal widely applicable by Central Limit Theorem."
-    },
-    {
-      date: '2026-01-24',
-      category: 'Functions',
-      difficulty: 'Medium',
-      bloomLevel: 'Apply',
-      question: "Asymptotes: How do you find vertical, horizontal, and oblique asymptotes?",
-      status: 'completed',
-      score: 86,
-      acceptanceRate: 77,
-      timeSpent: '4 minutes',
-      answer: "Vertical: set denominator $= 0$ (check not canceled by numerator). Horizontal: compare polynomial degrees in rational function. Degree(numerator) $<$ degree(denominator) → $y=0$. Equal degrees → $y =$ ratio of leading coefficients. Degree(num) $>$ degree(denom) by 1 → oblique asymptote from polynomial division. Sketch using asymptotes as guides."
-    },
-    {
-      date: '2026-01-23',
-      category: 'Discrete Math',
-      difficulty: 'Easy',
-      bloomLevel: 'Remember',
-      question: "Boolean Algebra: What are the fundamental operations and properties?",
-      status: 'completed',
-      score: 90,
-      acceptanceRate: 86,
-      timeSpent: '3 minutes',
-      answer: "Boolean values: 1 (true), 0 (false). Operations: AND (·, true only if both true), OR (+, true if any true), NOT (', inverts). De Morgan's Laws: $(A \\cdot B)' = A' + B'$, $(A + B)' = A' \\cdot B'$. Truth tables show all input/output combinations. Used in logic circuits, programming, and switching theory."
-    },
-    {
-      date: '2026-01-22',
-      category: 'Calculus',
-      difficulty: 'Medium',
-      bloomLevel: 'Analyze',
-      question: "Concavity and Inflection Points: How do you analyze these properties?",
-      status: 'completed',
-      score: 82,
-      acceptanceRate: 74,
-      timeSpent: '4 minutes',
-      answer: "Concave up: $f''(x) > 0$, graph shaped like $\\cup$. Concave down: $f''(x) < 0$, shaped like $\\cap$. Inflection point: where $f''(x) = 0$ and changes sign. Find by: 1) compute $f''(x)$, 2) solve $f''(x) = 0$, 3) test sign on each side. Graph changes from concave up to down (or vice versa) at inflection point. Helps sketch accurate graphs."
-    },
-    {
-      date: '2026-01-21',
-      category: 'Algebra',
-      difficulty: 'Medium',
-      bloomLevel: 'Understand',
-      question: "Rational Functions: What are their properties and how do you graph them?",
-      status: 'completed',
-      score: 85,
-      acceptanceRate: 76,
-      timeSpent: '5 minutes',
-      answer: "Rational function: $f(x) = \\frac{P(x)}{Q(x)}$. Domain: all real except where $Q(x) = 0$. Vertical asymptotes at zeros of denominator (if not canceled). Horizontal/oblique from degree analysis. Holes where both cancel. X-intercepts: $P(x) = 0$. Y-intercept: $f(0)$. Sketch by analyzing all features systematically."
-    },
-    {
-      date: '2026-01-20',
-      category: 'Trigonometry',
-      difficulty: 'Easy',
-      bloomLevel: 'Remember',
-      question: "Inverse Trigonometric Functions: What are their domains, ranges, and uses?",
-      status: 'completed',
-      score: 92,
-      acceptanceRate: 89,
-      timeSpent: '3 minutes',
-      answer: "$\\arcsin$: domain $[-1,1]$, range $[-\\pi/2, \\pi/2]$. $\\arccos$: domain $[-1,1]$, range $[0, \\pi]$. $\\arctan$: domain $\\mathbb{R}$, range $(-\\pi/2, \\pi/2)$. Properties: $\\arcsin(\\sin(\\theta)) = \\theta$ only if $\\theta \\in [-\\pi/2, \\pi/2]$. Used to find angles from trigonometric ratios and solve inverse trig equations."
-    },
-    {
-      date: '2026-01-19',
-      category: 'Linear Algebra',
-      difficulty: 'Hard',
-      bloomLevel: 'Analyze',
-      question: "Vector Spaces and Subspaces: What defines them and how do you verify properties?",
-      status: 'completed',
-      score: 72,
-      acceptanceRate: 58,
-      timeSpent: '7 minutes',
-      answer: "Vector space: closed under addition and scalar multiplication, contains zero vector, has additive inverses, satisfies distributive laws. Subspace: subset of vector space that's itself a vector space. Verify subspace: non-empty, closed under addition and scalar multiplication. Examples: null space, column space, row space. Important for understanding linear transformations."
-    },
-    {
-      date: '2026-01-18',
-      category: 'Calculus',
-      difficulty: 'Easy',
-      bloomLevel: 'Apply',
-      question: "Derivatives of Exponential Functions: How do you differentiate exponential functions?",
-      status: 'completed',
-      score: 94,
-      acceptanceRate: 91,
-      timeSpent: '2 minutes',
-      answer: "$\\frac{d}{dx}[e^x] = e^x$. $\\frac{d}{dx}[a^x] = a^x \\ln(a)$ for any base $a > 0$. Chain rule: $\\frac{d}{dx}[e^{f(x)}] = e^{f(x)} \\cdot f'(x)$. Example: $\\frac{d}{dx}[e^{x^2}] = 2x e^{x^2}$. Natural exponential is special: derivative equals itself. Essential for modeling growth and decay."
-    },
-    {
-      date: '2026-01-17',
-      category: 'Statistics',
-      difficulty: 'Medium',
-      bloomLevel: 'Understand',
-      question: "Hypothesis Testing: What are the key steps and how do you interpret p-values?",
-      status: 'completed',
-      score: 81,
-      acceptanceRate: 71,
-      timeSpent: '5 minutes',
-      answer: "Steps: 1) State null hypothesis $H_0$ and alternative $H_1$, 2) Choose significance level $\\alpha$, 3) Compute test statistic, 4) Calculate p-value, 5) Reject $H_0$ if $p < \\alpha$. P-value: probability of data assuming $H_0$ true. Smaller $p$ is stronger evidence against $H_0$. Common significance: $\\alpha = 0.05$ (5% error rate)."
-    },
-    {
-      date: '2026-01-16',
-      category: 'Calculus',
-      difficulty: 'Medium',
-      bloomLevel: 'Apply',
-      question: "Logarithmic Differentiation: When is it useful and how do you apply it?",
-      status: 'completed',
-      score: 79,
-      acceptanceRate: 68,
-      timeSpent: '5 minutes',
-      answer: "Useful for: 1) Products/quotients (logs simplify), 2) Functions like $x^x$ where variable is base and exponent. Process: 1) Take $\\ln$ both sides, 2) differentiate implicitly, 3) solve for $\\frac{dy}{dx}$, 4) substitute. Example: $y = x^x$, so $\\ln(y) = x\\ln(x)$, then $\\frac{y'}{y} = \\ln(x) + 1$, so $y' = x^x(\\ln(x) + 1)$."
-    },
-    {
-      date: '2026-01-15',
-      category: 'Discrete Math',
-      difficulty: 'Medium',
-      bloomLevel: 'Understand',
-      question: "Graph Theory Basics: What are vertices, edges, paths, and graph types?",
-      status: 'completed',
-      score: 83,
-      acceptanceRate: 75,
-      timeSpent: '4 minutes',
-      answer: "Graph: set of vertices (nodes) and edges (connections). Path: sequence of vertices connected by edges, length is number of edges. Cycle: path returning to starting vertex. Types: directed/undirected, weighted/unweighted, simple/multigraph. Degree: edges incident to vertex. Eulerian path visits each edge once; Hamiltonian visits each vertex once."
-    },
-    {
-      date: '2026-01-14',
-      category: 'Algebra',
-      difficulty: 'Easy',
-      bloomLevel: 'Remember',
-      question: "Radicals and Rational Exponents: How do you simplify radical expressions?",
-      status: 'completed',
-      score: 91,
-      acceptanceRate: 87,
-      timeSpent: '3 minutes',
-      answer: "$\\sqrt[n]{a} = a^{1/n}$. Simplify by factoring perfect powers: $\\sqrt[3]{24} = \\sqrt[3]{8 \\cdot 3} = 2\\sqrt[3]{3}$. Rationalize denominator: multiply by conjugate or appropriate form. Properties: $\\sqrt[n]{a} \\cdot \\sqrt[n]{b} = \\sqrt[n]{ab}$, $\\sqrt[n]{a^m} = a^{m/n}$. Works for negative and fractional exponents."
-    },
-    {
-      date: '2026-01-13',
-      category: 'Calculus',
-      difficulty: 'Hard',
-      bloomLevel: 'Analyze',
-      question: "Optimization with Constraints: How do Lagrange multipliers work?",
-      status: 'completed',
-      score: 74,
-      acceptanceRate: 61,
-      timeSpent: '7 minutes',
-      answer: "To optimize $f(x,y)$ subject to $g(x,y) = 0$, solve $\\nabla f = \\lambda \\nabla g$ with constraint. Set up system: $\\frac{\\partial f}{\\partial x} = \\lambda \\frac{\\partial g}{\\partial x}$, $\\frac{\\partial f}{\\partial y} = \\lambda \\frac{\\partial g}{\\partial y}$, and $g(x,y) = 0$. Multiplier $\\lambda$ scales constraint gradient. Extends to multiple constraints by adding more multipliers. Powerful for constrained optimization."
-    },
-    {
-      date: '2026-01-12',
-      category: 'Functions',
-      difficulty: 'Medium',
-      bloomLevel: 'Understand',
-      question: "Piecewise Functions: How do you define, graph, and evaluate piecewise functions?",
-      status: 'completed',
-      score: 80,
-      acceptanceRate: 73,
-      timeSpent: '4 minutes',
-      answer: "Piecewise function defined by different formulas on different intervals. Example: $f(x) = \\begin{cases} x^2 & \\text{if } x < 0 \\\\ x+1 & \\text{if } x \\geq 0 \\end{cases}$. To evaluate: identify applicable piece, use its formula. To graph: draw each piece on its domain, watch for jumps/holes at boundaries. Check continuity at transition points to determine smoothness.",
-      attempts: [
-        { attemptNumber: 1, score: 38, date: '2026-02-12', timeSpent: '12 minutes' },
-        { attemptNumber: 2, score: 58, date: '2026-02-12', timeSpent: '10 minutes' },
-	      { attemptNumber: 3, score: 80, date: '2026-01-12', timeSpent: '4 minutes' }
-      ]
+  // Helper function to calculate statistics from filtered challenges
+  const calculateStatsFromChallenges = (challenges: Challenge[]): ChallengeStats => {
+    const todayStr = getTodayString();
+    const filteredChallenges = challenges.filter(ch => ch.date <= todayStr);
+    
+    // Calculate totals
+    const totalAttempted = filteredChallenges.length;
+    const completedChallenges = filteredChallenges.filter(ch => ch.status === 'completed');
+    const totalSolved = completedChallenges.length;
+    const attempting = filteredChallenges.filter(ch => ch.status === 'pending').length;
+    
+    // Calculate by difficulty
+    const easy = {
+      total: filteredChallenges.filter(ch => ch.difficulty === 'Easy').length,
+      solved: completedChallenges.filter(ch => ch.difficulty === 'Easy').length
+    };
+    const medium = {
+      total: filteredChallenges.filter(ch => ch.difficulty === 'Medium').length,
+      solved: completedChallenges.filter(ch => ch.difficulty === 'Medium').length
+    };
+    const hard = {
+      total: filteredChallenges.filter(ch => ch.difficulty === 'Hard').length,
+      solved: completedChallenges.filter(ch => ch.difficulty === 'Hard').length
+    };
+    
+    // Calculate current streak (consecutive completed days ending today or yesterday)
+    const completedDates = new Set(
+      completedChallenges.map(ch => ch.date)
+    );
+    
+    let currentStreak = 0;
+    const today = new Date();
+    let checkDate = new Date(today);
+    
+    // Start checking from today and go backwards
+    while (true) {
+      const dateStr = checkDate.toISOString().split('T')[0];
+      if (completedDates.has(dateStr)) {
+        currentStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else if (currentStreak === 0 && checkDate.getTime() === today.getTime()) {
+        // If today's challenge isn't completed yet, start from yesterday
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
     }
-  ];
+    
+    // Calculate longest streak
+    const sortedDates = Array.from(completedDates).sort();
+    let longestStreak = 0;
+    let tempStreak = 0;
+    let prevDate: Date | null = null;
+    
+    for (const dateStr of sortedDates) {
+      const date = new Date(dateStr);
+      if (prevDate) {
+        const diffDays = Math.round((date.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          tempStreak++;
+        } else {
+          longestStreak = Math.max(longestStreak, tempStreak);
+          tempStreak = 1;
+        }
+      } else {
+        tempStreak = 1;
+      }
+      prevDate = date;
+    }
+    longestStreak = Math.max(longestStreak, tempStreak);
+    
+    // Calculate monthly attempts (challenges attempted in current month)
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    const monthlyAttempts = filteredChallenges.filter(ch => {
+      const chDate = new Date(ch.date);
+      return chDate.getMonth() === currentMonth && 
+             chDate.getFullYear() === currentYear &&
+             ch.status === 'completed';
+    }).length;
+    
+    return {
+      totalSolved,
+      totalAttempted,
+      attempting,
+      easy,
+      medium,
+      hard,
+      currentStreak,
+      longestStreak,
+      monthlyAttempts
+    };
+  };
+
+  // Fetch challenges and stats on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/e8d5cc56-2104-4f8f-86c9-195a9df42ec1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DailyChallengesPage.tsx:190',message:'loadData started',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      setIsLoading(true);
+      setError(null);
+      try {
+        // Fetch all challenges from database
+        const challengesData = await fetchChallenges({ limit: 1000 });
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/e8d5cc56-2104-4f8f-86c9-195a9df42ec1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DailyChallengesPage.tsx:200',message:'Data fetched successfully',data:{challengeCount:challengesData.challenges?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        
+        // Filter challenges to only show up to current date
+        const filteredChallenges = filterChallengesUpToToday(challengesData.challenges);
+        setChallengeHistory(filteredChallenges);
+        
+        // Calculate stats based on filtered challenges (up to today only)
+        const calculatedStats = calculateStatsFromChallenges(challengesData.challenges);
+        setProgressStats(calculatedStats);
+      } catch (err) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/e8d5cc56-2104-4f8f-86c9-195a9df42ec1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DailyChallengesPage.tsx:204',message:'Error in loadData',data:{error:err instanceof Error ? err.message : String(err),errorName:err instanceof Error ? err.name : 'Unknown'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D,E,F'})}).catch(()=>{});
+        // #endregion
+        console.error('Error loading challenges:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load challenges');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // Extract streak stats from progressStats
+  const currentStreak = progressStats.currentStreak;
+  const longestStreak = progressStats.longestStreak;
+  const monthlyAttempts = progressStats.monthlyAttempts;
+
+  // Legacy hardcoded data removed - now using API
+  // Challenges are loaded from the database via API in useEffect above
 
   const validAcceptanceRates = challengeHistory
-  .map(ch => ch.acceptanceRate)
-  .filter(rate => typeof rate === 'number' && rate !== null);
+    .map(ch => ch.acceptanceRate)
+    .filter(rate => typeof rate === 'number' && rate !== null);
 
   const averageAccuracy = validAcceptanceRates.length
-  ? Math.round(validAcceptanceRates.reduce((sum, rate) => sum + rate, 0) / validAcceptanceRates.length)
-  : 0;
+    ? Math.round(validAcceptanceRates.reduce((sum, rate) => sum + rate, 0) / validAcceptanceRates.length)
+    : 0;
 
   // Helper function to ensure all challenges have attempts arrays
-  const processedChallengeHistory = challengeHistory.map(challenge => ({
-    ...challenge,
-    attempts: challenge.attempts || [
-      { 
-        attemptNumber: 1, 
-        score: challenge.score, 
-        date: challenge.date, 
-        timeSpent: challenge.timeSpent 
-      }
-    ]
-  }));
+  // Also fetch full challenge details if needed
+  const processedChallengeHistory = challengeHistory.map(challenge => {
+    // If challenge has attempts, use them; otherwise create a single attempt from current data
+    if (challenge.attempts && challenge.attempts.length > 0) {
+      return {
+        ...challenge,
+        attempts: challenge.attempts
+      };
+    } else if (challenge.status === 'completed' && challenge.score !== null) {
+      return {
+        ...challenge,
+        attempts: [
+          { 
+            attemptNumber: 1, 
+            score: challenge.score, 
+            date: challenge.date, 
+            timeSpent: challenge.timeSpent || '0 minutes'
+          }
+        ]
+      };
+    } else {
+      return {
+        ...challenge,
+        attempts: []
+      };
+    }
+  });
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -572,6 +451,24 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedMonth, selectedTopic, selectedDifficulty, selectedStatus, searchQuery, sortBy]);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-gray-500">Loading challenges...</div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-red-500">Error: {error}</div>
+      </div>
+    );
+  }
 
   return (
     <TooltipProvider>
@@ -1074,9 +971,18 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => {
-                              setSelectedChallenge(challenge);
-                              setShowAnswerModal(true);
+                            onClick={async () => {
+                              try {
+                                // Fetch full challenge details with all attempts
+                                const fullChallenge = await fetchChallenge(challenge.id);
+                                setSelectedChallenge(fullChallenge);
+                                setShowAnswerModal(true);
+                              } catch (err) {
+                                console.error('Error fetching challenge details:', err);
+                                // Fallback to current challenge data
+                                setSelectedChallenge(challenge);
+                                setShowAnswerModal(true);
+                              }
                             }}
                           >
                             View
@@ -1085,7 +991,17 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
                           <Button 
                             size="sm"
                             className="bg-blue-600 hover:bg-blue-700"
-                            onClick={() => onStartChallenge?.()}
+                            onClick={async () => {
+                              try {
+                                // Fetch full challenge details including ground truth
+                                const fullChallenge = await fetchChallenge(challenge.id);
+                                onStartChallenge?.(fullChallenge);
+                              } catch (err) {
+                                console.error('Error fetching challenge for start:', err);
+                                // Fallback to current challenge data
+                                onStartChallenge?.(challenge);
+                              }
+                            }}
                           >
                             Start Challenge
                           </Button>
@@ -1318,10 +1234,18 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
                   <Button variant="outline" onClick={() => setShowAnswerModal(false)}>
                     Close
                   </Button>
-                  <Button onClick={() => {
+                  <Button onClick={async () => {
                     setShowAnswerModal(false);
-                    if (onStartChallenge) {
-                      onStartChallenge();
+                    if (onStartChallenge && selectedChallenge) {
+                      try {
+                        // Fetch fresh challenge data including ground truth
+                        const fullChallenge = await fetchChallenge(selectedChallenge.id);
+                        onStartChallenge(fullChallenge);
+                      } catch (err) {
+                        console.error('Error fetching challenge for redo:', err);
+                        // Fallback to selected challenge data
+                        onStartChallenge(selectedChallenge);
+                      }
                     }
                   }}>
                     Redo Challenge
