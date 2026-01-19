@@ -34,6 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from './ui/alert-dialog';
+import { fetchCurrentChallenge } from '../utils/challengesApi';
 
 interface GeneralChatbotProps {
   learningStyle: string | null;
@@ -41,6 +42,7 @@ interface GeneralChatbotProps {
   initialAnswer?: string;
   mode?: 'general' | 'challenge';
   isNewChallenge?: boolean;
+  challengeData?: any; // Challenge data from API
   onChallengeComplete?: () => void;
 }
 
@@ -495,6 +497,7 @@ export default function GeneralChatbot({
   initialAnswer, 
   mode = 'general', 
   isNewChallenge = false,
+  challengeData,
   onChallengeComplete 
 }: GeneralChatbotProps) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -581,6 +584,7 @@ export default function GeneralChatbot({
       setSelectedImages(prev => prev.filter((_, i) => i !== index));
     }
   }, []);
+
 
   // Memoized static data to prevent re-renders
   const quickActions = useMemo(() => [
@@ -825,35 +829,130 @@ Please transcribe the key mathematical expressions you see before analyzing them
     handleSendMessage(question);
   }, [handleSendMessage]);
 
+  const [currentChallengeQuestion, setCurrentChallengeQuestion] = useState<string>('');
+  const [currentChallengeGroundTruth, setCurrentChallengeGroundTruth] = useState<string>('');
+  const [currentChallengeId, setCurrentChallengeId] = useState<number | null>(null);
+  const [currentChallengeScore, setCurrentChallengeScore] = useState<number | null>(null);
+  const [challengeStartTime, setChallengeStartTime] = useState<Date | null>(null);
 
-  const handleEndChallengeSession = useCallback(() => {
+  const handleEndChallengeSession = useCallback(async () => {
     console.log('Ending challenge session:', challengeMessages);
+    
+    // Calculate time spent
+    let timeSpent = 'Unknown';
+    if (challengeStartTime) {
+      const endTime = new Date();
+      const diffMs = endTime.getTime() - challengeStartTime.getTime();
+      const diffMins = Math.round(diffMs / 60000);
+      timeSpent = diffMins > 0 ? `${diffMins} minutes` : 'Less than 1 minute';
+    }
+    
+    // Extract user's answer from challenge messages (the first user message after the question)
+    const userAnswerMessage = challengeMessages.find(msg => msg.type === 'user' && msg.category === 'homework');
+    const userAnswer = userAnswerMessage?.content || 'No written answer provided';
+    
+    // Submit attempt to the database if we have a challenge ID and score
+    if (currentChallengeId && currentChallengeScore !== null) {
+      try {
+        const apiUrl = (import.meta.env as any).VITE_API_URL || 'http://localhost:5001';
+        const response = await fetch(`${apiUrl}/api/challenges/${currentChallengeId}/attempts`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            user_id: 1, // Default user ID (can be replaced with actual user auth later)
+            answer: userAnswer,
+            score: currentChallengeScore,
+            time_spent: timeSpent,
+            status: 'completed'
+          })
+        });
+        
+        if (response.ok) {
+          console.log('Challenge attempt successfully submitted to database');
+        } else {
+          console.error('Failed to submit challenge attempt:', await response.text());
+        }
+      } catch (error) {
+        console.error('Error submitting challenge attempt:', error);
+      }
+    } else {
+      console.warn('Cannot submit attempt: missing challenge ID or score', {
+        challengeId: currentChallengeId,
+        score: currentChallengeScore
+      });
+    }
+    
     setChallengeSessionEnded(true);
     if (onChallengeComplete) {
       onChallengeComplete();
     }
-  }, [challengeMessages, onChallengeComplete]);
+  }, [challengeMessages, onChallengeComplete, currentChallengeId, currentChallengeScore, challengeStartTime]);
 
-  const [currentChallengeQuestion, setCurrentChallengeQuestion] = useState<string>('');
+  const handleStartChallenge = useCallback(async (challenge?: any) => {
+    let challengeToUse = challenge || challengeData;
+    const now = new Date();
+    
+    // If no challenge data provided, fetch today's challenge from API
+    if (!challengeToUse || !challengeToUse.question) {
+      try {
+        console.log('No challenge data provided, fetching today\'s challenge...');
+        challengeToUse = await fetchCurrentChallenge();
+        console.log('Fetched today\'s challenge:', challengeToUse);
+      } catch (err) {
+        console.error('Error fetching today\'s challenge:', err);
+        // Will fall back to default message below
+      }
+    }
+    
+    // If challenge data is available, display the question
+    if (challengeToUse && challengeToUse.question) {
+      const difficultyStars = challengeToUse.difficulty === 'Hard' ? '⭐⭐⭐' : 
+                              challengeToUse.difficulty === 'Medium' ? '⭐⭐' : '⭐';
+      
+      const questionMessage: Message = {
+        id: '1',
+        type: 'bot',
+        content: `📋 **Today's Challenge Question**
 
-  const handleStartChallenge = useCallback(() => {
-  const now = new Date();
-  const welcomeMessage: Message = {
-    id: '1',
-    type: 'bot',
-    content: `🎯 **Welcome to Today's Calculus Challenge!**
+**Topic:** ${challengeToUse.category || 'Mathematics'}  
+**Difficulty:** ${difficultyStars} ${challengeToUse.difficulty || 'Medium'}  
+**Question Type:** ${challengeToUse.bloomLevel || 'Problem Solving'}  
 
-Ready to deepen your understanding of university-level mathematics? Today's challenge focuses on rigorous problem-solving in integration and differentiation.
+**Question:**
+
+${challengeToUse.question}`,
+        timestamp: now,
+        category: 'homework'
+      };
+
+      setChallengeMessages([questionMessage]);
+      setCurrentChallengeQuestion(challengeToUse.question);
+      setCurrentChallengeGroundTruth(challengeToUse.groundTruthAnswer || '');
+      setCurrentChallengeId(challengeToUse.id || null);
+      setChallengeStartTime(now);
+      setChallengePhase('answering');
+      setShowChallengeButtons(false);
+      setShowSuggestions(false);
+    } else {
+      // Fallback to default welcome message if no challenge data
+      const welcomeMessage: Message = {
+        id: '1',
+        type: 'bot',
+        content: `🎯 **Welcome to Today's Challenge!**
+
+Ready to deepen your understanding? Today's challenge focuses on rigorous problem-solving.
 
 ⚠️ **Important:** This challenge session will reset at midnight. Any unfinished conversations will be lost, so make sure to complete your challenge today!`,
-    timestamp: now,
-    category: 'general'
-  };
+        timestamp: now,
+        category: 'general'
+      };
 
-  const questionMessage: Message = {
-    id: '2',
-    type: 'bot',
-    content: `📋 **Today's Challenge Question**
+      const questionMessage: Message = {
+        id: '2',
+        type: 'bot',
+        content: `📋 **Today's Challenge Question**
 
 **Topic:** Derivatives and Chain Rule  
 **Difficulty:** ⭐⭐⭐ Advanced  
@@ -862,18 +961,34 @@ Ready to deepen your understanding of university-level mathematics? Today's chal
 **Question:**
 
 Prove the chain rule for differentiation. Then, apply it to find the derivative of $f(x) = \\sin(e^{x^2})$ and show all work. Finally, explain the geometric interpretation of your result.`,
-    timestamp: now,
-    category: 'homework'
-  };
+        timestamp: now,
+        category: 'homework'
+      };
 
-  setChallengeMessages([welcomeMessage, questionMessage]);
-  setCurrentChallengeQuestion(
-    `Prove the chain rule for differentiation. Then, apply it to find the derivative of $f(x) = \\sin(e^{x^2})$ and show all work. Finally, explain the geometric interpretation of your result.`
-  );
-  setChallengePhase('answering');
-  setShowChallengeButtons(false);
-  setShowSuggestions(false);
-}, []);
+      setChallengeMessages([welcomeMessage, questionMessage]);
+      setCurrentChallengeQuestion(
+        `Prove the chain rule for differentiation. Then, apply it to find the derivative of $f(x) = \\sin(e^{x^2})$ and show all work. Finally, explain the geometric interpretation of your result.`
+      );
+      setChallengePhase('answering');
+      setShowChallengeButtons(false);
+      setShowSuggestions(false);
+    }
+  }, [challengeData]);
+
+  // Auto-start challenge if challengeData is provided and we're in challenge mode
+  useEffect(() => {
+    if (mode === 'challenge' && isNewChallenge && challengeData && challengeData.question && challengeMessages.length === 0) {
+      // Automatically start the challenge with the provided data
+      try {
+        handleStartChallenge(challengeData);
+      } catch (error) {
+        console.error('Error starting challenge:', error);
+        // Fallback: show welcome screen if auto-start fails
+        setShowChallengeButtons(true);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, isNewChallenge, challengeData]);
   
   const handleShowHint = useCallback(() => {
     setShowHintDialog(true);
@@ -915,7 +1030,7 @@ Prove the chain rule for differentiation. Then, apply it to find the derivative 
     : "";
 
   const llmPrompt = `
-You are a rigorous university-level mathematics professor. Evaluate this student's answer to a calculus challenge question.
+You are a rigorous university-level mathematics professor. Evaluate this student's answer to a calculus challenge question against a ground truth answer and provide a score out of 100%.
 
 IMPORTANT: Format ALL mathematical expressions using LaTeX notation:
 - Use $expression$ for inline math (e.g., $f(x) = x^2$)
@@ -925,27 +1040,54 @@ IMPORTANT: Format ALL mathematical expressions using LaTeX notation:
 Challenge Question:
 ${currentChallengeQuestion}
 
+Ground Truth Answer (Expert Reference):
+${currentChallengeGroundTruth}
+
 Student's Written Answer:
 ${challengeAnswer || "(See attached image for the student's work)"}${imageContext}
 
-Provide:
-1. Assessment of mathematical correctness
-2. Identification of any errors or gaps in reasoning
-3. Evaluation of proof rigor (if applicable)
-4. Suggestions for improvement
-5. Key insights the student should understand
+EVALUATION INSTRUCTIONS:
+1. Compare the student's answer to the ground truth answer
+2. Assess mathematical correctness, completeness, and clarity
+3. Identify any errors, misconceptions, or gaps in reasoning
+4. Evaluate proof rigor and mathematical notation (if applicable)
+5. Provide constructive feedback and suggestions for improvement
 
-Be thorough, precise, and constructive. Use proper mathematical notation with LaTeX formatting.
+SCORING RUBRIC (out of 100%):
+- Correctness (50%): Are the main concepts and final answer correct?
+- Completeness (25%): Are all key steps and explanations included?
+- Clarity & Notation (15%): Is the work clear, organized, and properly notated?
+- Understanding (10%): Does the answer demonstrate deep conceptual understanding?
 
-Present your feedback without using the bullet point format above, and instead generate it in a detailed paragraph form instead.
+CRITICAL: You MUST include a score at the very beginning of your response in this EXACT format:
+**SCORE: X/100**
+
+Where X is a number between 0 and 100. This line must come first, before any other feedback.
+
+After the score line, provide your detailed evaluation in paragraph form. Be thorough, precise, and constructive. Use proper mathematical notation with LaTeX formatting.
 `;
 
   let feedbackText = '';
+  let extractedScore: number | null = null;
+  
   try {
     feedbackText = await fetchLLMReply(llmPrompt, undefined, hasImages ? imagesToSubmit : undefined);
+    
+    // Extract score from the feedback (format: **SCORE: X/100**)
+    const scoreMatch = feedbackText.match(/\*\*SCORE:\s*(\d+(?:\.\d+)?)\s*\/\s*100\*\*/i);
+    if (scoreMatch) {
+      extractedScore = parseFloat(scoreMatch[1]);
+      console.log('Extracted score:', extractedScore);
+    } else {
+      console.warn('Could not extract score from LLM response');
+    }
   } catch (err) {
     feedbackText = "Sorry, I couldn't generate feedback at this time.";
+    console.error('Error getting feedback:', err);
   }
+  
+  // Store the extracted score for later submission
+  setCurrentChallengeScore(extractedScore);
   
   // Clear challenge images after submission
   setChallengeImages([]);
