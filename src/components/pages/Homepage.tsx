@@ -128,8 +128,12 @@ export default function Homepage({
         const challenge = await fetchCurrentChallenge();
         setTodayChallenge(challenge);
       } catch (err) {
-        console.error('Error fetching today\'s challenge:', err);
-        setChallengeError(err instanceof Error ? err.message : 'Failed to load challenge');
+        // Use our error handling utilities for user-friendly messages
+        const errorMsg = getUserFriendlyError(err as Error);
+        logError(err as Error, 'Homepage - Load Today\'s Challenge');
+        
+        // Show user-friendly message with actionable advice
+        setChallengeError(`${errorMsg.message}. ${errorMsg.actionable || ''}`);
         // Don't set challenge to null, allow fallback to default display
       } finally {
         setChallengeLoading(false);
@@ -149,8 +153,10 @@ export default function Homepage({
         setCurrentStreak(streak);
         setIsTodayChallengeCompleted(isTodayCompleted);
       } catch (err) {
-        console.error('Error fetching streak data:', err);
-        // Keep default values on error
+        // Use error handling utilities
+        const errorMsg = getUserFriendlyError(err as Error);
+        logError(err as Error, 'Homepage - Load Streak Data');
+        // Keep default values on error - no need to show error to user for streak
       } finally {
         setStreakLoading(false);
       }

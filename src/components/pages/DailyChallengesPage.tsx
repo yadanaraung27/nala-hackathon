@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/
 import { InlineMath, BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 import { fetchChallenges, fetchStats, fetchChallenge, type Challenge, type ChallengeStats } from '../../utils/challengesApi';
+import { getUserFriendlyError, logError } from '@/utils/errorMessages';
 
 interface DailyChallengesPageProps {
   onStartChallenge?: (challenge?: Challenge) => void;
@@ -978,7 +979,8 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
                                 setSelectedChallenge(fullChallenge);
                                 setShowAnswerModal(true);
                               } catch (err) {
-                                console.error('Error fetching challenge details:', err);
+                                const errorMsg = getUserFriendlyError(err as Error);
+                                logError(err as Error, 'DailyChallenges - View Challenge');
                                 // Fallback to current challenge data
                                 setSelectedChallenge(challenge);
                                 setShowAnswerModal(true);
@@ -997,7 +999,8 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
                                 const fullChallenge = await fetchChallenge(challenge.id);
                                 onStartChallenge?.(fullChallenge);
                               } catch (err) {
-                                console.error('Error fetching challenge for start:', err);
+                                const errorMsg = getUserFriendlyError(err as Error);
+                                logError(err as Error, 'DailyChallenges - Start Challenge');
                                 // Fallback to current challenge data
                                 onStartChallenge?.(challenge);
                               }
@@ -1242,7 +1245,8 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
                         const fullChallenge = await fetchChallenge(selectedChallenge.id);
                         onStartChallenge(fullChallenge);
                       } catch (err) {
-                        console.error('Error fetching challenge for redo:', err);
+                        const errorMsg = getUserFriendlyError(err as Error);
+                        logError(err as Error, 'DailyChallenges - Redo Challenge');
                         // Fallback to selected challenge data
                         onStartChallenge(selectedChallenge);
                       }

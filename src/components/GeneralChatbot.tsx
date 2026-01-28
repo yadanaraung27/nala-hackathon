@@ -35,6 +35,7 @@ import {
   AlertDialogTitle,
 } from './ui/alert-dialog';
 import { fetchCurrentChallenge } from '../utils/challengesApi';
+import { getUserFriendlyError, logError } from '../utils/errorMessages';
 
 interface GeneralChatbotProps {
   learningStyle: string | null;
@@ -901,7 +902,8 @@ Please transcribe the key mathematical expressions you see before analyzing them
         challengeToUse = await fetchCurrentChallenge();
         console.log('Fetched today\'s challenge:', challengeToUse);
       } catch (err) {
-        console.error('Error fetching today\'s challenge:', err);
+        const errorMsg = getUserFriendlyError(err as Error);
+        logError(err as Error, 'GeneralChatbot - Fetch Today\'s Challenge');
         // Will fall back to default message below
       }
     }

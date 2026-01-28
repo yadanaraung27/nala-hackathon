@@ -1,4 +1,5 @@
 // API client for daily challenges
+import { apiGet, apiPost } from './apiClient';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
@@ -84,16 +85,10 @@ export async function fetchChallenges(filters: ChallengeFilters = {}): Promise<{
 
   const fullUrl = `${API_BASE_URL}/api/challenges?${params}`;
 
-  try {
-    const response = await fetch(fullUrl, {mode: 'cors'});
-    if (!response.ok) {
-      throw new Error(`Failed to fetch challenges: ${response.statusText}`);
-    }
-    const data = await response.json();
-    return data;
-  } catch (err) {
-    throw err;
-  }
+  return await apiGet(fullUrl, {
+    timeout: 10000,  // 10 second timeout
+    retries: 2       // Retry twice on network failure
+  });
 }
 
 // Fetch a single challenge by ID with all attempts
@@ -103,13 +98,10 @@ export async function fetchChallenge(challengeId: number): Promise<Challenge> {
     user_id: userId.toString(),
   });
 
-  const response = await fetch(`${API_BASE_URL}/api/challenges/${challengeId}?${params}`);
-  
-  if (!response.ok) {
-    throw new Error(`Failed to fetch challenge: ${response.statusText}`);
-  }
-
-  return response.json();
+  return await apiGet(`${API_BASE_URL}/api/challenges/${challengeId}?${params}`, {
+    timeout: 10000,
+    retries: 2
+  });
 }
 
 // Submit a new attempt for a challenge
@@ -124,25 +116,16 @@ export async function submitAttempt(
 ): Promise<ChallengeAttempt> {
   const userId = getUserId();
   
-  const response = await fetch(`${API_BASE_URL}/api/challenges/${challengeId}/attempts`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      user_id: userId,
-      answer: attempt.answer,
-      score: attempt.score,
-      time_spent: attempt.timeSpent,
-      status: attempt.status || 'completed',
-    }),
+  const data = await apiPost(`${API_BASE_URL}/api/challenges/${challengeId}/attempts`, {
+    user_id: userId,
+    answer: attempt.answer,
+    score: attempt.score,
+    time_spent: attempt.timeSpent,
+    status: attempt.status || 'completed',
+  }, {
+    timeout: 15000,  // 15 seconds for submission
+    retries: 1       // Retry once if it fails
   });
-
-  if (!response.ok) {
-    throw new Error(`Failed to submit attempt: ${response.statusText}`);
-  }
-
-  const data = await response.json();
   return {
     attemptNumber: data.attempt_number,
     score: data.score,
@@ -162,17 +145,10 @@ export async function fetchStats(): Promise<ChallengeStats> {
 
   const fullUrl = `${API_BASE_URL}/api/challenges/stats?${params}`;
 
-  try {
-    const response = await fetch(fullUrl, {mode: 'cors'});
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch stats: ${response.statusText}`);
-    }
-
-    return response.json();
-  } catch (err) {
-    throw err;
-  }
+  return await apiGet(fullUrl, {
+    timeout: 10000,
+    retries: 2
+  });
 }
 
 // Fetch today's challenge
@@ -182,11 +158,8 @@ export async function fetchCurrentChallenge(): Promise<Challenge> {
     user_id: userId.toString(),
   });
 
-  const response = await fetch(`${API_BASE_URL}/api/challenges/current?${params}`);
-  
-  if (!response.ok) {
-    throw new Error(`Failed to fetch current challenge: ${response.statusText}`);
-  }
-
-  return response.json();
+  return await apiGet(`${API_BASE_URL}/api/challenges/current?${params}`, {
+    timeout: 10000,
+    retries: 2
+  });
 }

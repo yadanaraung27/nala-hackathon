@@ -78,7 +78,7 @@ This application uses Ollama with a **hybrid dual-model approach** for optimal A
 4. **Run the Flask backend server in another terminal:**
    ```bash
    cd backend
-   python rag_api.pg
+   python backend.py
    ```
 
 5. **Ensure Ollama server is running in a separate terminal:**
@@ -96,3 +96,140 @@ This application uses Ollama with a **hybrid dual-model approach** for optimal A
    - The dashboard UI will appear as shown:
    
      ![Figma Make UI](public/images/homepage_ui.png)
+## API Endpoints
+
+The backend provides the following API endpoints:
+
+### Challenges
+- `GET /api/challenges` - Get list of challenges with optional filtering
+- `GET /api/challenges/<id>` - Get a specific challenge
+- `GET /api/challenges/current` - Get today's challenge
+- `POST /api/challenges/<id>/attempts` - Submit a challenge attempt
+- `GET /api/challenges/stats` - Get user statistics
+
+### User Profile
+- `GET /api/user/<user_id>` - Get user profile information (username, email)
+
+### RAG (Retrieval-Augmented Generation)
+- `POST /api/ask` - Ask a question using RAG pipeline
+- `GET /api/weekly_topics` - Get weekly topic analysis
+
+### Health Check
+- `GET /api/health` - Server health check
+
+## Error Handling
+
+The application implements comprehensive error handling:
+
+### Backend Error Handling
+- **Global error handlers** for 404, 400, 500, and general exceptions
+- **Database wrapper** (`safe_db_operation()`) with automatic rollback on errors
+- **Structured error responses** with consistent JSON format:
+  ```json
+  {
+    "error": "Error Type",
+    "message": "User-friendly error message",
+    "status": 404
+  }
+  ```
+
+### Frontend Error Handling
+- **API Client** (`src/utils/apiClient.ts`) with automatic retry logic and timeout handling
+- **Error Messages** (`src/utils/errorMessages.ts`) for user-friendly error display
+- **Network error detection** and graceful degradation
+
+### Testing
+Run the comprehensive error handling test suite:
+```bash
+cd backend
+python test_all_errors.py
+```
+
+The test suite validates:
+- Flask error handlers
+- Database error handling and rollback
+- API endpoint error responses
+- Real-life scenarios (SQL injection, malformed JSON, concurrent access, large payloads)
+- Frontend error handling utilities
+
+Optional: Test against a running server:
+```bash
+python test_all_errors.py --live
+```
+
+## Database
+
+The application uses SQLite with the following tables:
+- `users` - User accounts (id, username, email, password_hash, created_at)
+- `challenges` - Daily challenges (id, date, category, difficulty, bloom_level, question, etc.)
+- `challenge_attempts` - User attempts at challenges (id, user_id, challenge_id, attempt_number, score, answer, etc.)
+
+### Database Utilities
+Located in `backend/database.py`:
+- `safe_db_operation()` - Context manager for safe database operations
+- `get_user_by_id()` - Fetch user by ID
+- `get_challenge_by_id()` - Fetch challenge by ID
+- `create_challenge_attempt()` - Create a new attempt record
+- `execute_query()` - Execute a generic query safely
+
+### Initialize Database
+```bash
+cd backend
+python init_db.py
+```
+
+## Project Structure
+
+```
+├── backend/
+│   ├── backend.py          # Main Flask server
+│   ├── challenges_api.py   # Challenges API endpoints
+│   ├── database.py         # Database utilities with error handling
+│   ├── schema.sql          # Database schema
+│   ├── test_all_errors.py  # Comprehensive error handling tests
+│   └── ragcore/            # RAG pipeline components
+├── src/
+│   ├── components/
+│   │   ├── pages/          # Page components
+│   │   └── ui/             # Reusable UI components
+│   └── utils/
+│       ├── apiClient.ts    # API client with retry/timeout logic
+│       ├── errorMessages.ts # User-friendly error messages
+│       └── challengesApi.ts # Challenges API functions
+└── public/
+    └── images/             # Static assets
+```
+
+## Development
+
+### Running in Development Mode
+
+1. **Frontend (Vite + React):**
+   ```bash
+   npm run dev
+   ```
+   Runs on `http://localhost:5173`
+
+2. **Backend (Flask):**
+   ```bash
+   cd backend
+   python backend.py
+   ```
+   Runs on `http://localhost:5001`
+
+3. **Ollama Server:**
+   ```bash
+   ollama serve
+   ```
+   Runs on `http://localhost:11434`
+
+### Testing
+
+```bash
+# Run comprehensive error handling tests
+cd backend
+python test_all_errors.py
+
+# Test against live server (requires backend running)
+python test_all_errors.py --live
+```

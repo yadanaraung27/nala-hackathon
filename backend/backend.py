@@ -29,6 +29,54 @@ CORS(app)
 # Register challenges blueprint
 app.register_blueprint(challenges_bp)
 
+# ============================================================================
+# GLOBAL ERROR HANDLERS
+# ============================================================================
+
+@app.errorhandler(404)
+def not_found(error):
+    """Handle 404 Not Found errors"""
+    return jsonify({
+        'error': 'Not Found',
+        'message': 'The requested resource was not found',
+        'status': 404
+    }), 404
+
+@app.errorhandler(400)
+def bad_request(error):
+    """Handle 400 Bad Request errors"""
+    return jsonify({
+        'error': 'Bad Request',
+        'message': str(error.description) if hasattr(error, 'description') else 'Invalid request',
+        'status': 400
+    }), 400
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 Internal Server errors"""
+    # Log the error for debugging
+    print(f"Internal Server Error: {error}")
+    return jsonify({
+        'error': 'Internal Server Error',
+        'message': 'An unexpected error occurred. Please try again later.',
+        'status': 500
+    }), 500
+
+@app.errorhandler(Exception)
+def handle_exception(error):
+    """Handle all uncaught exceptions"""
+    # Log the full error for debugging
+    print(f"Uncaught Exception: {type(error).__name__}: {error}")
+    import traceback
+    traceback.print_exc()
+    
+    # Return a generic error message to the client
+    return jsonify({
+        'error': 'Server Error',
+        'message': 'An unexpected error occurred. Please try again later.',
+        'status': 500
+    }), 500
+
 # Bootstrap index ONCE at startup
 retriever, reranker = None, None
 def llm(text, system=None, timeout_s=30):

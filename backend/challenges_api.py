@@ -2,7 +2,7 @@
 API endpoints for daily challenges
 """
 from flask import Blueprint, request, jsonify
-from database import get_db_connection, ensure_database
+from database import get_db_connection, ensure_database, safe_db_operation
 from datetime import datetime
 from typing import Optional
 
@@ -53,7 +53,7 @@ def get_challenges():
         limit = int(request.args.get('limit', 100))
         offset = (page - 1) * limit
         
-        with get_db_connection() as conn:
+        with safe_db_operation() as conn:
             cursor = conn.cursor()
             
             # Build query - get challenges with latest attempt info
@@ -202,7 +202,7 @@ def get_challenge(challenge_id: int):
     
     user_id = get_user_id_from_request()
     
-    with get_db_connection() as conn:
+    with safe_db_operation() as conn:
         cursor = conn.cursor()
         
         # Get challenge
@@ -286,7 +286,7 @@ def submit_attempt(challenge_id: int):
     if not user_id:
         return jsonify({'error': 'user_id is required'}), 400
     
-    with get_db_connection() as conn:
+    with safe_db_operation() as conn:
         cursor = conn.cursor()
         
         # Verify challenge exists
@@ -336,7 +336,7 @@ def get_stats():
         
         user_id = get_user_id_from_request()
         
-        with get_db_connection() as conn:
+        with safe_db_operation() as conn:
             cursor = conn.cursor()
             
             # Get total solved and attempted
@@ -467,7 +467,7 @@ def get_current_challenge():
     user_id = get_user_id_from_request()
     today = datetime.now().strftime('%Y-%m-%d')
     
-    with get_db_connection() as conn:
+    with safe_db_operation() as conn:
         cursor = conn.cursor()
         
         # Get today's challenge
@@ -514,3 +514,38 @@ def get_current_challenge():
         }
         
         return jsonify(challenge)
+
+
+@challenges_bp.route('/api/user/<int:user_id>', methods=['GET'])
+def get_user_profile(user_id: int):
+    """
+    Get user profile information.
+    
+    Path parameters:
+    - user_id: User ID
+    """
+    ensure_database()
+    
+    with safe_db_operation() as conn:
+        cursor = conn.cursor()
+        
+        # Get user profile
+        cursor.execute("""
+            SELECT id, username, email, created_at
+            FROM users
+            WHERE id = ?
+        """, (user_id,))
+        
+        row = cursor.fetchone()
+        
+        if not row:
+            return jsonify({'error': 'User not found'}), 404
+        
+        user = {
+            'id': row['id'],
+            'username': row['username'],
+            'email': row['email'],
+            'createdAt': row['created_at']
+        }
+        
+        return jsonify(user)
