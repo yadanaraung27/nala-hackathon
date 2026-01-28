@@ -1,6 +1,6 @@
 # ragcore/ingest.py
 from pathlib import Path
-from unstructured.partition.auto import partition
+from pypdf import PdfReader
 from nltk.tokenize import sent_tokenize
 
 def clean_text(txt: str) -> str:
@@ -10,9 +10,17 @@ def clean_text(txt: str) -> str:
     return txt
 
 def parse_to_text(path: Path) -> str:
-    # works for PDF, DOCX, HTML, MD, TXT
-    elements = partition(filename=str(path))
-    txt = "\n".join(e.text for e in elements if e.text)
+    """Parse PDF, TXT, or MD files to text"""
+    if path.suffix.lower() == '.pdf':
+        # Parse PDF with pypdf
+        reader = PdfReader(str(path))
+        txt = "\n".join(page.extract_text() for page in reader.pages)
+    elif path.suffix.lower() in {'.txt', '.md'}:
+        # Read plain text files
+        txt = path.read_text(encoding='utf-8', errors='ignore')
+    else:
+        # Unsupported format
+        return ""
     return clean_text(txt)
 
 def chunk_text(txt: str, max_tokens=500, overlap=80) -> list[dict]:

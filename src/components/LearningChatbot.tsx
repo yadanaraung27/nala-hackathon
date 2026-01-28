@@ -69,51 +69,36 @@ const renderBoldMarkdown = (content: string): React.ReactNode[] => {
 // Fetch reply from Ollama API
 async function fetchRagReply(query: string): Promise<string> {
   try {
-    const ollamaUrl = (import.meta.env as any).VITE_OLLAMA_URL || "http://localhost:11434";
-    const ollamaModel = (import.meta.env as any).VITE_OLLAMA_MODEL || "llama3.2-vision";
+    // Use RAG API endpoint to get answers grounded in learning theory documents
+    const ragApiUrl = "http://localhost:5001/api/ask";
 
-    const response = await fetch(`${ollamaUrl}/api/chat`, {
+    const response = await fetch(ragApiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: ollamaModel,
-        messages: [
-          {
-            role: "system",
-            content: "You are a helpful Learning Theory Assistant that helps students understand learning theories like Kolb's model, learning preferences, and provides personalized study tips. Be concise and encouraging. Use **text** for bold emphasis where needed."
-          },
-          {
-            role: "user",
-            content: query
-          }
-        ],
-        stream: false,
-        options: {
-          temperature: 0.7,
-          num_predict: 500
-        }
+        query: query
       })
     });
 
     if (!response.ok) {
-      console.error("Ollama API error:", response.status, await response.text());
-      throw new Error("Ollama API error");
+      console.error("RAG API error:", response.status, await response.text());
+      throw new Error("RAG API error");
     }
 
     const data = await response.json();
-    console.log("fetchRagReply: Ollama response:", data);
+    console.log("fetchRagReply: RAG API response:", data);
 
-    if (data.message && data.message.content) {
-      return data.message.content;
+    if (data.answer) {
+      return data.answer;
     } else {
-      console.warn("fetchRagReply: Unexpected Ollama response format.", data);
-      return "Sorry, I couldn't parse the response from the AI assistant.";
+      console.warn("fetchRagReply: Unexpected RAG API response format.", data);
+      return "Sorry, I couldn't parse the response from the learning assistant.";
     }
   } catch (err) {
     console.error("fetchRagReply: Network or unexpected error:", err);
-    return "Error contacting the learning assistant. Please try again.";
+    return "Error contacting the learning assistant. Please make sure the RAG API server is running on port 5001.";
   }
 }
 

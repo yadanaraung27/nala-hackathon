@@ -303,7 +303,7 @@ def answer(query: str, retriever, reranker, top_k=8):
     candidates = retriever.retrieve(q2, top_k=40)
     ranked = reranker.rerank(q2, candidates, top_k=top_k)
     ctx = compress_context(ranked, max_chars=3500)
-    ans = call_llm(query, ctx, model=os.getenv("RAG_LLM", "llama3.2-vision"))
+    ans = call_llm(query, ctx, model=os.getenv("RAG_LLM", "llama3.2:3b"))
     issues = self_check(ans, query)
     return ans, issues
 

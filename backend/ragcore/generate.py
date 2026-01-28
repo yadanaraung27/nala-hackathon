@@ -4,12 +4,13 @@ import os,json,requests
 SYSTEM = """You are a precise assistant. 
 - Use ONLY provided context to answer.
 - If missing info, say what’s missing.
-- Cite sources inline as [n] where n indexes the context list."""
+- Cite sources inline as [n] where n indexes the context list.
+- Do NOT include filenames in your answer, only use the citation numbers."""
 
 BASE_URL = os.getenv("BASE_URL", "https://nala.ntu.edu.sg") 
 API_KEY = os.getenv("API_KEY", "pk_LearnUS_176q45") 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2-vision") 
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b") 
 
 def build_prompt(query: str, context_chunks: list[dict]):
     ctx = []
