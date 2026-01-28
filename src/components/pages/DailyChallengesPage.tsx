@@ -189,7 +189,7 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
   // Helper function to get today's date string in YYYY-MM-DD format
   const getTodayString = () => {
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   };
 
   // Helper function to filter challenges up to today's date
@@ -234,7 +234,7 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
     
     // Start checking from today and go backwards
     while (true) {
-      const dateStr = checkDate.toISOString().split('T')[0];
+      const dateStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
       if (completedDates.has(dateStr)) {
         currentStreak++;
         checkDate.setDate(checkDate.getDate() - 1);
@@ -295,18 +295,11 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
   // Fetch challenges and stats on component mount
   useEffect(() => {
     const loadData = async () => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/e8d5cc56-2104-4f8f-86c9-195a9df42ec1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DailyChallengesPage.tsx:190',message:'loadData started',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       setIsLoading(true);
       setError(null);
       try {
         // Fetch all challenges from database
         const challengesData = await fetchChallenges({ limit: 1000 });
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/e8d5cc56-2104-4f8f-86c9-195a9df42ec1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DailyChallengesPage.tsx:200',message:'Data fetched successfully',data:{challengeCount:challengesData.challenges?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         
         // Filter challenges to only show up to current date
         const filteredChallenges = filterChallengesUpToToday(challengesData.challenges);
@@ -316,9 +309,6 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
         const calculatedStats = calculateStatsFromChallenges(challengesData.challenges);
         setProgressStats(calculatedStats);
       } catch (err) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/e8d5cc56-2104-4f8f-86c9-195a9df42ec1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DailyChallengesPage.tsx:204',message:'Error in loadData',data:{error:err instanceof Error ? err.message : String(err),errorName:err instanceof Error ? err.name : 'Unknown'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D,E,F'})}).catch(()=>{});
-        // #endregion
         console.error('Error loading challenges:', err);
         setError(err instanceof Error ? err.message : 'Failed to load challenges');
       } finally {
@@ -1107,7 +1097,7 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
                 <Badge variant="outline" className="text-xs">
                   {selectedChallenge.date}
                 </Badge>
-                <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-xs">
+                <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-xs">
                   {selectedChallenge.category}
                 </Badge>
                 <Badge 
@@ -1115,6 +1105,12 @@ export default function DailyChallengesPage({ onStartChallenge }: DailyChallenge
                   className={`text-xs ${getDifficultyColor(selectedChallenge.difficulty)}`}
                 >
                   {selectedChallenge.difficulty}
+                </Badge>
+                <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-xs">
+                  {selectedChallenge.bloomLevel}
+                </Badge>
+                <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-xs">
+                  {getKolbStage(selectedChallenge.bloomLevel).stage}
                 </Badge>
               </div>
             </CardHeader>

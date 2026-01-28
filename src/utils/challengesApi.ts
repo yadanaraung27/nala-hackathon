@@ -126,12 +126,15 @@ export async function submitAttempt(
     timeout: 15000,  // 15 seconds for submission
     retries: 1       // Retry once if it fails
   });
+
+  const d = new Date();
+  
   return {
     attemptNumber: data.attempt_number,
     score: data.score,
     answer: data.answer,
     timeSpent: data.time_spent,
-    date: new Date().toISOString().split('T')[0],
+    date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
     status: data.status,
   };
 }

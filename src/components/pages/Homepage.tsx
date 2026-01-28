@@ -67,7 +67,7 @@ export default function Homepage({
   // Helper function to get today's date string in YYYY-MM-DD format
   const getTodayString = () => {
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   };
 
   // Helper function to calculate streak from challenges
@@ -92,7 +92,7 @@ export default function Homepage({
     
     // Start checking from today and go backwards
     while (true) {
-      const dateStr = checkDate.toISOString().split('T')[0];
+      const dateStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
       if (completedDates.has(dateStr)) {
         streak++;
         checkDate.setDate(checkDate.getDate() - 1);

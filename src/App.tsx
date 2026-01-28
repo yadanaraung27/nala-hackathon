@@ -602,7 +602,7 @@ export default function App() {
               </div>
             </div>
             <p className="text-xs text-purple-200 text-center break-words px-2 leading-tight">
-              © 2025 LearnUs Dev Team.<br />All rights reserved.
+              © 2026 LearnUs Dev Team.<br />All rights reserved.
             </p>
           </div>
         )}

@@ -912,19 +912,31 @@ Please transcribe the key mathematical expressions you see before analyzing them
     if (challengeToUse && challengeToUse.question) {
       const difficultyStars = challengeToUse.difficulty === 'Hard' ? '⭐⭐⭐' : 
                               challengeToUse.difficulty === 'Medium' ? '⭐⭐' : '⭐';
+
+      const getKolbStage = (bloomLevel: string): string => {
+        const bloomToKolbMapping = {
+          'Remember': 'Experience',
+          'Understand': 'Reflect', 
+          'Apply': 'Experience',
+          'Analyze': 'Reflect',
+          'Evaluate': 'Conceptualize',
+          'Create': 'Experience'
+        };
+        
+        return bloomToKolbMapping[bloomLevel as keyof typeof bloomToKolbMapping] || 'Experience';
+      };
       
       const questionMessage: Message = {
         id: '1',
         type: 'bot',
         content: `📋 **Today's Challenge Question**
 
-**Topic:** ${challengeToUse.category || 'Mathematics'}  
-**Difficulty:** ${difficultyStars} ${challengeToUse.difficulty || 'Medium'}  
-**Question Type:** ${challengeToUse.bloomLevel || 'Problem Solving'}  
+• **Topic:** ${challengeToUse.category || 'Mathematics'}  
+• **Difficulty:** ${difficultyStars} ${challengeToUse.difficulty || 'Medium'}  
+• **Question Type:** ${challengeToUse.bloomLevel || 'Problem Solving'}  
+• **Learning Cycle:** ${getKolbStage(challengeToUse.bloomLevel) || 'Experience'} 
 
-**Question:**
-
-${challengeToUse.question}`,
+**Question:** ${challengeToUse.question}`,
         timestamp: now,
         category: 'homework'
       };
