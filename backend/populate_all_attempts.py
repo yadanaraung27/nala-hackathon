@@ -28,101 +28,40 @@ DEFAULT_USER_ID = 1
 START_DATE = '2026-01-12'
 END_DATE = '2026-02-02'
 
-# =============================================================================
-# SAMPLE DATA
-# =============================================================================
-
-# Sample answers based on challenge categories
-SAMPLE_ANSWERS = {
-    'Algebra': [
-        'I applied the exponent rules by multiplying exponents when bases are the same, and dividing when subtracting.',
-        'To simplify radicals, I converted them to rational exponents and then simplified.',
-        'Rational functions can be graphed by finding asymptotes and intercepts.',
-    ],
-    'Calculus': [
-        'Continuity requires that the limit equals the function value at that point, while differentiability requires the derivative to exist.',
-        'I used logarithmic differentiation to simplify the complex expression before taking the derivative.',
-        'The Mean Value Theorem states that for a continuous and differentiable function, there exists a point where the instantaneous rate equals the average rate.',
-        'I found the critical points by setting the derivative to zero, then used the second derivative test to classify them.',
-    ],
-    'Linear Algebra': [
-        'Eigenvalues represent the scaling factor, and eigenvectors are the directions that remain unchanged.',
-        'A vector space must satisfy closure, associativity, commutativity, and have additive identity and inverses.',
-    ],
-    'Statistics': [
-        'I set up the null and alternative hypotheses, calculated the test statistic, found the p-value, and compared it to alpha.',
-        'Normal distribution for continuous data, binomial for discrete outcomes, Poisson for rare events.',
-    ],
-    'Trigonometry': [
-        'I used the unit circle and periodicity to find all solutions within the given interval.',
-        'Inverse trig functions have restricted domains to ensure they are functions.',
-    ],
-    'Discrete Math': [
-        'Permutations are ordered arrangements, combinations are unordered selections.',
-        'Boolean algebra uses AND, OR, NOT operations with properties like commutativity and distributivity.',
-        'Graphs consist of vertices connected by edges, with paths being sequences of connected vertices.',
-    ],
-    'Functions': [
-        'Piecewise functions are defined differently for different intervals, requiring careful evaluation at boundaries.',
-        'Vertical asymptotes occur where denominators are zero, horizontal asymptotes depend on degree comparison.',
-    ],
-    'Analysis': [
-        'The Mean Value Theorem connects the average rate of change to the instantaneous rate.',
-    ],
-    'Sequences': [
-        'A sequence converges if its limit exists as n approaches infinity, found using limit laws.',
-    ],
-    'Linear Systems': [
-        'Main methods include substitution, elimination, and matrix methods like Gaussian elimination.',
-    ],
-}
-
 # Time spent options (in minutes)
 TIME_SPENT_OPTIONS = ['5 minutes', '8 minutes', '10 minutes', '12 minutes', '15 minutes', '18 minutes', '20 minutes', '25 minutes', '30 minutes']
 
 # =============================================================================
 # SPECIFIC ATTEMPTS DATA
-# - 3 attempts for "Improper Integrals" on 2026-01-27
-# - 2 attempts for "Vector Spaces and Subspaces" on 2026-01-19
 # =============================================================================
 
 SPECIFIC_ATTEMPTS = [
     {
-        'date': '2026-01-27',
-        'question_pattern': '%Improper Integrals%',
-        'attempts': [
+        "date": "2026-01-13",
+        "question_pattern": "%i^3%",
+        "attempts": [
             {
-                'score': 45,
-                'time_spent': '35 minutes',
-                'answer': "I attempted to evaluate the improper integral by taking the limit as the upper bound approaches infinity, but made an error in the antiderivative calculation.",
+                "score": 60,
+                "time_spent": "10 minutes",
+                "answer": "I remembered that i squared is -1 but made a mistake with the powers.",
             },
             {
-                'score': 68,
-                'time_spent': '25 minutes',
-                'answer': "I corrected my approach by first splitting the integral at the discontinuity, then evaluating each part separately using limits. I found the antiderivative correctly this time.",
+                "score": 85,
+                "time_spent": "6 minutes",
+                "answer": "Since i² = -1, multiplying by i gives i³ = -i.",
             },
-            {
-                'score': 82,
-                'time_spent': '20 minutes',
-                'answer': "I successfully evaluated the improper integral by recognizing it as a type 1 improper integral (infinite limit). I computed the limit of the definite integral from a to infinity, found the antiderivative, and evaluated the limit correctly, getting a convergent result.",
-            },
-        ]
+        ],
     },
     {
-        'date': '2026-01-19',
-        'question_pattern': '%Vector Spaces%',
-        'attempts': [
+        "date": "2026-01-14",
+        "question_pattern": "%complex number z%",
+        "attempts": [
             {
-                'score': 52,
-                'time_spent': '40 minutes',
-                'answer': "I tried to verify if the set was a vector space by checking closure under addition and scalar multiplication, but I made mistakes in checking the additive identity and inverse properties.",
-            },
-            {
-                'score': 78,
-                'time_spent': '30 minutes',
-                'answer': "I correctly verified that the set satisfies all ten vector space axioms: closure under addition and scalar multiplication, associativity, commutativity, existence of additive identity and inverses, and the distributive and associative properties for scalar multiplication.",
-            },
-        ]
+                "score": 90,
+                "time_spent": "5 minutes",
+                "answer": "The real part is x and the imaginary part is y.",
+            }
+        ],
     },
 ]
 
@@ -130,17 +69,21 @@ SPECIFIC_ATTEMPTS = [
 # HELPER FUNCTIONS
 # =============================================================================
 
-def get_sample_answer(category: str, difficulty: str) -> str:
-    """Get a sample answer based on category and difficulty"""
-    answers = SAMPLE_ANSWERS.get(category, ['I worked through the problem step by step, applying the relevant concepts and methods.'])
-    base_answer = random.choice(answers)
-    
-    if difficulty == 'Easy':
-        return f"{base_answer} This was straightforward to solve."
-    elif difficulty == 'Hard':
-        return f"{base_answer} This required careful analysis and multiple steps to solve correctly."
-    else:
-        return base_answer
+def get_sample_answer(challenge_row, difficulty: str) -> str:
+    """
+    Generate a realistic student answer based on ground truth.
+    """
+    gt = challenge_row["ground_truth_answer"]
+
+    if difficulty == "Easy":
+        return f"The answer is {gt}."
+    elif difficulty == "Medium":
+        return f"I worked through the question step by step and obtained {gt}."
+    else:  # Hard
+        return (
+            f"After carefully analysing the problem and applying the relevant concepts, "
+            f"I concluded that the correct answer is {gt}."
+        )
 
 
 def generate_realistic_score(difficulty: str, attempt_number: int) -> int:
@@ -207,8 +150,8 @@ def populate_random_attempts(user_id: int, start_date: str = START_DATE, end_dat
         
         # Get all challenges in the date range
         cursor.execute("""
-            SELECT id, date, category, difficulty, question 
-            FROM challenges 
+            SELECT id, date, category, difficulty, question, ground_truth_answer
+            FROM challenges
             WHERE date >= ? AND date <= ?
             ORDER BY date ASC
         """, (start_date, end_date))
@@ -228,7 +171,6 @@ def populate_random_attempts(user_id: int, start_date: str = START_DATE, end_dat
         for challenge in challenges:
             challenge_id = challenge['id']
             challenge_date = challenge['date']
-            category = challenge['category']
             difficulty = challenge['difficulty']
             
             # Skip challenges with specific attempts
@@ -255,7 +197,7 @@ def populate_random_attempts(user_id: int, start_date: str = START_DATE, end_dat
             # Create attempts
             for attempt_num in range(1, num_attempts + 1):
                 score = generate_realistic_score(difficulty, attempt_num)
-                answer = get_sample_answer(category, difficulty)
+                answer = get_sample_answer(challenge, difficulty)
                 
                 if attempt_num == 1:
                     time_spent = random.choice(TIME_SPENT_OPTIONS)

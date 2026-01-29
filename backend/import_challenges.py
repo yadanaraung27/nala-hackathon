@@ -25,7 +25,7 @@ def import_challenges_from_csv(csv_path: str, skip_duplicates: bool = True):
     skipped_count = 0
     error_count = 0
     
-    with open(csv_path, 'r', encoding='utf-8') as csvfile:
+    with open(csv_path, 'r', encoding='utf-8-sig') as csvfile:
         reader = csv.DictReader(csvfile)
         
         with get_db_connection() as conn:
